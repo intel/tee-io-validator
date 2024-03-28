@@ -1,0 +1,53 @@
+on:
+  push:
+    paths-ignore:
+      - "**.md"
+  pull_request:
+    paths-ignore:
+      - "**.md"
+  workflow_dispatch:
+
+name: Build binary
+
+jobs:
+  build_release_on_ubuntu:
+    name: Build binary on ubuntu
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+
+      - name: Initialize and update submodules
+        run: git submodule update --init --recursive
+
+      - name: Prepare build directory
+        run: mkdir -p teeio-validator/build
+
+      - name: Build
+        run: |
+              cd teeio-validator/build/
+              cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=mbedtls ..
+              make -j
+
+  build_release_on_centos:
+    name: Build binary on centos
+    runs-on: centos-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout Sources
+        uses: actions/checkout@v4
+
+      - name: Initialize and update submodules
+        run: git submodule update --init --recursive
+
+      - name: Prepare build directory
+        run: mkdir -p teeio-validator/build
+
+      - name: Build
+        run: |
+              cd teeio-validator/build/
+              cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=mbedtls ..
+              make -j
