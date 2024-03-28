@@ -1,0 +1,3 @@
+[submodule "spdm-emu"]
+	path = spdm-emu
+	url = https://github.com/DMTF/spdm-emu.git
