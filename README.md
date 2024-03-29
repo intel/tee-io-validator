@@ -62,6 +62,10 @@ PCIe [IDE ECN](https://members.pcisig.com/wg/PCI-SIG/document/16599) in PCIe 6.0
 
 PCIe [TDISP ECN](https://members.pcisig.com/wg/PCI-SIG/document/18268) in PCIe 6.1.
 
+#### CXL
+
+Compute Express Link Specification Revision [3.0](https://computeexpresslink.org/past-cxl-specifications/), [3.1](https://computeexpresslink.org/cxl-specification)
+
 #### Intel
 
 Intel [Root Complex IDE Key Configuration Unit - Software Programming Guide](https://cdrdv2.intel.com/v1/dl/getContent/732838)
