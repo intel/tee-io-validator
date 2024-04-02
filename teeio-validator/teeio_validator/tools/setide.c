@@ -4,7 +4,6 @@
  *  License: BSD 3-Clause License.
  **/
 
-#include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>
@@ -113,7 +112,7 @@ bool parse_cmdline_option(int argc, char *argv[], char *file_name, IDE_TEST_CONF
 
 bool clear_ft_supported_in_ide_ctrl(IDE_PORT* port)
 {
-    assert(port);
+    TEEIO_ASSERT(port);
 
     bool ret = false;
     int fd = open_configuration_space(port->bdf);

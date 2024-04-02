@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "hal/library/platform_lib.h"
@@ -174,14 +173,14 @@ bool test_query_1_setup(void *test_context)
 bool test_query_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  assert(group_context->spdm_context);
-  assert(group_context->session_id);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_context);
+  TEEIO_ASSERT(group_context->session_id);
 
   uint8_t port_index = 0;
   uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);
@@ -212,14 +211,14 @@ bool test_query_1_teardown(void *test_context)
 bool test_query_2_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  assert(group_context->spdm_context);
-  assert(group_context->session_id);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_context);
+  TEEIO_ASSERT(group_context->session_id);
 
   uint8_t port_index = 0;
   uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);
@@ -254,14 +253,14 @@ bool test_query_2_setup(void *test_context)
 bool test_query_2_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  assert(group_context->spdm_context);
-  assert(group_context->session_id);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_context);
+  TEEIO_ASSERT(group_context->session_id);
 
   uint8_t port_index = mMaxPortIndex;
   uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);

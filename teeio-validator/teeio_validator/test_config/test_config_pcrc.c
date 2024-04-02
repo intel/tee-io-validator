@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "hal/library/platform_lib.h"
@@ -28,10 +27,10 @@ bool test_config_support_common(void *test_context);
 static bool test_config_set_pcrc_common(void *test_context, bool enable)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = config_context->group_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // enable pcrc bit in
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
@@ -51,10 +50,10 @@ static bool test_config_set_pcrc_common(void *test_context, bool enable)
 static bool test_config_check_pcrc_support_common(void *test_context)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = config_context->group_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
   PCIE_IDE_CAP *dev_cap = &group_context->lower_port.ide_cap;

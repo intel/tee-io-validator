@@ -152,7 +152,7 @@ bool test_ksetgo_setup_common(
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_ide_km_query failed with status=0x%x\n", status));
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -165,7 +165,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   result = ide_km_key_prog(
       doe_context, spdm_context,
@@ -175,7 +175,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   result = ide_km_key_prog(
       doe_context, spdm_context,
@@ -185,7 +185,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   prime_host_ide_keys(
       (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
@@ -201,7 +201,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   result = ide_km_key_prog(
       doe_context, spdm_context,
@@ -211,7 +211,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   result = ide_km_key_prog(
       doe_context, spdm_context,
@@ -221,7 +221,7 @@ bool test_ksetgo_setup_common(
       kcbar_addr,
       k_set,
       rp_stream_index);
-  assert(result);
+  TEEIO_ASSERT(result);
 
   prime_host_ide_keys(
       (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
@@ -236,14 +236,14 @@ bool test_ksetgo_setup_common(
 bool test_ksetgo_1_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  assert(group_context->spdm_context);
-  assert(group_context->session_id);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_context);
+  TEEIO_ASSERT(group_context->session_id);
 
   return test_ksetgo_setup_common(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
     group_context->upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
@@ -256,12 +256,12 @@ bool test_ksetgo_1_run(void *test_context)
   bool res = false;
 
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
   void *doe_context = group_context->doe_context;

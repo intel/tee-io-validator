@@ -38,12 +38,12 @@ void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYP
 bool test_full_1_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
@@ -58,12 +58,12 @@ bool test_full_1_setup(void *test_context)
 bool test_full_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
   if (group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
@@ -167,12 +167,12 @@ bool test_full_teardown_common(void *test_context)
 {
   // first diable dev_ide and host_ide
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;

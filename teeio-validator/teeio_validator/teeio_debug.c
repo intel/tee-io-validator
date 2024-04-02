@@ -78,6 +78,6 @@ void teeio_assert(const char *file_name, int line_number, const char *descriptio
 #endif
 #endif
 
-    assert(false);
+    TEEIO_ASSERT(false);
 }
 #endif /* TEEIO_ASSERT_ENABLE */

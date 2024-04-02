@@ -269,12 +269,12 @@ bool is_valid_test_case(const char* test_case_name)
 ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFIG *test_config)
 {
   ide_run_test_suite_t *rts = (ide_run_test_suite_t *)malloc(sizeof(ide_run_test_suite_t));
-  assert(rts != NULL);
+  TEEIO_ASSERT(rts != NULL);
   memset(rts, 0, sizeof(ide_run_test_suite_t));
   sprintf(rts->name, "TestSuite_%d", suite->id);
 
   ide_common_test_suite_context_t *context = (ide_common_test_suite_context_t *)malloc(sizeof(ide_common_test_suite_context_t));
-  assert(context);
+  TEEIO_ASSERT(context);
   memset(context, 0, sizeof(ide_common_test_suite_context_t));
 
   context->signature = SUITE_CONTEXT_SIGNATURE;
@@ -288,11 +288,11 @@ ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFI
 
 bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TOPOLOGY_TYPE top_type)
 {
-  assert(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
-  assert(config_id < IDE_TEST_CONFIGURATION_TYPE_NUM);
+  TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+  TEEIO_ASSERT(config_id < IDE_TEST_CONFIGURATION_TYPE_NUM);
 
   ide_run_test_config_t *run_test_config = (ide_run_test_config_t *)malloc(sizeof(ide_run_test_config_t));
-  assert(run_test_config);
+  TEEIO_ASSERT(run_test_config);
   memset(run_test_config, 0, sizeof(ide_run_test_config_t));
 
   ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_id];
@@ -305,7 +305,7 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TO
 
   // assign test_config_context
   ide_common_test_config_context_t *context = (ide_common_test_config_context_t *)malloc(sizeof(ide_common_test_config_context_t));
-  assert(context);
+  TEEIO_ASSERT(context);
   memset(context, 0, sizeof(ide_common_test_config_context_t));
   context->group_context = NULL;  // this is assigned in run-time
   context->suite_context = rts->test_context;
@@ -341,15 +341,15 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TO
 bool alloc_run_test_configs(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id, int config_id)
 {
   IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(test_config, config_id);
-  assert(configuration);
-  assert(configuration->enabled);
-  assert(configuration->bit_map != 0);
-  assert(configuration->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+  TEEIO_ASSERT(configuration);
+  TEEIO_ASSERT(configuration->enabled);
+  TEEIO_ASSERT(configuration->bit_map != 0);
+  TEEIO_ASSERT(configuration->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
 
   IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
-  assert(top);
-  assert(top->enabled);
-  assert(top->type == configuration->type);
+  TEEIO_ASSERT(top);
+  TEEIO_ASSERT(top->enabled);
+  TEEIO_ASSERT(top->type == configuration->type);
 
   uint32_t config_bitmask = m_top_config_bitmasks[configuration->type];
 
@@ -370,14 +370,14 @@ ide_common_test_switch_internal_conn_context_t* alloc_switch_internal_conn_conte
 
   while(conn != NULL) {
     conn_context = (ide_common_test_switch_internal_conn_context_t*)malloc(sizeof(ide_common_test_switch_internal_conn_context_t));
-    assert(conn_context);
+    TEEIO_ASSERT(conn_context);
     memset(conn_context, 0, sizeof(ide_common_test_switch_internal_conn_context_t));
 
     IDE_SWITCH* sw = get_switch_by_id(test_config, conn->switch_id);
-    assert(sw);
+    TEEIO_ASSERT(sw);
     IDE_PORT* ups_port = get_port_from_switch_by_id(sw, conn->ups_port);
     IDE_PORT* dps_port = get_port_from_switch_by_id(sw, conn->dps_port);
-    assert(ups_port && dps_port);
+    TEEIO_ASSERT(ups_port && dps_port);
 
     conn_context->switch_id = conn->switch_id;
     conn_context->ups.port = ups_port;
@@ -404,19 +404,19 @@ ide_common_test_switch_internal_conn_context_t* alloc_switch_internal_conn_conte
 ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id)
 {
   ide_run_test_group_t *run_test_group = (ide_run_test_group_t *)malloc(sizeof(ide_run_test_group_t));
-  assert(run_test_group);
+  TEEIO_ASSERT(run_test_group);
   memset(run_test_group, 0, sizeof(ide_run_test_group_t));
 
   IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
-  assert(top != NULL);
-  assert(top->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+  TEEIO_ASSERT(top != NULL);
+  TEEIO_ASSERT(top->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
 
   IDE_PORT *root_port = get_port_by_id(test_config, top->root_port);
   IDE_PORT *upper_port = get_port_by_id(test_config, top->upper_port);
   IDE_PORT *lower_port = get_port_by_id(test_config, top->lower_port);
-  assert(root_port != NULL);
-  assert(upper_port != NULL);
-  assert(lower_port != NULL);
+  TEEIO_ASSERT(root_port != NULL);
+  TEEIO_ASSERT(upper_port != NULL);
+  TEEIO_ASSERT(lower_port != NULL);
 
   sprintf(run_test_group->name, "%s", m_ide_test_topology_name[top->type]);
 
@@ -425,7 +425,7 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
   run_test_group->teardown_func = group_funcs->teardown;
 
   ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)malloc(sizeof(ide_common_test_group_context_t));
-  assert(context);
+  TEEIO_ASSERT(context);
   memset(context, 0, sizeof(ide_common_test_group_context_t));
 
   context->signature = GROUP_CONTEXT_SIGNATURE;
@@ -468,11 +468,11 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 */
 bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_CASE test_case, uint32_t case_id)
 {
-  assert(test_case < IDE_COMMON_TEST_CASE_NUM);
-  assert(case_id <= MAX_CASE_ID);
+  TEEIO_ASSERT(test_case < IDE_COMMON_TEST_CASE_NUM);
+  TEEIO_ASSERT(case_id <= MAX_CASE_ID);
 
   ide_run_test_case_t *run_test_case = (ide_run_test_case_t *)malloc(sizeof(ide_run_test_case_t));
-  assert(run_test_case != NULL);
+  TEEIO_ASSERT(run_test_case != NULL);
   memset(run_test_case, 0, sizeof(ide_run_test_case_t));
 
   strncpy(run_test_case->class, m_ide_test_case_name[(int)test_case], MAX_NAME_LENGTH);
@@ -486,7 +486,7 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   run_test_case->complete_ide_stream = case_funcs->complete_ide_stream;
 
   ide_common_test_case_context_t* context = (ide_common_test_case_context_t *)malloc(sizeof(ide_common_test_case_context_t));
-  assert(context);
+  TEEIO_ASSERT(context);
   memset(context, 0, sizeof(ide_common_test_case_context_t));
 
   context->group_context = run_test_group->test_context;
@@ -525,7 +525,7 @@ bool alloc_run_test_cases(
     }
 
     run_test_group = alloc_run_test_group(run_test_suite, test_config, top->id);
-    assert(run_test_group);
+    TEEIO_ASSERT(run_test_group);
 
     for (int j = 0; j < tc->cases_cnt; j++)
     {
@@ -560,13 +560,13 @@ ide_run_test_suite_t *prepare_tests_data(IDE_TEST_CONFIG *test_config)
     }
 
     run_test_suite = alloc_run_test_suite(suite, test_config);
-    assert(run_test_suite);
+    TEEIO_ASSERT(run_test_suite);
 
     bool ret = alloc_run_test_configs(run_test_suite, test_config, suite->topology_id, suite->configuration_id);
-    assert(ret);
+    TEEIO_ASSERT(ret);
 
     ret = alloc_run_test_cases(run_test_suite, test_config, suite, top);
-    assert(ret);
+    TEEIO_ASSERT(ret);
 
     // insert into run_test_suite chain
     ide_run_test_suite_t *itr = run_test_suite_header;
@@ -591,10 +591,10 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_case_result_t
 {
   bool ret = true;
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_case->test_context;
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEEIO_PRINT(("     Run %s\n", test_case->name));
 
@@ -633,7 +633,7 @@ TestCaseDone:
 
   if(test_case->teardown_func != NULL) {
     ret = test_case->teardown_func(test_case->test_context);
-    assert(ret);
+    TEEIO_ASSERT(ret);
   }
 
   return ret;
@@ -642,7 +642,7 @@ TestCaseDone:
 ide_run_test_case_result_t *alloc_run_test_case_result(ide_run_test_group_result_t* group_result, const char* case_name, const char* case_class)
 {
   ide_run_test_case_result_t *case_result = (ide_run_test_case_result_t *)malloc(sizeof(ide_run_test_case_result_t));
-  assert(case_result);
+  TEEIO_ASSERT(case_result);
   memset(case_result, 0, sizeof(ide_run_test_case_result_t));
 
   strncpy(case_result->name, case_name, MAX_NAME_LENGTH);
@@ -668,10 +668,10 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
 {
   bool ret = true;
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)run_test_group->test_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
   config_context->group_context = group_context;
 
   if(run_test_group->test_case == NULL) {
@@ -708,7 +708,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
 
     // call test_config's enable function
     ret = run_test_config->enable_func(config_context);
-    assert(ret);
+    TEEIO_ASSERT(ret);
 
     // run the test_case
     do_run_test_case(test_case, case_result);
@@ -717,7 +717,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
       // check config
       ret = run_test_config->check_func(config_context);
       case_result->config_result = config_context->test_result;
-      assert(ret);
+      TEEIO_ASSERT(ret);
     }
 
     // next case
@@ -729,7 +729,7 @@ TestGroupDone:
   if (run_test_group->teardown_func != NULL)
   {
     ret = run_test_group->teardown_func(group_context);
-    assert(ret);
+    TEEIO_ASSERT(ret);
   }
 
   // config_context is reused between different run_group_test
@@ -744,7 +744,7 @@ TestGroupDone:
 ide_run_test_group_result_t* alloc_run_test_group_result(ide_run_test_group_t *run_test_group, ide_run_test_config_t *run_test_config)
 {
   ide_run_test_group_result_t* group_result = (ide_run_test_group_result_t *)malloc(sizeof(ide_run_test_group_result_t));
-  assert(group_result);
+  TEEIO_ASSERT(group_result);
   memset(group_result, 0, sizeof(ide_run_test_group_result_t));
   strncpy(group_result->name, run_test_group->name, MAX_NAME_LENGTH);
 
@@ -778,7 +778,7 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
       {
         // alloc group_result
         ide_run_test_group_result_t* group_result = alloc_run_test_group_result(run_test_group, run_test_config);
-        assert(group_result);
+        TEEIO_ASSERT(group_result);
 
         do_run_test_group(run_test_group, run_test_config, group_result);
 
@@ -810,7 +810,7 @@ bool test_group_cases_statics(ide_run_test_group_result_t *group_result, int *pa
     } else if(case_result->case_result == IDE_COMMON_TEST_CASE_RESULT_FAILED) {
       *failed += 1;
     } else {
-      assert(false);
+      TEEIO_ASSERT(false);
     }
 
     case_result = case_result->next;
@@ -834,7 +834,7 @@ bool test_suite_cases_statics(ide_run_test_suite_t *run_test_suite, int *passed,
   while(run_test_config) {
 
     ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
-    assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+    TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
     ide_run_test_group_result_t * group_result = run_test_config->group_result;
 
@@ -870,7 +870,7 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
     while(run_test_config) {
 
       ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
-      assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+      TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
       ide_run_test_group_result_t * group_result = run_test_config->group_result;
       while(group_result) {

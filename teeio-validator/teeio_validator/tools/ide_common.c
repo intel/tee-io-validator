@@ -4,7 +4,6 @@
  *  License: BSD 3-Clause License.
  **/
 
-#include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
 #include <stdlib.h>
@@ -25,14 +24,14 @@ ide_common_test_switch_internal_conn_context_t *alloc_switch_internal_conn_conte
     while (conn != NULL)
     {
         conn_context = (ide_common_test_switch_internal_conn_context_t *)malloc(sizeof(ide_common_test_switch_internal_conn_context_t));
-        assert(conn_context);
+        TEEIO_ASSERT(conn_context);
         memset(conn_context, 0, sizeof(ide_common_test_switch_internal_conn_context_t));
 
         IDE_SWITCH *sw = get_switch_by_id(test_config, conn->switch_id);
-        assert(sw);
+        TEEIO_ASSERT(sw);
         IDE_PORT *ups_port = get_port_from_switch_by_id(sw, conn->ups_port);
         IDE_PORT *dps_port = get_port_from_switch_by_id(sw, conn->dps_port);
-        assert(ups_port && dps_port);
+        TEEIO_ASSERT(ups_port && dps_port);
 
         conn_context->switch_id = conn->switch_id;
         conn_context->ups.port = ups_port;
@@ -81,20 +80,20 @@ bool scan_open_devices_in_top(IDE_TEST_CONFIG *test_config, int top_id, DEVCIES_
     if (top->connection == IDE_TEST_CONNECT_SWITCH)
     {
         // root_port and upper_port are the same
-        assert(root_port->id == upper_port->id);
+        TEEIO_ASSERT(root_port->id == upper_port->id);
         sw_conn1 = alloc_switch_internal_conn_context(test_config, top, top->sw_conn1);
     }
     else if (top->connection == IDE_TEST_CONNECT_P2P)
     {
         // root_port and upper_port are not the same
-        assert(root_port->id != upper_port->id);
+        TEEIO_ASSERT(root_port->id != upper_port->id);
         sw_conn1 = alloc_switch_internal_conn_context(test_config, top, top->sw_conn1);
         sw_conn2 = alloc_switch_internal_conn_context(test_config, top, top->sw_conn2);
     }
     else if (top->connection == IDE_TEST_CONNECT_DIRECT)
     {
         // root_port and upper_port are the same
-        assert(root_port->id == upper_port->id);
+        TEEIO_ASSERT(root_port->id == upper_port->id);
     }
 
     // now scan devices
@@ -174,7 +173,7 @@ ScanOpenDevicesFail:
 
 bool read_ide_cap_ctrl_register(IDE_PORT* port, uint32_t *ide_cap, uint32_t *ide_ctrl)
 {
-    assert(port);
+    TEEIO_ASSERT(port);
 
     bool ret = false;
     int fd = open_configuration_space(port->bdf);

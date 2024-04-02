@@ -4,7 +4,6 @@
  *  License: BSD 3-Clause License.
  **/
 
-#include <assert.h>
 #include <ctype.h>
 #include <getopt.h>
 #include <stdio.h>

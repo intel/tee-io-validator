@@ -78,7 +78,7 @@ bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint8_t bus, uint8_t* S
 
   *SecBus = data32.byte1;
   *SubBus = data32.byte2;
-  assert(*SecBus <= *SubBus);
+  TEEIO_ASSERT(*SecBus <= *SubBus);
 
   res = true;
 
@@ -137,7 +137,7 @@ ScanEndpointDone:
     close(fd);
   }
 
-  assert(res);
+  TEEIO_ASSERT(res);
 
   return res;
 }
