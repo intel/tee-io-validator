@@ -16,31 +16,31 @@ Intel TDX Connect adds “device” to TEE scope. “Device” need to follow st
 
 #### Test Case
 
-1. [Test for QUERY](./doc/IdeKmTestCase/1.Query.md)
+1. [Test for QUERY](./doc/ide_test/IdeKmTestCase/1.Query.md)
 
-2. [Test for KEY_PROG](./doc/IdeKmTestCase/2.KeyProg.md)
+2. [Test for KEY_PROG](./doc/ide_test/IdeKmTestCase/2.KeyProg.md)
 
-3. [Test for K_SET_GO](./doc/IdeKmTestCase/3.KSetGo.md)
+3. [Test for K_SET_GO](./doc/ide_test/IdeKmTestCase/3.KSetGo.md)
 
-4. [Test for K_SET_STOP](./doc/IdeKmTestCase/4.KSetStop.md)
+4. [Test for K_SET_STOP](./doc/ide_test/IdeKmTestCase/4.KSetStop.md)
 
-5. [Test for SPDM Session](./doc/IdeKmTestCase/5.SpdmSession.md)
+5. [Test for SPDM Session](./doc/ide_test/IdeKmTestCase/5.SpdmSession.md)
 
 #### Test Configuration
 
-1. [Test for Selective IDE](./doc/IdeKmTestConfiguration/1.SelectiveIDE.md)
+1. [Test for Selective IDE](./doc/ide_test/IdeKmTestConfiguration/1.SelectiveIDE.md)
 
-2. [Test for Link IDE](./doc/IdeKmTestConfiguration/2.LinkIDE.md)
+2. [Test for Link IDE](./doc/ide_test/IdeKmTestConfiguration/2.LinkIDE.md)
 
-3. [Test for both Selective IDE and Link IDE enabling](./doc/IdeKmTestConfiguration/3.SelectiveAndLinkIDE.md)
+3. [Test for both Selective IDE and Link IDE enabling](./doc/ide_test/IdeKmTestConfiguration/3.SelectiveAndLinkIDE.md)
 
 #### Test Topology
 
-1. [Test for Selective IDE](./doc/IdeKmTestTopology/1.SelectiveIDE.md)
+1. [Test for Selective IDE](./doc/ide_test/IdeKmTestTopology/1.SelectiveIDE.md)
 
-2. [Test for Link IDE](./doc/IdeKmTestTopology/2.LinkIDE.md)
+2. [Test for Link IDE](./doc/ide_test/IdeKmTestTopology/2.LinkIDE.md)
 
-3. [Test for both Selective IDE and Link IDE enabling](./doc/IdeKmTestTopology/3.SelectiveAndLinkIDE.md)
+3. [Test for both Selective IDE and Link IDE enabling](./doc/ide_test/IdeKmTestTopology/3.SelectiveAndLinkIDE.md)
 
 ### Standard
 
