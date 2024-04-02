@@ -1,6 +1,6 @@
 # ide_test.ini spec
 
-**TEE-IO Device Validation Utility** reads ide_test.ini to get the information, such as root port dev/func, endpoint dev/func, topology, etc. Its structure refers to [IdeKmTestCase](../doc/IdeKmTestCase), [IdeKmTestConfiguration](../doc/IdeKmTestConfiguration) and [IdeKmTestTopology](../doc/IdeKmTestTopology)
+**TEE-IO Device Validation Utility** reads ide_test.ini to get the information, such as root port dev/func, endpoint dev/func, topology, etc. Its structure refers to [IdeKmTestCase](../doc/ide_test/IdeKmTestCase), [IdeKmTestConfiguration](../doc/ide_test/IdeKmTestConfiguration) and [IdeKmTestTopology](../doc/ide_test/IdeKmTestTopology)
 
 There are 6 sections in the ide_test.ini.
 1. Main
@@ -74,8 +74,8 @@ EntryName=EntryValue
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
 |topology|number||M|Topology_x|
 |configuration|number||M|Configuration_x|
-|query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Query.md](../doc/IdeKmTestCase/1.Query.md)|
-|KeyProg|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [keyProg.md](../doc/IdeKmTestCase/2.keyProg.md)|
-|KSetGo|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetGo.md](../doc/IdeKmTestCase/3.KSetGo.md)|
-|KSetStop|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetStop.md](../doc/IdeKmTestCase/4.KSetStop.md)|
-|SpdmSession|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [SpdmSession.md](../doc/IdeKmTestCase/5.SpdmSession.md)|
+|query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Query.md](../doc/ide_test/IdeKmTestCase/1.Query.md)|
+|KeyProg|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [keyProg.md](../doc/ide_test/IdeKmTestCase/2.keyProg.md)|
+|KSetGo|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetGo.md](../doc/ide_test/IdeKmTestCase/3.KSetGo.md)|
+|KSetStop|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetStop.md](../doc/ide_test/IdeKmTestCase/4.KSetStop.md)|
+|SpdmSession|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [SpdmSession.md](../doc/ide_test/IdeKmTestCase/5.SpdmSession.md)|
