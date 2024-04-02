@@ -17,7 +17,7 @@
 
 #define NOT_IMPLEMENTED(msg) \
   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not implemented - %s\n", msg)); \
-  assert(false)
+  TEEIO_ASSERT(false)
 
 #define MAX_SUPPORTED_PORTS_NUM     16
 #define MAX_SUPPORTED_SWITCHES_NUM  16

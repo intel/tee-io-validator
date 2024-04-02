@@ -9,7 +9,6 @@
 #include <ctype.h>
 #include <string.h>
 
-#include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "hal/library/platform_lib.h"
@@ -50,7 +49,7 @@ static bool common_test_group_setup(void *test_context)
   bool ret = false;
 
   ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
-  assert(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // first scan devices
   if(!scan_devices(test_context)) {
@@ -83,24 +82,24 @@ static bool common_test_group_setup(void *test_context)
   libspdm_sleep(1000000);
   if (is_doe_error_asserted())
   {
-    assert(false);
+    TEEIO_ASSERT(false);
   }
   libspdm_return_t status = pci_doe_init_request();
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_doe_init_request - %x\n", (uint32_t)status));
-    assert(false);
+    TEEIO_ASSERT(false);
   }
 
   context->doe_context = m_pci_doe_context;
 
   // init spdm_context
   void *spdm_context = spdm_client_init();
-  assert(spdm_context != NULL);
+  TEEIO_ASSERT(spdm_context != NULL);
 
   uint32_t session_id = 0;
   ret = spdm_connect(spdm_context, &session_id);
-  assert(ret);
+  TEEIO_ASSERT(ret);
 
   context->spdm_context = spdm_context;
   context->session_id = session_id;
@@ -111,7 +110,7 @@ static bool common_test_group_setup(void *test_context)
 static bool common_test_group_teardown(void *test_context)
 {
   ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
-  assert(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // close spdm_session and free spdm_context
   if(context->spdm_context != NULL) {

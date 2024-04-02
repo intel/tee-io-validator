@@ -80,7 +80,7 @@ int open_configuration_space(char *bdf)
 {
   if (bdf == NULL)
   {
-    assert(false);
+    TEEIO_ASSERT(false);
     return -1;
   }
 
@@ -193,7 +193,7 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context)
 
   if (port_context == NULL || port_context->port->port_type != IDE_PORT_TYPE_ROOTPORT)
   {
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -208,11 +208,11 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context)
   }
 
   size = lseek(fd, 0x0, SEEK_END);
-  assert(size <= 4096);
+  TEEIO_ASSERT(size <= 4096);
 
   lseek(fd, 0, SEEK_SET);
   size_t bytes_read = read(fd, buffer, size);
-  assert(bytes_read == size);
+  TEEIO_ASSERT(bytes_read == size);
 
   INTEL_KEYP_ACPI *keyp = (INTEL_KEYP_ACPI *)buffer;
   if (memcmp(keyp->signature, KEYP_SIGNATURE, sizeof(keyp->signature)) != 0)
@@ -232,7 +232,7 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context)
   while (offset < size)
   {
     kcu = (INTEL_KEYP_KEY_CONFIGURATION_UNIT *)(buffer + offset);
-    assert(offset + kcu->Length <= size);
+    TEEIO_ASSERT(offset + kcu->Length <= size);
     if (kcu->ProtocolType != 1)
     {
       offset += kcu->Length;
@@ -267,7 +267,7 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context)
   port_context->mapped_kcbar_addr = map_kcbar_addr(kcbar_addr, &port_context->kcbar_fd);
   if (port_context->mapped_kcbar_addr == NULL)
   {
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -322,7 +322,7 @@ bool scan_devices(void *test_context)
 {
   bool ret = false;
   ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
-  assert(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   IDE_TEST_TOPOLOGY *top = context->top;
 
@@ -350,7 +350,7 @@ bool open_root_port(ide_common_test_port_context_t *port_context)
   char str[MAX_NAME_LENGTH] = {0};
 
   IDE_PORT *port = port_context->port;
-  assert(port->port_type == IDE_PORT_TYPE_ROOTPORT);
+  TEEIO_ASSERT(port->port_type == IDE_PORT_TYPE_ROOTPORT);
 
   // open configuration space and get ecap offset
   int fd = open_configuration_space(port->bdf);
@@ -528,7 +528,7 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
         }
         if(j == cnt) {
           // the stream_id in Stream_X must have a corresponding entry in id_maps
-          assert(false);
+          TEEIO_ASSERT(false);
         } else {
           // check if the stream is in secure state. If not, then this Stream_X can be re-used.
           if(id_maps[j].state != IDE_STREAM_STATUS_SECURE) {
@@ -550,14 +550,14 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: ide_id=%02x ide_type=%s rp_stream_index=%02x stream_id=%02x state=%d\n",
                 i, id_maps[i].ide_id, m_ide_type_name[id_maps[i].ide_type], id_maps[i].rp_stream_index, id_maps[i].stream_id, id_maps[i].state));
     if(rp_or_dev && id_maps[i].ide_id != INVALID_IDE_ID && id_maps[i].rp_stream_index == INVALID_RP_STREAM_INDEX) {
-      assert(false);
+      TEEIO_ASSERT(false);
     }
   }
 
   // now find available ide_id
   *ide_id = INVALID_IDE_ID;
   if(ide_type == IDE_TEST_IDE_TYPE_LNK_IDE) {
-    assert(ide_cap.lnk_ide_supported == 1);
+    TEEIO_ASSERT(ide_cap.lnk_ide_supported == 1);
     for(i = 0; i < num_lnk_ide + 1; i++) {
       if(id_maps[i].ide_id == INVALID_IDE_ID || id_maps[i].state != IDE_STREAM_STATUS_SECURE) {
         break;
@@ -567,7 +567,7 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
       *ide_id = i;
     }
   } else if(ide_type == IDE_TEST_IDE_TYPE_SEL_IDE) {
-    assert(ide_cap.sel_ide_supported == 1);
+    TEEIO_ASSERT(ide_cap.sel_ide_supported == 1);
     for(i = num_lnk_ide; i < cnt; i++) {
       if(id_maps[i].ide_id == INVALID_IDE_ID || id_maps[i].state != IDE_STREAM_STATUS_SECURE) {
         break;
@@ -677,15 +677,15 @@ bool populate_addr_assoc_reg_block(
  */
 bool init_host_port(ide_common_test_group_context_t *group_context)
 {
-  assert(group_context != NULL);
-  assert(group_context->top != NULL);
+  TEEIO_ASSERT(group_context != NULL);
+  TEEIO_ASSERT(group_context->top != NULL);
 
   // IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
   ide_common_test_port_context_t *port_context = &group_context->upper_port;
-  assert(port_context != NULL);
-  assert(port_context->port != NULL);
-  assert(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
-  assert(group_context->upper_port.port->id == group_context->root_port.port->id);
+  TEEIO_ASSERT(port_context != NULL);
+  TEEIO_ASSERT(port_context->port != NULL);
+  TEEIO_ASSERT(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
+  TEEIO_ASSERT(group_context->upper_port.port->id == group_context->root_port.port->id);
 
   if(!open_root_port(port_context)) {
     return false;
@@ -777,10 +777,10 @@ bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOL
 
 bool open_dev_port(ide_common_test_port_context_t *port_context)
 {
-  assert(port_context != NULL);
+  TEEIO_ASSERT(port_context != NULL);
   IDE_PORT *port = port_context->port;
-  assert(port != NULL);
-  assert(port->port_type == IDE_PORT_TYPE_ENDPOINT);
+  TEEIO_ASSERT(port != NULL);
+  TEEIO_ASSERT(port->port_type == IDE_PORT_TYPE_ENDPOINT);
 
   char str[MAX_NAME_LENGTH] = {0};
 
@@ -839,12 +839,12 @@ OpenDevFail:
  */
 bool init_dev_port(ide_common_test_group_context_t *group_context)
 {
-  assert(group_context != NULL);
-  assert(group_context->top != NULL);
+  TEEIO_ASSERT(group_context != NULL);
+  TEEIO_ASSERT(group_context->top != NULL);
 
   IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
   ide_common_test_port_context_t *port_context = &group_context->lower_port;
-  assert(port_context != NULL);
+  TEEIO_ASSERT(port_context != NULL);
 
   if(!open_dev_port(port_context)) {
     return false;
@@ -1106,7 +1106,7 @@ void set_host_ide_key_set(
     }
     else
     {
-        assert(false);
+        TEEIO_ASSERT(false);
     }
     mmio_write_reg32(ctrl_reg_ptr, stream_txrx_control.raw);
 }
@@ -1171,7 +1171,7 @@ uint32_t read_host_stream_status_in_ecap(int cfg_space_fd, uint32_t ecap_offset,
       // skip control register
       offset += 4;
     } else {
-      assert(false);
+      TEEIO_ASSERT(false);
     }
 
     data = device_pci_read_32(offset, cfg_space_fd);

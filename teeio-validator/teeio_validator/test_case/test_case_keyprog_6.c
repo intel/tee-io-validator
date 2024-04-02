@@ -125,12 +125,12 @@ bool test_keyprog_6_run(void *test_context)
   bool status;
   bool pass = true;
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
   void *doe_context = group_context->doe_context;

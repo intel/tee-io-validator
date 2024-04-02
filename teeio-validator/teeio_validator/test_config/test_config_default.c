@@ -7,7 +7,6 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "hal/library/platform_lib.h"

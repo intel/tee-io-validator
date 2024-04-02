@@ -9,7 +9,6 @@
 #include <ctype.h>
 #include <unistd.h>
 
-#include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "hal/library/platform_lib.h"
@@ -46,11 +45,11 @@ typedef enum
 bool test_config_check_common(void *test_context, const char* assertion_msg)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)config_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   ide_common_test_port_context_t *port = &group_context->upper_port;
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
@@ -136,7 +135,7 @@ static bool test_config_reset_ide_registers(ide_common_test_group_context_t *gro
                             true);
   if (!res)
   {
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -147,7 +146,7 @@ static bool test_config_reset_ide_registers(ide_common_test_group_context_t *gro
                             false);
   if (!res)
   {
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -158,16 +157,16 @@ bool test_config_enable_common(void *test_context)
 {
   bool res = true;
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = config_context->group_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // if connection is via switch or P2P, then we shall set ft_supported in the switch's port
   ide_common_test_switch_internal_conn_context_t* conn;
   if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH || group_context->top->connection == IDE_TEST_CONNECT_P2P) {
     conn = group_context->sw_conn1;
-    assert(conn);
+    TEEIO_ASSERT(conn);
 
     res = true;
 
@@ -182,7 +181,7 @@ bool test_config_enable_common(void *test_context)
 
   if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
     conn = group_context->sw_conn2;
-    assert(conn);
+    TEEIO_ASSERT(conn);
     res = true;
     while(res && conn) {
       res = set_ft_supported_in_switch(conn->dps.port->bdf) && set_ft_supported_in_switch(conn->ups.port->bdf);
@@ -243,10 +242,10 @@ CheckFailed:
 bool test_config_support_common(void *test_context)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
-  assert(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = config_context->group_context;
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
   PCIE_IDE_CAP *dev_cap = &group_context->lower_port.ide_cap;
@@ -268,7 +267,7 @@ bool test_config_support_common(void *test_context)
   ide_common_test_switch_internal_conn_context_t* conn;
   if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH || group_context->top->connection == IDE_TEST_CONNECT_P2P) {
     conn = group_context->sw_conn1;
-    assert(conn);
+    TEEIO_ASSERT(conn);
 
     supported = true;
     while(conn) {
@@ -291,7 +290,7 @@ bool test_config_support_common(void *test_context)
 
   if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
     conn = group_context->sw_conn2;;
-    assert(conn);
+    TEEIO_ASSERT(conn);
 
     supported = true;
     while(conn) {

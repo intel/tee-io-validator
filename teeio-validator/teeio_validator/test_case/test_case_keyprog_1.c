@@ -60,14 +60,14 @@ bool test_keyprog_setup_common(void *test_context)
   libspdm_return_t status;
 
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  assert(group_context->spdm_context);
-  assert(group_context->session_id);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_context);
+  TEEIO_ASSERT(group_context->session_id);
 
   // query
   ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
@@ -84,7 +84,7 @@ bool test_keyprog_setup_common(void *test_context)
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_ide_km_query failed with status=0x%x\n", status));
-    assert(false);
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -188,12 +188,12 @@ bool test_keyprog_1_run(void *test_context)
   libspdm_return_t status;
   bool pass = true;
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  assert(case_context);
-  assert(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
-  assert(group_context);
-  assert(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
   void *doe_context = group_context->doe_context;
