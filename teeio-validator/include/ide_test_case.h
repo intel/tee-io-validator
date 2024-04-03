@@ -108,4 +108,10 @@ bool test_full_1_setup(void *test_context);
 bool test_full_1_run(void *test_context);
 bool test_full_1_teardown(void *test_context);
 
+// Full case - KeyRefresh
+bool test_full_keyrefresh_setup(void *test_context);
+bool test_full_keyrefresh_run(void *test_context);
+bool test_full_keyrefresh_teardown(void *test_context);
+
+
 #endif

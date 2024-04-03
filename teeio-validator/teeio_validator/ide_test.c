@@ -136,13 +136,15 @@ ide_test_group_funcs_t m_group_funcs[] = {
   }
 };
 
+#define TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh"
+
 ide_test_case_name_t m_test_case_names[IDE_COMMON_TEST_CASE_NUM] = {
-  {"Query",       "1,2",            IDE_COMMON_TEST_CASE_QUERY},
-  {"KeyProg",     "1,2,3,4,5,6",    IDE_COMMON_TEST_CASE_KEYPROG},
-  {"KSetGo",      "1,2,3,4",        IDE_COMMON_TEST_CASE_KSETGO},
-  {"KSetStop",    "1,2,3,4",        IDE_COMMON_TEST_CASE_KSETSTOP},
-  {"SpdmSession", "1,2",            IDE_COMMON_TEST_CASE_SPDMSESSION},
-  {"Test",        "IdeStream",      IDE_COMMON_TEST_CASE_TEST}
+  {"Query",       "1,2",                  IDE_COMMON_TEST_CASE_QUERY},
+  {"KeyProg",     "1,2,3,4,5,6",          IDE_COMMON_TEST_CASE_KEYPROG},
+  {"KSetGo",      "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETGO},
+  {"KSetStop",    "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETSTOP},
+  {"SpdmSession", "1,2",                  IDE_COMMON_TEST_CASE_SPDMSESSION},
+  {"Test",        TEST_CLASS_CASE_NAMES,  IDE_COMMON_TEST_CASE_TEST}
 };
 
 ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] = {
@@ -194,7 +196,7 @@ ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] =
   // Test Full
   {
     { test_full_1_setup, test_full_1_run, test_full_1_teardown, false },  // IdeStream
-    {NULL, NULL, NULL},
+    { test_full_keyrefresh_setup, test_full_keyrefresh_run, test_full_keyrefresh_teardown, false },  // KeyRefresh
     {NULL, NULL, NULL},
     {NULL, NULL, NULL},
     {NULL, NULL, NULL},
