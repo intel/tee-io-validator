@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.12)
 
-ADD_COMPILE_OPTIONS(-Wno-unused-result -Werror)
+ADD_COMPILE_OPTIONS(-Wno-unused-result -Werror=format-overflow -Werror)
 
 if(CMAKE_BUILD_TYPE STREQUAL "Release")
     ADD_COMPILE_OPTIONS(-Wno-error=unused-variable -Wno-error=unused-but-set-variable)
