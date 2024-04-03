@@ -41,7 +41,7 @@ bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint8_t bus, uint8_t* S
   int fd = -1;
 
   port->bus = bus;
-  sprintf(port->bdf, "%02x:%02x.%x", bus, port->device, port->function);
+  snprintf(port->bdf, BDF_LENGTH, "%02x:%02x.%x", bus, port->device, port->function&0xf);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Scan %s...\n", port->bdf));
 
@@ -114,7 +114,7 @@ bool scan_endpoint_at_bus(uint8_t bus, IDE_PORT* port)
   int fd = -1;
 
   port->bus = bus;
-  sprintf(port->bdf, "%02x:%02x.%x", bus, port->device, port->function);
+  snprintf(port->bdf, BDF_LENGTH, "%02x:%02x.%x", bus, port->device, port->function&0xf);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Scan endpoint(%s)...\n", port->bdf));
 
