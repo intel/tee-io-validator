@@ -12,6 +12,8 @@ Intel TDX Connect adds “device” to TEE scope. “Device” need to follow st
 
 [ide_test.ini spec](./doc/ide_test_ini.md)
 
+[FAQ](./doc/faq.md)
+
 ### IDE_KM Test
 
 #### Test Case
