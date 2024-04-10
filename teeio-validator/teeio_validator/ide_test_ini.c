@@ -2311,6 +2311,7 @@ void ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
   char section_name[MAX_SECTION_NAME_LENGTH] = {0};
   char entry_name[MAX_ENTRY_NAME_LENGTH] = {0};
   uint32_t data32 = 0;
+  uint8_t *entry_value = NULL;
 
   sprintf(section_name, "%s", MAIN_SECION);
   sprintf(entry_name, "pci_log");
@@ -2319,10 +2320,14 @@ void ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
     test_config->main_config.pci_log = data32 == 1;
   }
 
-  sprintf(entry_name, "wo_tdisp");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  sprintf(entry_name, "debug_level");
+  if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
   {
-    test_config->main_config.wo_tdisp = data32 == 1;
+    test_config->main_config.debug_level = TEEIO_DEBUG_WARN;
+  }
+  else
+  {
+    test_config->main_config.debug_level = get_ide_log_level_from_string((const char*)entry_value);
   }
 }
 
@@ -2433,7 +2438,7 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
   IDE_TEST_MAIN_CONFIG *main = &test_config->main_config;
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "[Main]\n"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pci_log=%s\n", main->pci_log == 0 ? "false":"true"));
-  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  wo_tdisp=%s\n", main->wo_tdisp == 0 ? "false":"true"));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  debug_level=%s\n", get_ide_log_level_string(main->debug_level)));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
 
   IDE_TEST_PORTS_CONFIG *ports = &test_config->ports_config;

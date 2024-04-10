@@ -33,7 +33,7 @@ void log_file_close();
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 
 bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char* ide_test_ini);
-bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage);
+bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage, uint8_t* debug_level);
 void print_usage();
 bool run(IDE_TEST_CONFIG *test_config);
 bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case);
@@ -43,6 +43,7 @@ int main(int argc, char *argv[])
     char ide_test_ini_file[MAX_FILE_NAME] = {0};
     bool to_print_usage = false;
     int ret = -1;
+    uint8_t debug_level = TEEIO_DEBUG_NUM;
 
     if (!log_file_init(LOGFILE)){
         TEEIO_PRINT(("Failed to init log file!\n"));
@@ -52,9 +53,13 @@ int main(int argc, char *argv[])
     TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
 
     // parse command line optioins
-    if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage)) {
+    if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage, &debug_level)) {
         print_usage();
         goto MainDone;
+    }
+
+    if(debug_level != TEEIO_DEBUG_NUM) {
+        g_debug_level = debug_level;
     }
 
     if(to_print_usage) {
@@ -74,6 +79,10 @@ int main(int argc, char *argv[])
         goto MainDone;
     }
     g_pci_log = ide_test_config.main_config.pci_log;
+
+    if(debug_level == TEEIO_DEBUG_NUM) {
+        g_debug_level = ide_test_config.main_config.debug_level;
+    }
 
     // if g_top_ids is valid, then we go into xxx mode
     if(g_top_id != 0 && g_config_id != 0) {
