@@ -58,7 +58,7 @@ void print_usage()
 /**
  * parse the command line option
 */
-bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage)
+bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage, uint8_t* debug_level)
 {
   int opt, v;
   uint8_t data8;
@@ -70,6 +70,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   TEEIO_ASSERT(file_name != NULL);
   TEEIO_ASSERT(ide_test_config != NULL);
   TEEIO_ASSERT(print_usage != NULL);
+  TEEIO_ASSERT(debug_level);
 
   // first print the raw command line
   for(int i = 0; i < argc; i++) {
@@ -129,7 +130,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
               break;
 
         case 'l':
-            g_debug_level = get_ide_log_level_from_string(optarg);
+            *debug_level = get_ide_log_level_from_string(optarg);
             break;
 
           case 'h':

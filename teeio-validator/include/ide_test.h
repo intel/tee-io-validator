@@ -154,7 +154,7 @@ struct _IDE_SWITCH_INTERNAL_CONNECTION {
 typedef struct
 {
   bool pci_log;
-  uint32_t log_level;
+  uint32_t debug_level;
   bool wo_tdisp;
 } IDE_TEST_MAIN_CONFIG;
 
