@@ -43,6 +43,8 @@ static bool test_config_set_pcrc_common(void *test_context, bool enable)
 
   ide_common_test_port_context_t *port_context = &group_context->upper_port;
   set_pcrc_in_ecap(port_context->cfg_space_fd, ide_type, port_context->ide_id, port_context->ecap_offset, enable);
+  port_context = &group_context->lower_port;
+  set_pcrc_in_ecap(port_context->cfg_space_fd, ide_type, port_context->ide_id, port_context->ecap_offset, enable);
 
   return true;
 }
