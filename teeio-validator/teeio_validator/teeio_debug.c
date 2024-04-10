@@ -7,6 +7,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/time.h>
+#include <time.h>
 #include <assert.h>
 #include <stdarg.h>
 #include "utils.h"
@@ -14,7 +16,29 @@
 
 #define IDE_MAX_LOG_MESSAGE_LENGTH  1024
 
+extern FILE* m_logfile;
 extern TEEIO_DEBUG_LEVEL g_debug_level;
+
+#define TIME_STAMP_LENGTH 64
+char m_timestamp[TIME_STAMP_LENGTH];
+
+char * current_time()
+{
+    char buf[TIME_STAMP_LENGTH/2];
+    struct timeval currentTime;
+    gettimeofday(&currentTime, NULL);
+
+    // Extract milliseconds
+    long milliseconds = currentTime.tv_usec / 1000;
+
+    // Convert to local time
+    time_t rawtime = currentTime.tv_sec;
+    struct tm *localTime = localtime(&rawtime);
+
+    strftime(buf, TIME_STAMP_LENGTH/2, "%Y-%m-%d %H:%M:%S", localTime);
+    snprintf(m_timestamp, TIME_STAMP_LENGTH, "%s.%03ld", buf, milliseconds);
+    return m_timestamp;
+}
 
 void teeio_debug_print(int debug_level, const char *format, ...)
 {
@@ -31,7 +55,14 @@ void teeio_debug_print(int debug_level, const char *format, ...)
 
     va_end(marker);
 
-    printf("[%s]%s", get_ide_log_level_string(debug_level), buffer);
+    char* timestamp = current_time();
+
+    printf("[%s][%s] %s", timestamp, get_ide_log_level_string(debug_level), buffer);
+
+    if(m_logfile) {
+        fprintf(m_logfile, "[%s][%s] %s", timestamp, get_ide_log_level_string(debug_level), buffer);
+        fflush(m_logfile);
+    }
 }
 
 void teeio_print(const char *format, ...)
@@ -45,7 +76,12 @@ void teeio_print(const char *format, ...)
 
     va_end(marker);
 
-    printf("%s", buffer);
+    char* timestamp = current_time();
+    printf("[%s] %s", timestamp, buffer);
+    if(m_logfile) {
+        fprintf(m_logfile, "[%s] %s", timestamp, buffer);
+        fflush(m_logfile);
+    }
 }
 
 
