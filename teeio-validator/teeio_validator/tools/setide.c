@@ -28,13 +28,16 @@ IDE_OPERATION g_ide_operation = IDE_OPERATION_CLEAR;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;
+FILE* m_logfile = NULL;
 
 void print_usage()
 {
-    TEEIO_PRINT(( "\nUsage:\n"));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "Usage:\n"));
     TEEIO_PRINT(( "  setide -f ide_test.ini [-t <top_id>] [-c]\n"));
 
-    TEEIO_PRINT(( "\nOptions:\n"));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "Options:\n"));
     TEEIO_PRINT(( "  -f <ide_test.ini>   : The file name of test configuration. For example ide_test.ini\n"));
     TEEIO_PRINT(( "  -t <top_id>         : topology id which is to be listed or cleared. For example 1\n"));
     TEEIO_PRINT(( "  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));

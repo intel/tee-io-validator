@@ -28,13 +28,16 @@ DEVCIES_CONTEXT devices_context = {0};
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;
+FILE* m_logfile = NULL;
 
 void print_usage()
 {
-    TEEIO_PRINT(( "\nUsage:\n"));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "Usage:\n"));
     TEEIO_PRINT(( "  lside -f ide_test.ini [-t <top_id>] [-l]\n"));
 
-    TEEIO_PRINT(( "\nOptions:\n"));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "Options:\n"));
     TEEIO_PRINT(( "  -f <ide_test.ini>   : The file name of test configuration. For example ide_test.ini\n"));
     TEEIO_PRINT(( "  -t <top_id>         : topology id which is to be listed or cleared. For example 1\n"));
     TEEIO_PRINT(( "  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
@@ -261,7 +264,8 @@ void lside_dump_kcbar(INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr)
 
 bool dump_root_port(ide_common_test_port_context_t *port_context)
 {
-    TEEIO_PRINT(( "\nRootPort - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "RootPort - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
 
     lside_dump_ecap(port_context->cfg_space_fd, port_context->ecap_offset);
     lside_dump_kcbar((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr);
@@ -340,13 +344,15 @@ bool list_devices_in_top(IDE_TEST_CONFIG *test_config, int top_id)
     if (devices_context.root_port_context != devices_context.upper_port_context)
     {
         port_context = devices_context.upper_port_context;
-        TEEIO_PRINT(( "\nDevice - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
+        TEEIO_PRINT(( "\n"));
+        TEEIO_PRINT(( "Device - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
         lside_dump_ecap(devices_context.upper_port_context->cfg_space_fd, devices_context.upper_port_context->ecap_offset);
     }
 
     // then lower_port
     port_context = devices_context.lower_port_context;
-    TEEIO_PRINT(( "\nDevice - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
+    TEEIO_PRINT(( "\n"));
+    TEEIO_PRINT(( "Device - %s(%s).\n", port_context->port->port_name, port_context->port->bdf));
     lside_dump_ecap(devices_context.lower_port_context->cfg_space_fd, devices_context.lower_port_context->ecap_offset);
 
     return true;
