@@ -103,7 +103,8 @@ bool test_full_keyrefresh_run(void *test_context)
   bool res = true;
 
   while(true){
-    TEEIO_PRINT(("\nCurrent KeySet=%d. Check the registers below.\n", mKeySet));
+    TEEIO_PRINT(("\n"));
+    TEEIO_PRINT(("Current KeySet=%d. Check the registers below.\n", mKeySet));
     TEEIO_PRINT(("Print host registers.\n"));
     dump_host_registers(group_context->upper_port.mapped_kcbar_addr,
                       group_context->rp_stream_index,
@@ -112,7 +113,8 @@ bool test_full_keyrefresh_run(void *test_context)
                       group_context->upper_port.ecap_offset,
                       ide_type);
 
-    TEEIO_PRINT(("\nPrint device registers.\n"));
+    TEEIO_PRINT(("\n"));
+    TEEIO_PRINT(("Print device registers.\n"));
     dump_dev_registers(group_context->lower_port.cfg_space_fd,
                       group_context->lower_port.ide_id,
                       group_context->lower_port.ecap_offset,

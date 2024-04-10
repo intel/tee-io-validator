@@ -23,6 +23,7 @@
 #include "teeio_debug.h"
 
 #define MAX_SUPPORT_DEVICE_NUM  32
+extern FILE* m_logfile;
 
 bool IsValidDecimalString(
     uint8_t *Decimal,
@@ -786,4 +787,18 @@ bool convert_hex_str_to_uint8(char* str, uint8_t* data8)
 
   *data8 = (uint8_t)result;
   return true;
+}
+
+bool log_file_init(const char* filepath){
+    m_logfile = fopen(filepath, "w");
+    if(!m_logfile){
+        return false;
+    }
+    return true;
+}
+
+void log_file_close(){
+    if(!m_logfile){
+        fclose(m_logfile);
+    }
 }

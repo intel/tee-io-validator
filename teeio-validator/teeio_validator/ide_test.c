@@ -789,7 +789,8 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
       run_test_config = run_test_config->next;
     }
 
-    TEEIO_PRINT(("\n\n"));
+    TEEIO_PRINT(("\n"));
+
     return true;
 }
 
