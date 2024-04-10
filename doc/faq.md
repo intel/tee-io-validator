@@ -23,6 +23,10 @@ If you find anything missing or incorrect in the FAQ, feel free to create an iss
 
 - [How I know if the test is pass or fail?](#how-i-know-if-the-test-is-pass-or-fail)
 
+- [Where to check the ouput log?](#where-to-check-the-ouput-log)
+
+- [How to set debug level?](#how-to-set-debug-level)
+
 ### What is TEE-IO Device Validation Utility?
 Intel TDX Connect adds “device” to TEE scope. “Device” need to follow standard protocols (SPDM, IDE, TDISP) to communicate with Intel Root Port and Intel TDX TSM. 
 TEE-IO Device Validation Utility is proposed to validate the interoperability of standard protocols (SPDM/IDE/TDISP) between the device and Intel component.
@@ -82,3 +86,9 @@ TEE-IO Device Validation Utility will print out the test result as below:
        KSetStop.3: case - pass; ide_stream_secure - na
        KSetStop.4: case - pass; ide_stream_secure - na
 ```
+
+### Where to check the ouput log?
+TEE-IO Device Validation Utility prints information and debug log in both console and **teeio_log.txt**. Refer to [Issue#30](https://github.com/intel/tee-io-validator/issues/30#issuecomment-2046467274)
+
+### How to set debug level?
+TEE-IO Device Validation Utility set debug_level in 2 ways: ide_test.ini and command option. Refer to [Issue#30](https://github.com/intel/tee-io-validator/issues/30#issuecomment-2046469418)
