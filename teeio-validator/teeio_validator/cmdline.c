@@ -39,11 +39,13 @@ bool is_valid_test_case(const char* test_case_name);
 
 void print_usage()
 {
-  TEEIO_PRINT(("\nUsage:\n"));
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Usage:\n"));
   TEEIO_PRINT(("  teeio_validator -f ide_test.ini\n"));
   TEEIO_PRINT(("  teeio_validator -f ide_test.ini -t 1 -c 1 -s Test.IdeStream\n"));
 
-  TEEIO_PRINT(("\nOptions:\n"));
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Options:\n"));
   TEEIO_PRINT(("  -f <ide_test.ini>   : The file name of test configuration. For example ide_test.ini\n"));
   TEEIO_PRINT(("  -t <top_id>         : topology id which is to be tested. For example 1\n"));
   TEEIO_PRINT(("  -c <config_id>      : configuration id which is to be tested. For example 1\n"));
@@ -60,12 +62,25 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
 {
   int opt, v;
   uint8_t data8;
+  char buf[MAX_LINE_LENGTH] = {0};
+  int pos = 0;
 
   TEEIO_ASSERT(argc > 0);
   TEEIO_ASSERT(argv != NULL);
   TEEIO_ASSERT(file_name != NULL);
   TEEIO_ASSERT(ide_test_config != NULL);
   TEEIO_ASSERT(print_usage != NULL);
+
+  // first print the raw command line
+  for(int i = 0; i < argc; i++) {
+    if(pos + strlen(argv[i]) + 1 >= MAX_LINE_LENGTH) {
+      break;
+    }
+
+    sprintf(buf + pos, "%s ", argv[i]);
+    pos = strlen(buf);
+  }
+  TEEIO_PRINT(("%s\n", buf));
 
   while ((opt = getopt(argc, argv, "f:t:c:s:l:b:h")) != -1) {
       switch (opt) {

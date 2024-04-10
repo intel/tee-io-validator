@@ -25,7 +25,7 @@ char g_test_case[MAX_CASE_NAME_LENGTH] = {0};
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;
 
-extern FILE* m_logfile;
+FILE* m_logfile = NULL;
 
 bool log_file_init(const char* filepath);
 void log_file_close();
@@ -40,51 +40,56 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
 
 int main(int argc, char *argv[])
 {
-    TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
-
     char ide_test_ini_file[MAX_FILE_NAME] = {0};
     bool to_print_usage = false;
-
-    // parse command line optioins
-    if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage)) {
-        print_usage();
-        return -1;
-    }
-
-    if(to_print_usage) {
-        print_usage();
-        return 0;
-    }
-
-    if(ide_test_ini_file[0] == 0) {
-        TEEIO_PRINT(("-f parameter is missing.\n"));
-        print_usage();
-        return -1;
-    }
-
-    if(!parse_ide_test_init(&ide_test_config, ide_test_ini_file)) {
-        TEEIO_PRINT(("Parse %s failed.\n", ide_test_ini_file));
-        return -1;
-    }
-    g_pci_log = ide_test_config.main_config.pci_log;
-
-    // if g_top_ids is valid, then we go into xxx mode
-    if(g_top_id != 0 && g_config_id != 0) {
-        if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case)) {
-            return -1;
-        }
-    }
-
-    srand((unsigned int)time(NULL));
+    int ret = -1;
 
     if (!log_file_init(LOGFILE)){
         TEEIO_PRINT(("Failed to init log file!\n"));
         return -1;
     }
 
+    TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
+
+    // parse command line optioins
+    if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage)) {
+        print_usage();
+        goto MainDone;
+    }
+
+    if(to_print_usage) {
+        print_usage();
+        ret = 0;
+        goto MainDone;
+    }
+
+    if(ide_test_ini_file[0] == 0) {
+        TEEIO_PRINT(("-f parameter is missing.\n"));
+        print_usage();
+        goto MainDone;
+    }
+
+    if(!parse_ide_test_init(&ide_test_config, ide_test_ini_file)) {
+        TEEIO_PRINT(("Parse %s failed.\n", ide_test_ini_file));
+        goto MainDone;
+    }
+    g_pci_log = ide_test_config.main_config.pci_log;
+
+    // if g_top_ids is valid, then we go into xxx mode
+    if(g_top_id != 0 && g_config_id != 0) {
+        if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case)) {
+            goto MainDone;
+        }
+    }
+
+    srand((unsigned int)time(NULL));
+
     run(&ide_test_config);
 
+    ret = 0;
+
+MainDone:
     log_file_close();
 
-    return 0;
+    return ret;
 }

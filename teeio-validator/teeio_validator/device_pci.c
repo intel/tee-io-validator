@@ -36,7 +36,6 @@ uint32_t g_aer_extended_offset = 0;
 
 
 int m_dev_fp = 0;
-FILE* m_logfile = NULL;
 
 void dump_ecap(
     int fd,
@@ -44,21 +43,6 @@ void dump_ecap(
     uint32_t ide_ecap_offset,
     TEST_IDE_TYPE ide_type
 );
-
-bool log_file_init(const char* filepath){
-    m_logfile = fopen(filepath, "w");
-    if(!m_logfile){
-        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "failed to open %s to write!\n", LOGFILE));
-        return false;
-    }
-    return true;
-}
-
-void log_file_close(){
-    if(!m_logfile){
-        fclose(m_logfile);
-    }
-}
 
 // more info please check file - new_cambria_core_regs_RWF_FM85.doc.xml
 void check_pcie_advance_error()

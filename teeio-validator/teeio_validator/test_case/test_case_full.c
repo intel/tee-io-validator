@@ -76,7 +76,8 @@ bool test_full_1_run(void *test_context)
   }
 
   // dump registers
-  TEEIO_PRINT(("\nPrint host registers.\n"));
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Print host registers.\n"));
   dump_host_registers(group_context->upper_port.mapped_kcbar_addr,
                     group_context->rp_stream_index,
                     group_context->upper_port.cfg_space_fd,
@@ -84,7 +85,8 @@ bool test_full_1_run(void *test_context)
                     group_context->upper_port.ecap_offset,
                     ide_type);
 
-  TEEIO_PRINT(("\nPrint device registers.\n"));
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Print device registers.\n"));
   dump_dev_registers(group_context->lower_port.cfg_space_fd,
                     group_context->lower_port.ide_id,
                     group_context->lower_port.ecap_offset,

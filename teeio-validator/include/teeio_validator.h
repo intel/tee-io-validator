@@ -29,6 +29,8 @@
 #define TEEIO_VALIDATOR_NAME "teeio_validator"
 #define TEEIO_VALIDATOR_VERSION "0.1.0"
 
+#define LOGFILE "./teeio_log.txt"
+
 typedef struct {
     size_t cert_chain_size;
     uint8_t cert_chain[LIBSPDM_MAX_CERT_CHAIN_SIZE];
@@ -70,7 +72,5 @@ libspdm_return_t pci_doe_process_session_test(void *spdm_context, uint32_t sessi
 
 bool libspdm_write_output_file(const char *file_name, const void *file_data,
                                size_t file_size);
-
-#define LOGFILE "./spdm_log.txt"
 
 #endif
