@@ -1129,9 +1129,6 @@ bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_
 
     device_pci_write_32(offset, data, cfg_space_fd);
 
-    data = device_pci_read_32(offset, cfg_space_fd);
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IDE Stream Control register: 0x%x\n", data));
-
     return true;
 }
 
