@@ -25,6 +25,7 @@ uint32_t g_doe_extended_offset = 0;
 IDE_TEST_CONFIG lside_test_config = {0};
 DEVCIES_CONTEXT m_devices_context = {0};
 IDE_OPERATION g_ide_operation = IDE_OPERATION_CLEAR;
+bool g_run_test_suite = false;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;

@@ -38,6 +38,7 @@
 #include "ide_test.h"
 
 extern uint8_t g_scan_bus;
+extern bool g_run_test_suite;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index);
 
@@ -2678,15 +2679,19 @@ bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char *ide_test_ini)
   }
 
   // [TestSuite_x]
-  index = 0;
-  for (index = 0; index < MAX_TEST_SUITE_NUM; index++)
+  if(g_run_test_suite)
   {
-    ParseTestSuiteSection(context, test_config, index + 1);
-  }
-  if (test_config->test_suites.cnt == 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to parse test_suite.\n"));
-    goto ParseDone;
+    index = 0;
+    for (index = 0; index < MAX_TEST_SUITE_NUM; index++)
+    {
+      ParseTestSuiteSection(context, test_config, index + 1);
+    }
+    if (test_config->test_suites.cnt == 0)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to parse test_suite.\n"));
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "TestSuite_x section is missing or incorrect.\n"));
+      goto ParseDone;
+    }
   }
 
   dump_test_config(test_config);

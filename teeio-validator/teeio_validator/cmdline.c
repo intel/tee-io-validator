@@ -34,6 +34,7 @@ extern int g_config_id;
 extern char g_test_case[MAX_CASE_NAME_LENGTH];
 extern TEEIO_DEBUG_LEVEL g_debug_level;
 extern uint8_t g_scan_bus;
+extern bool g_run_test_suite;
 
 bool is_valid_test_case(const char* test_case_name);
 
@@ -99,6 +100,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
                 return false;
               }
               sprintf(g_test_case, "%s", optarg);
+              g_run_test_suite = false;
               break;
 
           case 't':

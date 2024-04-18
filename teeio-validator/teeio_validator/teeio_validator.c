@@ -21,6 +21,7 @@ IDE_TEST_CONFIG ide_test_config = {0};
 int g_top_id = 0;
 int g_config_id = 0;
 char g_test_case[MAX_CASE_NAME_LENGTH] = {0};
+bool g_run_test_suite = true;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;
