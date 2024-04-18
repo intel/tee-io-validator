@@ -75,5 +75,5 @@ TEEIO_DEBUG_LEVEL get_ide_log_level_from_string(const char* debug_level);
 const char* get_ide_log_level_string(TEEIO_DEBUG_LEVEL debug_level);
 
 bool convert_hex_str_to_uint8(char* str, uint8_t* data8);
-
+TEST_IDE_TYPE map_top_type_to_ide_type(IDE_TEST_TOPOLOGY_TYPE top_type);
 #endif

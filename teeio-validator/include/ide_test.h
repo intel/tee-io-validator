@@ -71,7 +71,7 @@
 typedef enum {
     TEST_IDE_TYPE_SEL_IDE = 0,
     TEST_IDE_TYPE_LNK_IDE = 1,
-    TEST_IDE_TYPE_NA
+    TEST_IDE_TYPE_NUM
 } TEST_IDE_TYPE;
 
 typedef enum

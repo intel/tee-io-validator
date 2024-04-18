@@ -802,3 +802,17 @@ void log_file_close(){
         fclose(m_logfile);
     }
 }
+
+TEST_IDE_TYPE map_top_type_to_ide_type(IDE_TEST_TOPOLOGY_TYPE top_type)
+{
+  TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
+
+  if(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
+    ide_type = TEST_IDE_TYPE_LNK_IDE;
+  } else if (top_type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE){
+    NOT_IMPLEMENTED("selective_and_link_ide topology");
+    ide_type = TEST_IDE_TYPE_NUM;
+  }
+
+  return ide_type;
+}
