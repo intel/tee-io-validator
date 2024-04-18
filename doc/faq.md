@@ -88,7 +88,7 @@ TEE-IO Device Validation Utility will print out the test result as below:
 ```
 
 ### Where to check the ouput log?
-TEE-IO Device Validation Utility prints information and debug log in both console and **teeio_log.txt**. Refer to [Issue#30](https://github.com/intel/tee-io-validator/issues/30#issuecomment-2046467274)
+TEE-IO Device Validation Utility prints information and debug log in both console and **teeio_log_\<timestamp\>.txt** (e.g. teeio_log_2024-04-17_21-23-38.txt). Refer to [Issue#30](https://github.com/intel/tee-io-validator/issues/30#issuecomment-2046467274)
 
 ### How to set debug level?
 TEE-IO Device Validation Utility set debug_level in 2 ways: ide_test.ini and command option. Refer to [Issue#30](https://github.com/intel/tee-io-validator/issues/30#issuecomment-2046469418)

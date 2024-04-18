@@ -15,6 +15,8 @@
 #include <stdbool.h>
 #include <string.h>
 #include <sys/mman.h>
+#include <sys/time.h>
+#include <time.h>
 #include <ctype.h>
 #include "pcie.h"
 #include "intel_keyp.h"
@@ -24,6 +26,8 @@
 
 #define MAX_SUPPORT_DEVICE_NUM  32
 extern FILE* m_logfile;
+
+#define MAX_TIME_STAMP_LENGTH 32
 
 bool IsValidDecimalString(
     uint8_t *Decimal,
@@ -789,12 +793,32 @@ bool convert_hex_str_to_uint8(char* str, uint8_t* data8)
   return true;
 }
 
-bool log_file_init(const char* filepath){
-    m_logfile = fopen(filepath, "w");
-    if(!m_logfile){
-        return false;
-    }
-    return true;
+bool log_file_init(const char* log_file){
+  if(m_logfile > 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_WARN, "m_logfile exists. Close it before init a new logfile.\n"));
+    fclose(m_logfile);
+    m_logfile = 0;
+  }
+
+  char full_log_file[MAX_FILE_NAME] = {0};
+  char current_time_stamp[MAX_TIME_STAMP_LENGTH] = {0};
+  struct timeval currentTime;
+  gettimeofday(&currentTime, NULL);
+
+  // Convert to local time
+  time_t rawtime = currentTime.tv_sec;
+  struct tm *localTime = localtime(&rawtime);
+
+  strftime(current_time_stamp, MAX_TIME_STAMP_LENGTH, "%Y-%m-%d_%H-%M-%S", localTime);
+
+  snprintf(full_log_file, MAX_FILE_NAME, "%s_%s.txt", log_file, current_time_stamp);
+  m_logfile = fopen(full_log_file, "w");
+  if(!m_logfile){
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to initialize log file [%s]\n", full_log_file));
+    return false;
+  }
+
+  return true;
 }
 
 void log_file_close(){

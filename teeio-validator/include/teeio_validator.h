@@ -29,7 +29,7 @@
 #define TEEIO_VALIDATOR_NAME "teeio_validator"
 #define TEEIO_VALIDATOR_VERSION "0.1.0"
 
-#define LOGFILE "./teeio_log.txt"
+#define LOGFILE "./teeio_log"
 
 typedef struct {
     size_t cert_chain_size;
