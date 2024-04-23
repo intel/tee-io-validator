@@ -14,6 +14,17 @@
 #include "ide_test_group.h"
 #include "ide_test_case.h"
 
+#define LIST_APPEND(new, type)      \
+  if (*itr == NULL)  {              \
+    *itr = new;                     \
+  } else {                          \
+    type *walk = *itr;              \
+    while (walk->next) {            \
+      walk = walk->next;            \
+    }                               \
+    walk->next = new;               \
+  }
+
 const char *m_ide_test_case_name[] = {
     "Query",
     "KeyProg",
@@ -319,19 +330,8 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TO
   sprintf(run_test_config->name, "%s", m_ide_test_configuration_name[config_id]);
 
   // insert into run_test_suite
-  ide_run_test_config_t *itr = rts->test_config;
-  if (itr == NULL)
-  {
-    rts->test_config = run_test_config;
-  }
-  else
-  {
-    while (itr->next)
-    {
-      itr = itr->next;
-    }
-    itr->next = run_test_config;
-  }  
+  ide_run_test_config_t **itr = &rts->test_config;
+  LIST_APPEND(run_test_config, ide_run_test_config_t);
 
   return true;
 }
@@ -384,18 +384,9 @@ ide_common_test_switch_internal_conn_context_t* alloc_switch_internal_conn_conte
     conn_context->switch_id = conn->switch_id;
     conn_context->ups.port = ups_port;
     conn_context->dps.port = dps_port;
-    
-    if(conn_header == NULL) {
-      conn_header = conn_context;
-    } else {
-      ide_common_test_switch_internal_conn_context_t* itr = conn_header;
-      while(itr->next) {
-        itr = itr->next;
-      }
-      itr->next = conn_context;
-    }
 
-    conn = conn->next;
+    ide_common_test_switch_internal_conn_context_t** itr = &conn_header;
+    LIST_APPEND(conn_context, ide_common_test_switch_internal_conn_context_t);
   }
 
   return conn_header;
@@ -448,19 +439,8 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
   run_test_group->test_context = context;
 
   // insert into run_test_suite
-  ide_run_test_group_t *itr = rts->test_group;
-  if (itr == NULL)
-  {
-    rts->test_group = run_test_group;
-  }
-  else
-  {
-    while (itr->next)
-    {
-      itr = itr->next;
-    }
-    itr->next = run_test_group;
-  }
+  ide_run_test_group_t **itr = &rts->test_group;
+  LIST_APPEND(run_test_group, ide_run_test_group_t);
 
   return run_test_group;
 }
@@ -495,19 +475,8 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   context->signature = CASE_CONTEXT_SIGNATURE;
   run_test_case->test_context = context;
 
-  ide_run_test_case_t *itr = run_test_group->test_case;
-  if (itr == NULL)
-  {
-    run_test_group->test_case = run_test_case;
-  }
-  else
-  {
-    while (itr->next)
-    {
-      itr = itr->next;
-    }
-    itr->next = run_test_case;
-  }
+  ide_run_test_case_t **itr = &run_test_group->test_case;
+  LIST_APPEND(run_test_case, ide_run_test_case_t);
 
   return true;
 }
@@ -571,19 +540,8 @@ ide_run_test_suite_t *prepare_tests_data(IDE_TEST_CONFIG *test_config)
     TEEIO_ASSERT(ret);
 
     // insert into run_test_suite chain
-    ide_run_test_suite_t *itr = run_test_suite_header;
-    if (itr == NULL)
-    {
-      run_test_suite_header = run_test_suite;
-    }
-    else
-    {
-      while (itr->next != NULL)
-      {
-        itr = itr->next;
-      }
-      itr->next = run_test_suite;
-    }
+    ide_run_test_suite_t **itr = &run_test_suite_header;
+    LIST_APPEND(run_test_suite, ide_run_test_suite_t);
   }
 
   return run_test_suite_header;
@@ -650,15 +608,8 @@ ide_run_test_case_result_t *alloc_run_test_case_result(ide_run_test_group_result
   strncpy(case_result->name, case_name, MAX_NAME_LENGTH);
   strncpy(case_result->class, case_class, MAX_NAME_LENGTH);
 
-  ide_run_test_case_result_t* itr = group_result->case_result;
-  if(itr == NULL) {
-    group_result->case_result = case_result;
-  } else {
-    while(itr->next) {
-      itr = itr->next;
-    }
-    itr->next = case_result;
-  }
+  ide_run_test_case_result_t** itr = &group_result->case_result;
+  LIST_APPEND(case_result, ide_run_test_case_result_t);
 
   return case_result;
 }
@@ -750,15 +701,8 @@ ide_run_test_group_result_t* alloc_run_test_group_result(ide_run_test_group_t *r
   memset(group_result, 0, sizeof(ide_run_test_group_result_t));
   strncpy(group_result->name, run_test_group->name, MAX_NAME_LENGTH);
 
-  ide_run_test_group_result_t* itr = run_test_config->group_result;
-  if(itr == NULL) {
-    run_test_config->group_result = group_result;
-  } else {
-    while(itr->next) {
-      itr = itr->next;
-    }
-    itr->next = group_result;
-  }
+  ide_run_test_group_result_t** itr = &run_test_config->group_result;
+  LIST_APPEND(group_result, ide_run_test_group_result_t);
 
   return group_result;
 }
