@@ -19,9 +19,8 @@ bool set_pcrc_in_ecap(
     uint8_t ide_id, uint32_t ide_ecap_offset,
     bool enable
 );
-bool test_config_enable_common(void *test_context);
-bool test_config_check_common(void *test_context, const char* assertion_msg);
-bool test_config_support_common(void *test_context);
+
+extern const char *m_ide_test_topology_name[];
 
 // set pcrc for selective_ide and link_ide.
 static bool test_config_set_pcrc_common(void *test_context, bool enable)
@@ -40,6 +39,8 @@ static bool test_config_set_pcrc_common(void *test_context, bool enable)
   } else if (top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE){
     NOT_IMPLEMENTED("selective_and_link_ide topology");
   }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s pcrc for %s\n", enable ? "enable" : "disable", m_ide_test_topology_name[top->type]));
 
   ide_common_test_port_context_t *port_context = &group_context->upper_port;
   set_pcrc_in_ecap(port_context->cfg_space_fd, ide_type, port_context->ide_id, port_context->ecap_offset, enable);
@@ -60,8 +61,11 @@ static bool test_config_check_pcrc_support_common(void *test_context)
   PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
   PCIE_IDE_CAP *dev_cap = &group_context->lower_port.ide_cap;
   if(!host_cap->pcrc_supported || !dev_cap->pcrc_supported) {
+    TEEIO_DEBUG((TEEIO_DEBUG_WARN, "check pcrc and it is NOT supported. host=%d, device=%d\n", host_cap->pcrc_supported, dev_cap->pcrc_supported));
     return false;
   }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "check pcrc and it is supported.\n"));
 
   return true;
 }
@@ -69,12 +73,7 @@ static bool test_config_check_pcrc_support_common(void *test_context)
 // selective_ide test pcrc
 bool test_config_pcrc_enable_sel(void *test_context)
 {
-  bool res = test_config_enable_common(test_context);
-  if(res) {
-    res = test_config_set_pcrc_common(test_context, true);
-  }
-
-  return res;
+  return test_config_set_pcrc_common(test_context, true);
 }
 
 bool test_config_pcrc_disable_sel(void *test_context)
@@ -84,24 +83,18 @@ bool test_config_pcrc_disable_sel(void *test_context)
 
 bool test_config_pcrc_support_sel(void *test_context)
 {
-  return test_config_support_common(test_context) &&
-          test_config_check_pcrc_support_common(test_context);
+  return test_config_check_pcrc_support_common(test_context);
 }
 
 bool test_config_pcrc_check_sel(void *test_context)
 {
-  return test_config_check_common(test_context, "PCRC Config Assertion");
+  return true;
 }
 
 // link_ide test pcrc
 bool test_config_pcrc_enable_link(void *test_context)
 {
-  bool res = test_config_enable_common(test_context);
-  if(res) {
-    res = test_config_set_pcrc_common(test_context, true);
-  }
-
-  return res;
+    return test_config_set_pcrc_common(test_context, true);
 }
 
 bool test_config_pcrc_disable_link(void *test_context)
@@ -116,7 +109,7 @@ bool test_config_pcrc_support_link(void *test_context)
 
 bool test_config_pcrc_check_link(void *test_context)
 {
-  return test_config_check_common(test_context, "PCRC Config Assertion");
+  return true;
 }
 
 // selective_and_link_ide test pcrc

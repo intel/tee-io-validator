@@ -1866,55 +1866,45 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   sprintf(entry_name, "default");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.default_config = true;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
-    // todo Set default config
-    goto ParseConfigDone;
   }
 
   sprintf(entry_name, "switch");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.via_switch = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_SWITCH);
   }
 
   sprintf(entry_name, "partial_header_encryption");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.partial_header_encryption = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC);
   }
 
   sprintf(entry_name, "pcrc");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.pcrc = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_PCRC);
   }
 
   sprintf(entry_name, "aggregation");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.aggregation = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_AGGGEG);
   }
 
   sprintf(entry_name, "selective_ide_for_configuration");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.selective_ide_for_configuration = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG);
   }
 
   sprintf(entry_name, "tee_limited_stream");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    // config.tee_limited_stream = data32 == 1;
     config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_TEE_LIMITED_STREAM);
   }
 
-ParseConfigDone:
   // id
   config.id = index;
   for (int i = 0; i < MAX_CONFIGURATION_NUM; i++)
@@ -1931,13 +1921,6 @@ ParseConfigDone:
   cfg->enabled = config.enabled;
   cfg->type = config.type;
   cfg->bit_map = config.bit_map;
-  // cfg->default_config = config.default_config;
-  // cfg->aggregation = config.aggregation;
-  // cfg->partial_header_encryption = config.partial_header_encryption;
-  // cfg->pcrc = config.pcrc;
-  // cfg->selective_ide_for_configuration = config.selective_ide_for_configuration;
-  // cfg->tee_limited_stream = config.tee_limited_stream;
-  // cfg->via_switch = config.via_switch;
 
   test_config->configurations.cnt += 1;
 

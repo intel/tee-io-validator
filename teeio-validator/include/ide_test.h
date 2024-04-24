@@ -365,17 +365,20 @@ typedef struct {
 
 typedef struct _ide_run_test_case_result_t ide_run_test_case_result_t;
 struct _ide_run_test_case_result_t {
+  ide_run_test_case_result_t* next;
+
   char class[MAX_NAME_LENGTH];
   char name[MAX_NAME_LENGTH];
   IDE_COMMON_TEST_CASE_RESULT case_result;
   IDE_COMMON_TEST_CONFIG_RESULT config_result;
-  ide_run_test_case_result_t* next;
 };
 
 typedef struct _ide_run_test_group_result_t ide_run_test_group_result_t;
 struct _ide_run_test_group_result_t {
-  char name[MAX_NAME_LENGTH];
   ide_run_test_group_result_t* next;
+
+  char top_type[MAX_NAME_LENGTH];
+  char case_class[MAX_NAME_LENGTH];
   ide_run_test_case_result_t* case_result;
 };
 
@@ -388,6 +391,18 @@ typedef bool(*ide_common_test_config_support_func_t) (void *test_context);
 // test config support function which is to check if some funciton is successfully enabled/disabled
 typedef bool(*ide_common_test_config_check_func_t) (void *test_context);
 
+typedef struct _ide_run_test_config_item_t ide_run_test_config_item_t;
+struct _ide_run_test_config_item_t {
+  ide_run_test_config_item_t *next;
+
+  IDE_TEST_CONFIGURATION_TYPE type;
+
+  ide_common_test_config_enable_func_t enable_func;
+  ide_common_test_config_disable_func_t disable_func;
+  ide_common_test_config_support_func_t support_func;
+  ide_common_test_config_check_func_t check_func;
+};
+
 typedef struct _ide_run_test_config ide_run_test_config_t;
 struct _ide_run_test_config {
   ide_run_test_config_t *next;
@@ -395,11 +410,7 @@ struct _ide_run_test_config {
   void *test_context;
 
   ide_run_test_group_result_t* group_result;
-
-  ide_common_test_config_enable_func_t enable_func;
-  ide_common_test_config_disable_func_t disable_func;
-  ide_common_test_config_support_func_t support_func;
-  ide_common_test_config_check_func_t check_func;
+  ide_run_test_config_item_t* config_item;
 };
 
 typedef struct {
@@ -454,7 +465,8 @@ typedef bool(*ide_common_test_group_teardown_func_t) (void *test_context);
 typedef struct _ide_run_test_group ide_run_test_group_t;
 struct _ide_run_test_group {
   ide_run_test_group_t *next;
-  char name[MAX_NAME_LENGTH];
+  char top_type[MAX_NAME_LENGTH];
+  char case_class[MAX_NAME_LENGTH];
   void *test_context;
 
   ide_run_test_case_t *test_case;
