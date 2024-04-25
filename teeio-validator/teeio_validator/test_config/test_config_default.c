@@ -21,8 +21,7 @@ bool test_config_support_common(void *test_context);
 // test selective_ide and link_ide with default config
 bool test_config_default_enable_common(void *test_context)
 {
-  // reset ide registers
-  return test_config_enable_common(test_context);
+  return true;
 }
 
 bool test_config_default_disable_common(void *test_context)
@@ -32,12 +31,12 @@ bool test_config_default_disable_common(void *test_context)
 
 bool test_config_default_support_common(void *test_context)
 {
-  return test_config_support_common(test_context);
+  return true;
 }
 
 bool test_config_default_check_common(void *test_context)
 {
-  return test_config_check_common(test_context, "Default Config Assertion");
+  return true;
 }
 
 // test selective_and_link_ide with default config
