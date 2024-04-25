@@ -14,6 +14,24 @@
 #include "ide_test_group.h"
 #include "ide_test_case.h"
 
+bool test_config_enable_common(void *test_context);
+bool test_config_check_common(void *test_context, const char* assertion_msg);
+bool test_config_support_common(void *test_context);
+
+void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
+{
+  TEEIO_ASSERT(head != NULL && new != NULL);
+  if (*head == NULL)  {
+    *head = new;
+  } else {
+    ide_run_test_config_item_t *walk = *head;
+    while (walk->next) {
+      walk = walk->next;
+    }
+    walk->next = new;
+  }
+}
+
 const char *m_ide_test_case_name[] = {
     "Query",
     "KeyProg",
@@ -288,22 +306,49 @@ ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFI
   return rts;
 }
 
-bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TOPOLOGY_TYPE top_type)
+bool alloc_run_test_config_item(ide_run_test_config_t *rtc, int config_type, IDE_TEST_TOPOLOGY_TYPE top_type)
 {
   TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
-  TEEIO_ASSERT(config_id < IDE_TEST_CONFIGURATION_TYPE_NUM);
+  TEEIO_ASSERT(config_type < IDE_TEST_CONFIGURATION_TYPE_NUM);
+
+  ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_type];
+
+  ide_run_test_config_item_t *config_item = (ide_run_test_config_item_t*)malloc(sizeof(ide_run_test_config_item_t));
+  TEEIO_ASSERT(config_item != NULL);
+  memset(config_item, 0, sizeof(ide_run_test_config_item_t));
+  config_item->type = config_type;
+
+  // assign the functions
+  config_item->check_func = config_func->check;
+  config_item->disable_func = config_func->disable;
+  config_item->enable_func = config_func->enable;
+  config_item->support_func = config_func->support;
+
+  append_config_item(&rtc->config_item, config_item);
+
+  return true;
+}
+
+/**
+ * allocate run_test_configs based on configuration indicated by @config_id
+ * run_test_configs is attached in a run_test_suite.
+*/
+bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id, int config_id)
+{
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(test_config, config_id);
+  TEEIO_ASSERT(configuration);
+  TEEIO_ASSERT(configuration->enabled);
+  TEEIO_ASSERT(configuration->bit_map != 0);
+  TEEIO_ASSERT(configuration->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+
+  IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
+  TEEIO_ASSERT(top);
+  TEEIO_ASSERT(top->enabled);
+  TEEIO_ASSERT(top->type == configuration->type);
 
   ide_run_test_config_t *run_test_config = (ide_run_test_config_t *)malloc(sizeof(ide_run_test_config_t));
   TEEIO_ASSERT(run_test_config);
   memset(run_test_config, 0, sizeof(ide_run_test_config_t));
-
-  ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_id];
-
-  // assign the functions
-  run_test_config->check_func = config_func->check;
-  run_test_config->disable_func = config_func->disable;
-  run_test_config->enable_func = config_func->enable;
-  run_test_config->support_func = config_func->support;
 
   // assign test_config_context
   ide_common_test_config_context_t *context = (ide_common_test_config_context_t *)malloc(sizeof(ide_common_test_config_context_t));
@@ -312,11 +357,27 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TO
   context->group_context = NULL;  // this is assigned in run-time
   context->suite_context = rts->test_context;
   context->signature = CONFIG_CONTEXT_SIGNATURE;
-  context->top_type = top_type;
+  context->top_type = top->type;
   run_test_config->test_context = context;
 
-  // name
-  sprintf(run_test_config->name, "%s", m_ide_test_configuration_name[config_id]);
+  // config_item
+  uint32_t config_bitmask = m_top_config_bitmasks[configuration->type];
+  uint32_t config_bits = configuration->bit_map & config_bitmask;
+  char name_buf[MAX_NAME_LENGTH] = {0};
+  int offset = 0;
+  for(int i = 0; i < IDE_TEST_CONFIGURATION_TYPE_NUM; i++) {
+    if(config_bits & BIT_MASK(i)) {
+      alloc_run_test_config_item(run_test_config, i, top->type);
+      TEEIO_ASSERT(offset + strlen(m_ide_test_configuration_name[i]) + 1 < MAX_NAME_LENGTH);
+      sprintf(name_buf + offset, "%s+", m_ide_test_configuration_name[i]);
+      offset = strlen(name_buf);
+    }
+  }
+
+  TEEIO_ASSERT(offset > 1);
+  // strip the last '+'
+  name_buf[offset - 1] = '\0';
+  sprintf(run_test_config->name, "%s", name_buf);
 
   // insert into run_test_suite
   ide_run_test_config_t *itr = rts->test_config;
@@ -331,35 +392,6 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, int config_id, IDE_TEST_TO
       itr = itr->next;
     }
     itr->next = run_test_config;
-  }  
-
-  return true;
-}
-
-/**
- * allocate run_test_configs based on configuration indicated by @config_id
- * run_test_configs is attached in a run_test_suite.
-*/
-bool alloc_run_test_configs(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id, int config_id)
-{
-  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(test_config, config_id);
-  TEEIO_ASSERT(configuration);
-  TEEIO_ASSERT(configuration->enabled);
-  TEEIO_ASSERT(configuration->bit_map != 0);
-  TEEIO_ASSERT(configuration->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
-
-  IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
-  TEEIO_ASSERT(top);
-  TEEIO_ASSERT(top->enabled);
-  TEEIO_ASSERT(top->type == configuration->type);
-
-  uint32_t config_bitmask = m_top_config_bitmasks[configuration->type];
-
-  uint32_t config_bits = configuration->bit_map & config_bitmask;
-  for(int i = 0; i < IDE_TEST_CONFIGURATION_TYPE_NUM; i++) {
-    if(config_bits & BIT_MASK(i)) {
-      alloc_run_test_config(rts, i, top->type);
-    }
   }
 
   return true;
@@ -403,7 +435,7 @@ ide_common_test_switch_internal_conn_context_t* alloc_switch_internal_conn_conte
 
 // alloc run_test_group data.
 // After the call of this funciton, the data is inserted into the run_test_suite
-ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id)
+ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_config, int top_id, int case_id)
 {
   ide_run_test_group_t *run_test_group = (ide_run_test_group_t *)malloc(sizeof(ide_run_test_group_t));
   TEEIO_ASSERT(run_test_group);
@@ -526,7 +558,7 @@ bool alloc_run_test_cases(
       continue;
     }
 
-    run_test_group = alloc_run_test_group(run_test_suite, test_config, top->id);
+    run_test_group = alloc_run_test_group(run_test_suite, test_config, top->id, i);
     TEEIO_ASSERT(run_test_group);
 
     for (int j = 0; j < tc->cases_cnt; j++)
@@ -564,7 +596,7 @@ ide_run_test_suite_t *prepare_tests_data(IDE_TEST_CONFIG *test_config)
     run_test_suite = alloc_run_test_suite(suite, test_config);
     TEEIO_ASSERT(run_test_suite);
 
-    bool ret = alloc_run_test_configs(run_test_suite, test_config, suite->topology_id, suite->configuration_id);
+    bool ret = alloc_run_test_config(run_test_suite, test_config, suite->topology_id, suite->configuration_id);
     TEEIO_ASSERT(ret);
 
     ret = alloc_run_test_cases(run_test_suite, test_config, suite, top);
@@ -663,12 +695,71 @@ ide_run_test_case_result_t *alloc_run_test_case_result(ide_run_test_group_result
   return case_result;
 }
 
+static bool do_run_test_config_support(ide_run_test_config_t *run_test_config)
+{
+  bool ret = false;
+
+  if(!test_config_support_common(run_test_config->test_context)) {
+    return false;
+  }
+
+  ide_run_test_config_item_t* config_item = run_test_config->config_item;
+  do {
+    TEEIO_ASSERT(config_item->support_func);
+    ret = config_item->support_func(run_test_config->test_context);
+
+    config_item = config_item->next;
+  } while(ret && config_item);
+
+  return ret;
+}
+
+static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config)
+{
+  bool ret = false;
+
+  if(!test_config_enable_common(run_test_config->test_context)) {
+    return false;
+  }
+
+  ide_run_test_config_item_t* config_item = run_test_config->config_item;
+  do {
+    TEEIO_ASSERT(config_item->support_func);
+    ret = config_item->enable_func(run_test_config->test_context);
+
+    config_item = config_item->next;
+  } while(ret && config_item);
+
+  return ret;
+}
+
+static bool do_run_test_config_check(ide_run_test_config_t *run_test_config)
+{
+  bool ret = false;
+
+  if(!test_config_check_common(run_test_config->test_context, "Check Common Assertion")) {
+    return false;
+  }
+
+  ide_run_test_config_item_t* config_item = run_test_config->config_item;
+  do {
+    TEEIO_ASSERT(config_item->support_func);
+    ret = config_item->check_func(run_test_config->test_context);
+
+    config_item = config_item->next;
+  } while(ret && config_item);
+
+  return ret;
+}
+
 /**
  * run_test_group
 */
 bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config_t *run_test_config, ide_run_test_group_result_t* group_result)
 {
   bool ret = true;
+  bool run_test_group_failed = false;
+  bool run_test_config_failed = false;
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)run_test_group->test_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
@@ -690,16 +781,24 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     if(!ret) {
       config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
       TEEIO_PRINT(("       %s failed at test_group->setup(). Skip the TestConfig.\n", run_test_config->name));
-      goto TestGroupDone;
+      run_test_group_failed = true;
     }
   }
+  else
+  {
+    run_test_group_failed = true;
+  }
 
-  // check if the test_config is supported.
-  // if not supported, this test_group is done.
-  if(!run_test_config->support_func(config_context)) {
-    config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
-    TEEIO_PRINT(("       %s is not supported. Skip the TestConfig.\n", run_test_config->name));
-    goto TestGroupDone;
+  if(run_test_group_failed) {
+    run_test_config_failed = true;
+  } else {
+    // check if the test_config is supported.
+    // if not supported, this test_group is done.
+    if(!do_run_test_config_support(run_test_config)) {
+      config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
+      TEEIO_PRINT(("       %s is not supported. Skip the TestConfig.\n", run_test_config->name));
+      run_test_config_failed = true;
+    }
   }
 
   ide_run_test_case_t *test_case = run_test_group->test_case;
@@ -707,9 +806,14 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   {
     // alloc case_result
     ide_run_test_case_result_t *case_result = alloc_run_test_case_result(group_result, test_case->name, test_case->class);
+    if(run_test_group_failed || run_test_config_failed) {
+      case_result->case_result = IDE_COMMON_TEST_CASE_RESULT_FAILED;
+      case_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
+      goto OneCaseDone;
+    }
 
     // call test_config's enable function
-    ret = run_test_config->enable_func(config_context);
+    ret = do_run_test_config_enable(run_test_config);
     TEEIO_ASSERT(ret);
 
     // run the test_case
@@ -717,18 +821,18 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
 
     if(test_case->complete_ide_stream) {
       // check config
-      ret = run_test_config->check_func(config_context);
+      ret = do_run_test_config_check(run_test_config);
       case_result->config_result = config_context->test_result;
       TEEIO_ASSERT(ret);
     }
 
+OneCaseDone:
     // next case
     test_case = test_case->next;
   }
 
-TestGroupDone:
   // call run_test_group's teardown function
-  if (run_test_group->teardown_func != NULL)
+  if (run_test_group->teardown_func != NULL && !run_test_group_failed)
   {
     ret = run_test_group->teardown_func(group_context);
     TEEIO_ASSERT(ret);
@@ -875,12 +979,14 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
       ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
       TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
+      TEEIO_PRINT(("   TestConfiguration (%s)\n", run_test_config->name));
+
       ide_run_test_group_result_t * group_result = run_test_config->group_result;
       while(group_result) {
 
         ide_run_test_case_result_t *case_result = group_result->case_result;
         test_group_cases_statics(group_result, &passed, &failed, &skipped);
-        TEEIO_PRINT(("     TestGroup (%s %s %s) - pass: %d, fail: %d, skip: %d\n", group_result->name, run_test_config->name, case_result->class, passed, failed, skipped));
+        TEEIO_PRINT(("     TestGroup (%s %s) - pass: %d, fail: %d, skip: %d\n", group_result->name, case_result->class, passed, failed, skipped));
 
         while(case_result) {
           TEEIO_PRINT(("       %s: case - %s; ide_stream_secure - %s\n", case_result->name, m_test_case_result_str[case_result->case_result], m_test_config_result_str[case_result->config_result]));
@@ -889,9 +995,11 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
         }
 
         group_result = group_result->next;
+        TEEIO_PRINT(("\n"));
       }
 
       run_test_config = run_test_config->next;
+      TEEIO_PRINT(("\n"));
     }
 
     TEEIO_PRINT((" ---------------------------------------------\n"));
@@ -974,6 +1082,22 @@ bool clean_test_group_results(ide_run_test_group_result_t *group_result)
   return true;
 }
 
+bool clean_test_config_items(ide_run_test_config_item_t *config_item)
+{
+  if(config_item == NULL) {
+    return true;
+  }
+  ide_run_test_config_item_t *ptr = NULL;
+
+  while (config_item) {
+    ptr = config_item;
+    config_item = config_item->next;
+    free(ptr);
+  }
+
+  return true;
+}
+
 bool clean_test_configs(ide_run_test_config_t *config)
 {
   if(config == NULL) {
@@ -983,6 +1107,7 @@ bool clean_test_configs(ide_run_test_config_t *config)
   ide_run_test_config_t *ptr_config = NULL;
   while(config){
     clean_test_group_results(config->group_result);
+    clean_test_config_items(config->config_item);
     if(config->test_context) {
       free(config->test_context);
     }
