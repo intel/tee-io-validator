@@ -35,6 +35,8 @@
 
 #define KCBAR_MEMORY_SIZE 1024
 
+#define LINK_IDE_REGISTER_BLOCK_SIZE (sizeof(PCIE_LNK_IDE_STREAM_CTRL) + sizeof(PCIE_LINK_IDE_STREAM_STATUS))
+
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
 
@@ -42,14 +44,6 @@ const char *m_ide_type_name[] = {
   "SelectiveIDE",
   "LinkIDE",
 };
-
-typedef struct {
-  uint8_t ide_id;
-  uint8_t stream_id;
-  uint8_t rp_stream_index;
-  uint8_t ide_type;         // TEST_IDE_TYPE_LNK_IDE or TEST_IDE_TYPE_SEL_IDE
-  uint8_t state;  // IDE_STREAM_STATUS_SECURE or IDE_STREAM_STATUS_INSECURE
-} ideid_rpstreamindex_streamid_map_t;
 
 // TODO
 bool g_use_prefetchable_mem = false;
@@ -445,11 +439,7 @@ bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t n
 */
 bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_context, uint8_t* rp_stream_index, uint8_t* ide_id, IDE_TEST_TOPOLOGY_TYPE top_type, bool rp_or_dev)
 {
-  int cnt = 0;
-  int i, j;
-  ideid_rpstreamindex_streamid_map_t *id_maps = NULL;
-  uint8_t *free_rp_stream_block = NULL;
-  int free_rp_stream_block_cnt = 0;
+  int i;
 
   IDE_TEST_IDE_TYPE ide_type = IDE_TEST_IDE_TYPE_SEL_IDE;
   if(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
@@ -465,141 +455,96 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
 
   int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
   int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
-  cnt = num_lnk_ide + num_sel_ide;
-
-  id_maps = (ideid_rpstreamindex_streamid_map_t *)malloc(sizeof(ideid_rpstreamindex_streamid_map_t) * cnt);
 
   // skip IDE Extended Capability Header, IDE Capability Register and IDE Control Register.
-  // It is 0xc bytes
-  int offset = port_context->ecap_offset + 0xc;
+  int offset = port_context->ecap_offset + sizeof(PCIE_CAP_ID) + sizeof(PCIE_IDE_CAP) + sizeof(PCIE_IDE_CTRL);
+  bool found = false;
 
-  if(ide_cap.lnk_ide_supported == 1) {
+  if(ide_type == IDE_TEST_IDE_TYPE_LNK_IDE) {
+    // Try to find a free Link IDE Stream Register Block in ecap
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Link IDE Stream Register Blocks to find a free one.\n"));
+    if(ide_cap.lnk_ide_supported == 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Link IDE is not supported.\n"));;
+      goto FindFreeLinkSelectiveIDERegisterBlockDone;
+    }
     for(i = 0; i < num_lnk_ide; i++) {
       PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
       PCIE_LINK_IDE_STREAM_STATUS lnk_ide_stream_status = {.raw = device_pci_read_32(offset + 4, port_context->cfg_space_fd)};
-      id_maps[i].ide_type = IDE_TEST_IDE_TYPE_LNK_IDE;
-      id_maps[i].rp_stream_index = INVALID_RP_STREAM_INDEX;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: lnk_ide_stream_ctrl = 0x%08x, lnk_ide_stream_status = 0x%08x\n", lnk_ide_stream_ctrl.raw, lnk_ide_stream_status.raw));
 
-      if(lnk_ide_stream_ctrl.en == 1) {
-        id_maps[i].stream_id = lnk_ide_stream_ctrl.stream_id;
-        id_maps[i].ide_id = i;
-        id_maps[i].state =  (uint8_t)lnk_ide_stream_status.state;
-      } else {
-        id_maps[i].ide_id = INVALID_IDE_ID;
-        id_maps[i].stream_id = INVALID_RP_STREAM_INDEX;
+      if(lnk_ide_stream_ctrl.en == 0) {
+        // This Link IDE Stream Register Block is not enabled.
+        *ide_id = i;
+        found = true;
+        break;
       }
-
-      offset += 0x8;
+      offset += LINK_IDE_REGISTER_BLOCK_SIZE;
     }
-  }
+  } else {
+    // find a free Selective IDE Stream Register Block in ecap
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Selective IDE Stream Register Blocks to find a free one.\n"));
+    if(ide_cap.sel_ide_supported == 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Selective IDE is not supported.\n"));
+      goto FindFreeLinkSelectiveIDERegisterBlockDone;
+    }
 
-  if(ide_cap.sel_ide_supported == 1) {
-    for(i = num_lnk_ide; i < num_sel_ide + num_lnk_ide; i++) {
+    offset += (num_lnk_ide * LINK_IDE_REGISTER_BLOCK_SIZE);
+    for(i = num_lnk_ide; i < num_lnk_ide + num_sel_ide; i++) {
       PCIE_SEL_IDE_STREAM_CAP sel_ide_stream_cap = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
       offset += 4;
       PCIE_SEL_IDE_STREAM_CTRL sel_ide_stream_ctrl = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
-      PCIE_LINK_IDE_STREAM_STATUS lnk_ide_stream_status = {.raw = device_pci_read_32(offset + 4, port_context->cfg_space_fd)};
-      id_maps[i].ide_type = IDE_TEST_IDE_TYPE_SEL_IDE;
-      id_maps[i].rp_stream_index = INVALID_RP_STREAM_INDEX;
-      if(sel_ide_stream_ctrl.enabled == 1) {
-        id_maps[i].stream_id = sel_ide_stream_ctrl.stream_id;
-        id_maps[i].ide_id = i;
-        id_maps[i].state =  (uint8_t)lnk_ide_stream_status.state;
-      } else {
-        id_maps[i].ide_id = INVALID_IDE_ID;
-        id_maps[i].stream_id = INVALID_RP_STREAM_INDEX;
+      offset += 4;
+      PCIE_SEL_IDE_STREAM_STATUS sel_ide_stream_status = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
+      offset += 4;
+
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: sel_ide_stream_ctrl = 0x%08x, sel_ide_stream_status = 0x%08x\n", sel_ide_stream_ctrl.raw, sel_ide_stream_status.raw));
+      if(sel_ide_stream_ctrl.enabled == 0) {
+        // This Selective IDE Stream Register Block is not enabled.
+        *ide_id = i;
+        found = true;
+        break;
       }
-      offset += (16 + sel_ide_stream_cap.num_addr_assoc_reg_blocks * 3 * 4);
+
+      // skip 2 RID Assoc Register (2*4) and 3 Addr Assoc Register (3*4).
+      // Addr Assoc Register may have num_addr_assoc_reg_blocks
+      offset += (2*4 + sel_ide_stream_cap.num_addr_assoc_reg_blocks * 3 * 4);
     }
   }
 
+FindFreeLinkSelectiveIDERegisterBlockDone:
+  if(!found) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to find free Link/Selective IDE Register Block.\n"));
+    return false;
+  }
+
+  // Now try to find a free stream_x in KCBar if it is rootport
   if(rp_or_dev) {
+    found = false;
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to find a free one.\n"));
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
     int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
-    free_rp_stream_block = (uint8_t *)malloc(num_stream_supported);
+
     for(i = 0; i < num_stream_supported; i++) {
       INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
-      if(stream_config_reg_block->control.en == 1) {
-        for(j = 0; j < cnt; j++) {
-          if(id_maps[j].stream_id == stream_config_reg_block->control.stream_id) {
-            id_maps[j].rp_stream_index = i;
-            break;
-          }
-        }
-        if(j == cnt) {
-          // the stream_id in Stream_X must have a corresponding entry in id_maps
-          TEEIO_ASSERT(false);
-        } else {
-          // check if the stream is in secure state. If not, then this Stream_X can be re-used.
-          if(id_maps[j].state != IDE_STREAM_STATUS_SECURE) {
-            free_rp_stream_block[free_rp_stream_block_cnt++] = (uint8_t)i;
-          }
-        }
-      } else {
-        free_rp_stream_block[free_rp_stream_block_cnt++] = (uint8_t)i;
-      }
-    }
-
-    for(i = 0; i < free_rp_stream_block_cnt; i++) {
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Free rp_stream_index: %d\n", free_rp_stream_block[i]));
-    }
-  }
-
-  // Now we have the id_maps
-  for(i = 0; i < cnt; i++) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: ide_id=%02x ide_type=%s rp_stream_index=%02x stream_id=%02x state=%d\n",
-                i, id_maps[i].ide_id, m_ide_type_name[id_maps[i].ide_type], id_maps[i].rp_stream_index, id_maps[i].stream_id, id_maps[i].state));
-    if(rp_or_dev && id_maps[i].ide_id != INVALID_IDE_ID && id_maps[i].rp_stream_index == INVALID_RP_STREAM_INDEX) {
-      TEEIO_ASSERT(false);
-    }
-  }
-
-  // now find available ide_id
-  *ide_id = INVALID_IDE_ID;
-  if(ide_type == IDE_TEST_IDE_TYPE_LNK_IDE) {
-    TEEIO_ASSERT(ide_cap.lnk_ide_supported == 1);
-    for(i = 0; i < num_lnk_ide + 1; i++) {
-      if(id_maps[i].ide_id == INVALID_IDE_ID || id_maps[i].state != IDE_STREAM_STATUS_SECURE) {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: stream_config_reg_block.control = 0x%08x\n", i, stream_config_reg_block->control.raw));
+      if(stream_config_reg_block->control.en == 0) {
+        *rp_stream_index = (uint8_t)i;
+        found = true;
         break;
       }
     }
-    if(i != num_lnk_ide) {
-      *ide_id = i;
-    }
-  } else if(ide_type == IDE_TEST_IDE_TYPE_SEL_IDE) {
-    TEEIO_ASSERT(ide_cap.sel_ide_supported == 1);
-    for(i = num_lnk_ide; i < cnt; i++) {
-      if(id_maps[i].ide_id == INVALID_IDE_ID || id_maps[i].state != IDE_STREAM_STATUS_SECURE) {
-        break;
-      }
-    }
-    if(i != cnt) {
-      *ide_id = i;
-    }
-  }
 
-  if(*ide_id == INVALID_IDE_ID) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find ide_id failed: there is no free %s Stream Control Register Block.\n", m_ide_type_name[ide_type]));
-  }
-
-  // now find free rp_stream_index
-  if(rp_or_dev) {
-    *rp_stream_index = INVALID_RP_STREAM_INDEX;
-    if(free_rp_stream_block_cnt == 0) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find rp_stream_index failed: there is no free Per-Stream Configuration Register Block.\n"));
+    if(!found) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to find free Stream_x in KCBar.\n"));
+      return false;
     } else {
-      *rp_stream_index = free_rp_stream_block[0];
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp_stream_index = %d\n", *rp_stream_index));
     }
   }
 
-  free(id_maps);
-  free(free_rp_stream_block);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_id = %d\n", *ide_id));
 
-  if(rp_or_dev) {
-    return *ide_id != INVALID_IDE_ID && *rp_stream_index != INVALID_RP_STREAM_INDEX;
-  } else {
-    return *ide_id != INVALID_IDE_ID;
-  }
+  return true;
 }
 
 bool populate_rid_assoc_reg_block(
