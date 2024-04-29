@@ -37,6 +37,23 @@
 
 #define LINK_IDE_REGISTER_BLOCK_SIZE (sizeof(PCIE_LNK_IDE_STREAM_CTRL) + sizeof(PCIE_LINK_IDE_STREAM_STATUS))
 
+typedef enum {
+  PCIE_DEVICE_BITS_WIDTH_32 = 0,
+  PCIE_DEVICE_BITS_WIDTH_64,
+  PCIE_DEVICE_BITS_WIDTH_INVALID
+} PCIE_DEVICE_BITS_WIDTH;
+
+const char* m_dev_bits_width[] = {
+  "32Bit",
+  "64Bit",
+  "Unknown"
+};
+
+#define PCIE_BAR0_OFFSETE 0x10
+// PCIE Base 6.1 Table 7-9
+#define PCIE_MEM_BASE_ADDR_MASK 0x6
+#define PCIE_MEM_BASE_ADDR_64 0x4
+
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
 
@@ -45,9 +62,6 @@ const char *m_ide_type_name[] = {
   "LinkIDE",
 };
 
-// TODO
-bool g_use_prefetchable_mem = false;
-
 PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK m_rid_assoc_reg_block = {
     .rid_assoc1 = {.raw = 0xffff00},
     .rid_assoc2 = {.raw = 0x1}
@@ -55,7 +69,7 @@ PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK m_rid_assoc_reg_block = {
 
 PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK m_addr_assoc_reg_block = {
     .addr_assoc1 = {.raw = 0xfff00001},
-    .addr_assoc2 = {.raw = 0xffffffff},
+    .addr_assoc2 = {.raw = 0},
     .addr_assoc3 = {.raw = 0},
 };
 
@@ -470,7 +484,7 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
     for(i = 0; i < num_lnk_ide; i++) {
       PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
       PCIE_LINK_IDE_STREAM_STATUS lnk_ide_stream_status = {.raw = device_pci_read_32(offset + 4, port_context->cfg_space_fd)};
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: lnk_ide_stream_ctrl = 0x%08x, lnk_ide_stream_status = 0x%08x\n", lnk_ide_stream_ctrl.raw, lnk_ide_stream_status.raw));
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: lnk_ide_stream_ctrl = 0x%08x, lnk_ide_stream_status = 0x%08x\n", i, lnk_ide_stream_ctrl.raw, lnk_ide_stream_status.raw));
 
       if(lnk_ide_stream_ctrl.en == 0) {
         // This Link IDE Stream Register Block is not enabled.
@@ -497,7 +511,7 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
       PCIE_SEL_IDE_STREAM_STATUS sel_ide_stream_status = {.raw = device_pci_read_32(offset, port_context->cfg_space_fd)};
       offset += 4;
 
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: sel_ide_stream_ctrl = 0x%08x, sel_ide_stream_status = 0x%08x\n", sel_ide_stream_ctrl.raw, sel_ide_stream_status.raw));
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: sel_ide_stream_ctrl = 0x%08x, sel_ide_stream_status = 0x%08x\n", i, sel_ide_stream_ctrl.raw, sel_ide_stream_status.raw));
       if(sel_ide_stream_ctrl.enabled == 0) {
         // This Selective IDE Stream Register Block is not enabled.
         *ide_id = i;
@@ -564,30 +578,46 @@ bool populate_rid_assoc_reg_block(
     return true;
 }
 
+PCIE_DEVICE_BITS_WIDTH check_device_bits_width(int fd)
+{
+  TEEIO_ASSERT(fd > 0);
+
+  PCIE_DEVICE_BITS_WIDTH bits_width = PCIE_DEVICE_BITS_WIDTH_INVALID;
+  uint32_t  bar0 = device_pci_read_32(PCIE_BAR0_OFFSETE, fd);
+  if((bar0 & PCIE_MEM_BASE_ADDR_MASK) == PCIE_MEM_BASE_ADDR_64) {
+    bits_width = PCIE_DEVICE_BITS_WIDTH_64;
+  } else {
+    bits_width = PCIE_DEVICE_BITS_WIDTH_32;
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device bits width: %s\n", m_dev_bits_width[bits_width]));
+
+  return bits_width;
+}
+
 bool populate_addr_assoc_reg_block(
-    ide_common_test_switch_internal_conn_context_t* conn,
+    char* dev_bdf,
     PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK *addr_assoc_reg_block)
 {
-    if(addr_assoc_reg_block == NULL || conn == NULL) {
+    if(addr_assoc_reg_block == NULL || dev_bdf == NULL) {
         return false;
     }
 
-    bool use_prefetch_memory = false;
-    int mem_base_offset = MEMORY_BASE_OFFSET;
-
-    if(g_use_prefetchable_mem) {
-        use_prefetch_memory = true;
-        mem_base_offset = PREFETCH_MEMORY_BASE_OFFSET;
-    }
-
-    ide_common_test_switch_internal_conn_context_t *itr = conn;
-    while(itr->next != NULL) {
-      itr = itr->next;
-    }
-
-    int cfg_space_fd = open_configuration_space(itr->dps.port->bdf);
+    int cfg_space_fd = open_configuration_space(dev_bdf);
     if(cfg_space_fd == -1) {
       return false;
+    }
+
+    PCIE_DEVICE_BITS_WIDTH bits_width = check_device_bits_width(cfg_space_fd);
+    if(bits_width == PCIE_DEVICE_BITS_WIDTH_INVALID) {
+      return false;
+    }
+
+    bool use_prefetch_memory = bits_width == PCIE_DEVICE_BITS_WIDTH_64;
+    int mem_base_offset = MEMORY_BASE_OFFSET;
+
+    if(use_prefetch_memory) {
+        mem_base_offset = PREFETCH_MEMORY_BASE_OFFSET;
     }
 
     uint32_t data32 = device_pci_read_32(mem_base_offset, cfg_space_fd);
@@ -653,19 +683,33 @@ bool init_host_port(ide_common_test_group_context_t *group_context)
   ide_common_test_port_context_t *lower_port_context = &group_context->lower_port;
   populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
+  ide_common_test_switch_internal_conn_context_t *itr = NULL;
+  char* bdf = NULL;
   if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH) {
-    if(!populate_addr_assoc_reg_block(group_context->sw_conn1, &port_context->addr_assoc_reg_block)) {
-      goto InitHostFail;
+
+    itr = group_context->sw_conn1;
+    while(itr->next != NULL) {
+      itr = itr->next;
     }
+    bdf = itr->dps.port->bdf;
   } else if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    if(!populate_addr_assoc_reg_block(group_context->sw_conn2, &port_context->addr_assoc_reg_block)) {
-      goto InitHostFail;
+    itr = group_context->sw_conn2;
+    while(itr->next != NULL) {
+      itr = itr->next;
     }
+    bdf = itr->dps.port->bdf;
+
   } else {
-    port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
-    port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
-    port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
+    bdf = lower_port_context->port->bdf;
   }
+
+  if(!populate_addr_assoc_reg_block(bdf, &port_context->addr_assoc_reg_block)) {
+    goto InitHostFail;
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump host assoc_reg_block:\n"));
+  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
+  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 
   // kset
   // pre-allocate the slot_ids
@@ -810,7 +854,7 @@ bool init_dev_port(ide_common_test_group_context_t *group_context)
   port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
   port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump assoc_reg_block:\n"));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump dev assoc_reg_block:\n"));
   dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
   dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 
