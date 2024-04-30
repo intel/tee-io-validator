@@ -20,8 +20,8 @@
 
 extern void *m_pci_doe_context;
 
-void trigger_doe_abort();
-bool is_doe_error_asserted();
+// void trigger_doe_abort();
+// bool is_doe_error_asserted();
 bool init_host_port(ide_common_test_group_context_t *group_context);
 bool close_host_port(ide_common_test_group_context_t *group_context);
 bool init_both_root_upper_port(ide_common_test_group_context_t *group_context);
@@ -31,7 +31,6 @@ bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOL
 void *spdm_client_init(void);
 bool spdm_connect (void *spdm_context, uint32_t *session_id);
 bool spdm_stop(void *spdm_context, uint32_t session_id);
-libspdm_return_t pci_doe_init_request();
 bool scan_devices(void *test_context);
 
 // selective_ide test group
@@ -76,22 +75,6 @@ static bool common_test_group_setup(void *test_context)
   if (!ret) {
     return false;
   }
-
-  // init doe
-  trigger_doe_abort();
-  libspdm_sleep(1000000);
-  if (is_doe_error_asserted())
-  {
-    TEEIO_ASSERT(false);
-  }
-  libspdm_return_t status = pci_doe_init_request();
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_doe_init_request - %x\n", (uint32_t)status));
-    TEEIO_ASSERT(false);
-  }
-
-  context->doe_context = m_pci_doe_context;
 
   // init spdm_context
   void *spdm_context = spdm_client_init();

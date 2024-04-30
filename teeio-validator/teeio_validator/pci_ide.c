@@ -23,6 +23,8 @@
 #define PCI_IDE_EXT_CAPABILITY_ID 0x0030
 #define PCI_AER_EXT_CAPABILITY_ID 0x0001
 
+#define MAX_PCI_DOE_CNT 32
+
 // PCIE_LINK_IDE_STREAM_CTRL:en PCIE_SEL_IDE_STREAM_CTRL:en
 #define IDE_STREAM_CTRL_ENABLE 0x00000001
 
@@ -83,6 +85,9 @@ bool reset_ide_registers(
   uint8_t stream_id,
   uint8_t rp_stream_index,
   bool reset_kcbar);
+bool pci_doe_init_request();
+void trigger_doe_abort();
+bool is_doe_error_asserted();
 
 int open_configuration_space(char *bdf)
 {
@@ -147,6 +152,39 @@ uint32_t get_extended_cap_offset(int fd, uint32_t ext_id)
   }
 
   return offset;
+}
+
+// There may be multi DOE Extened Caps in ecap. This function walks thru the
+// extended caps and find out all the DOE Extended caps offset.
+bool get_doe_extended_cap_offset(int fd, uint32_t* doe_offsets, int* size)
+{
+  uint32_t ext_cap_start = 0x100; // defined by PCIe Specification
+  uint32_t walker = ext_cap_start;
+  uint32_t cap_ext_header = 0;
+  int cnt = 0;
+
+  TEEIO_ASSERT(size != NULL);
+
+  while (walker < 0x1000 && walker != 0)
+  {
+    cap_ext_header = device_pci_read_32(walker, fd);
+
+    if (((PCIE_CAP_ID *)&cap_ext_header)->id == PCI_DOE_EXT_CAPABILITY_ID)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Find DOE Extended Cap at offset - 0x%04x\n", walker));
+
+      if(doe_offsets != NULL) {
+        TEEIO_ASSERT(cnt < *size);
+        doe_offsets[cnt] = walker;
+      }
+      cnt += 1;
+    }
+
+    walker = ((PCIE_CAP_ID *)&cap_ext_header)->next_cap_offset;
+  }
+
+  *size = cnt;
+  return cnt > 0;
 }
 
 uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd)
@@ -742,6 +780,34 @@ bool close_both_root_upper_port(ide_common_test_group_context_t *group_context)
   return false;
 }
 
+bool init_pci_doe(int fd)
+{
+  uint32_t doe_extended_offsets[MAX_PCI_DOE_CNT] = {0};
+  int doe_cnt = MAX_PCI_DOE_CNT;
+  if(!get_doe_extended_cap_offset(fd, doe_extended_offsets, &doe_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Can not find PCI DOE Extended Cap!\n"));
+    return false;
+  }
+
+  trigger_doe_abort();
+  libspdm_sleep(1000000);
+  if (is_doe_error_asserted())
+  {
+    TEEIO_ASSERT(false);
+  }
+
+  for(int i = 0; i < doe_cnt; i++) {
+    g_doe_extended_offset = doe_extended_offsets[i];
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Try to init pci_doe (doe_offset=0x%04x)\n", g_doe_extended_offset));
+    if(pci_doe_init_request()) {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "doe_offset=0x%04x is the one to be used in teeio-validator.\n", g_doe_extended_offset));
+      return true;
+    }
+  }
+
+  return false;
+}
+
 bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOLOGY_TYPE top_type)
 {
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_dev_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
@@ -795,22 +861,16 @@ bool open_dev_port(ide_common_test_port_context_t *port_context)
   }
   port_context->ecap_offset = ecap_offset;
 
-  g_doe_extended_offset = get_extended_cap_offset(fd, PCI_DOE_EXT_CAPABILITY_ID);
-  if (g_doe_extended_offset == 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ECAP Offset of DOE is NOT found\n"));
-    goto OpenDevFail;
-  }
-  else
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of DOE: 0x%016x\n", g_doe_extended_offset));
-  }
-  port_context->doe_offset = g_doe_extended_offset;
-
   // TODO
   // m_dev_fp indicates the device ide card. It is used in doe_read_write.c.
   // It will be removed later.
   m_dev_fp = fd;
+
+  // initialize pci doe
+  if(!init_pci_doe(fd)) {
+    goto OpenDevFail;
+  }
+  port_context->doe_offset = g_doe_extended_offset;
 
   uint32_t offset = ecap_offset + 4;
   port_context->ide_cap.raw = device_pci_read_32(offset, fd);
