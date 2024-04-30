@@ -205,3 +205,19 @@ ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int 
 {
     return NULL;
 }
+
+bool pci_doe_init_request()
+{
+    return false;
+}
+void trigger_doe_abort()
+{
+}
+bool is_doe_error_asserted()
+{
+    return false;
+}
+
+void libspdm_sleep(uint64_t microseconds)
+{
+}
