@@ -37,22 +37,12 @@
 
 #define LINK_IDE_REGISTER_BLOCK_SIZE (sizeof(PCIE_LNK_IDE_STREAM_CTRL) + sizeof(PCIE_LINK_IDE_STREAM_STATUS))
 
-typedef enum {
-  PCIE_DEVICE_BITS_WIDTH_32 = 0,
-  PCIE_DEVICE_BITS_WIDTH_64,
-  PCIE_DEVICE_BITS_WIDTH_INVALID
-} PCIE_DEVICE_BITS_WIDTH;
-
-const char* m_dev_bits_width[] = {
-  "32Bit",
-  "64Bit",
-  "Unknown"
-};
-
 #define PCIE_BAR0_OFFSETE 0x10
 // PCIE Base 6.1 Table 7-9
 #define PCIE_MEM_BASE_ADDR_MASK 0x6
 #define PCIE_MEM_BASE_ADDR_64 0x4
+// bit 3 prefetchable
+#define PCIE_MEM_BASE_PREFETCHABLE_MASK 0x8
 
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
@@ -578,21 +568,23 @@ bool populate_rid_assoc_reg_block(
     return true;
 }
 
-PCIE_DEVICE_BITS_WIDTH check_device_bits_width(int fd)
+// If the device is 64-bit and bit3 (prefetchable bit) is set, then use_prefetchable registers
+bool check_use_prefetchable(int fd)
 {
   TEEIO_ASSERT(fd > 0);
+  bool use_prefetchable = false;
 
-  PCIE_DEVICE_BITS_WIDTH bits_width = PCIE_DEVICE_BITS_WIDTH_INVALID;
   uint32_t  bar0 = device_pci_read_32(PCIE_BAR0_OFFSETE, fd);
   if((bar0 & PCIE_MEM_BASE_ADDR_MASK) == PCIE_MEM_BASE_ADDR_64) {
-    bits_width = PCIE_DEVICE_BITS_WIDTH_64;
-  } else {
-    bits_width = PCIE_DEVICE_BITS_WIDTH_32;
+    // check bit 3
+    if((bar0 & PCIE_MEM_BASE_PREFETCHABLE_MASK) != 0) {
+      use_prefetchable = true;
+    }
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device bits width: %s\n", m_dev_bits_width[bits_width]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device bar0 is 0x%08x, use_prefetchable = %d\n", bar0, use_prefetchable));
 
-  return bits_width;
+  return use_prefetchable;
 }
 
 bool populate_addr_assoc_reg_block(
@@ -608,12 +600,7 @@ bool populate_addr_assoc_reg_block(
       return false;
     }
 
-    PCIE_DEVICE_BITS_WIDTH bits_width = check_device_bits_width(cfg_space_fd);
-    if(bits_width == PCIE_DEVICE_BITS_WIDTH_INVALID) {
-      return false;
-    }
-
-    bool use_prefetch_memory = bits_width == PCIE_DEVICE_BITS_WIDTH_64;
+    bool use_prefetch_memory = check_use_prefetchable(cfg_space_fd);
     int mem_base_offset = MEMORY_BASE_OFFSET;
 
     if(use_prefetch_memory) {
@@ -700,7 +687,7 @@ bool init_host_port(ide_common_test_group_context_t *group_context)
     bdf = itr->dps.port->bdf;
 
   } else {
-    bdf = lower_port_context->port->bdf;
+    bdf = port_context->port->bdf;
   }
 
   if(!populate_addr_assoc_reg_block(bdf, &port_context->addr_assoc_reg_block)) {
