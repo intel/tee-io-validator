@@ -22,6 +22,7 @@
 
 bool test_keyprog_setup_common(void *test_context);
 extern uint8_t m_keyprog_max_port;
+void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer);
 
 static const char* mKeyProgAssersion[] = {
     "ide_km_key_prog send receive_data",        // .0
@@ -179,6 +180,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 1;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -192,6 +194,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 2;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -205,6 +208,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 3;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -218,6 +222,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 4;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -231,6 +236,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 5;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -244,6 +250,7 @@ bool test_keyprog_3_run(void *test_context)
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   port_index = m_keyprog_max_port + 6;
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL with port_index=%d(max=%d)\n", port_index, m_keyprog_max_port));
   status = test_ide_km_key_prog_case3(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
