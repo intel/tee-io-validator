@@ -21,6 +21,7 @@
 #include "teeio_debug.h"
 
 bool test_keyprog_setup_common(void *test_context);
+void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer);
 
 static const char* mKeyProgAssersion[] = {
     "ide_km_key_prog send receive_data",        // .0
@@ -159,6 +160,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -172,6 +174,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -185,6 +188,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -198,6 +202,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -211,6 +216,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
@@ -224,6 +230,7 @@ bool test_keyprog_6_run(void *test_context)
   stream_id++;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
+  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL stream_id=%d\n", stream_id));
   status = test_ide_km_key_prog_case6(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],

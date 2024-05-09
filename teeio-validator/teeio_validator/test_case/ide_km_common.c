@@ -56,6 +56,14 @@ void set_host_ide_key_set(
 bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
 void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 
+void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer)
+{
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Key:\n"));
+  dump_hex_array((uint8_t *)key_buffer->key, sizeof(key_buffer->key));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IV:\n"));
+  dump_hex_array((uint8_t *)key_buffer->iv, sizeof(key_buffer->iv));
+}
+
 // program keys to device card and root port
 bool ide_km_key_prog(
     const void *pci_doe_context,
@@ -96,6 +104,9 @@ bool ide_km_key_prog(
 
     key_buffer.iv[0] = 0;
     key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
+
+    dump_key_iv(&key_buffer);
+
     status = pci_ide_km_key_prog(pci_doe_context, spdm_context, session_id,
                                  stream_id,
                                  k_sets[ks] | directions[direction] | substreams[substream],

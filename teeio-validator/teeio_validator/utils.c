@@ -28,6 +28,7 @@
 extern FILE* m_logfile;
 
 #define MAX_TIME_STAMP_LENGTH 32
+#define COLUME_SIZE 16
 
 bool IsValidDecimalString(
     uint8_t *Decimal,
@@ -825,4 +826,43 @@ void log_file_close(){
     if(!m_logfile){
         fclose(m_logfile);
     }
+}
+
+static void dump_hex_array_to_str (
+  uint8_t  *array,
+  int  array_size,
+  char *str,
+  int str_size
+  )
+{
+  int index;
+  TEEIO_ASSERT(str_size >= array_size * 3);
+
+  for (index = 0; index < array_size; index++) {
+    if(index == array_size - 1) {
+      sprintf(str + index * 3, "%02x", array[index]);
+    } else {
+      sprintf(str + index * 3, "%02x ", array[index]);
+    }
+  }
+}
+
+void dump_hex_array(uint8_t* data, int size)
+{
+  int i = 0;
+  int count = size / COLUME_SIZE;
+  int left = size % COLUME_SIZE;
+  char one_line_buffer[COLUME_SIZE * 3] = {0};
+
+  for(i = 0; i < count; i++) {
+    memset(one_line_buffer, 0, sizeof(one_line_buffer));
+    dump_hex_array_to_str(data + i * COLUME_SIZE, COLUME_SIZE, one_line_buffer, COLUME_SIZE * 3);
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%04x: %s\n", i * COLUME_SIZE, one_line_buffer));
+  }
+
+  if(left != 0) {
+    memset(one_line_buffer, 0, sizeof(one_line_buffer));
+    dump_hex_array_to_str(data + i * COLUME_SIZE, left, one_line_buffer, COLUME_SIZE * 3);
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%04x: %s\n", i * COLUME_SIZE, one_line_buffer));
+  }
 }
