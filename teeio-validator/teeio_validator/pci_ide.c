@@ -61,7 +61,7 @@ PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK m_rid_assoc_reg_block = {
 
 PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK m_addr_assoc_reg_block = {
     .addr_assoc1 = {.raw = 0xfff00001},
-    .addr_assoc2 = {.raw = 0},
+    .addr_assoc2 = {.raw = 0xffffffff},
     .addr_assoc3 = {.raw = 0},
 };
 
