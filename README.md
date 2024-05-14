@@ -56,13 +56,13 @@ DMTF [DSP0277](https://www.dmtf.org/dsp/DSP0277) Secured Messages using SPDM Spe
 
 PCIe Base Specification Version [6.0.1](https://members.pcisig.com/wg/PCI-SIG/document/18363), [6.1](https://members.pcisig.com/wg/PCI-SIG/document/19849), [6.2](https://members.pcisig.com/wg/PCI-SIG/document/20590).
 
-PCIe [DOE 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14143) in PCIe 6.0, [DOE 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/18483) in PCIe 6.1.
+PCIe [DOE 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14143) for PCIe 4.0, 5.0 (integrated in 6.0), [DOE 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/18483) for PCIe 5.0, 6.0 (integrated in 6.1).
 
-PCIe [CMA 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14236) in PCIe 6.0, [CMA 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/20110) in PCIe 6.2.
+PCIe [CMA 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14236) for PCIe 4.0, 5.0 (integrated PCIe 6.0), [CMA 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/20110) for PCIe 6.1 (integrated in 6.2).
 
-PCIe [IDE ECN](https://members.pcisig.com/wg/PCI-SIG/document/16599) in PCIe 6.0.
+PCIe [IDE ECN](https://members.pcisig.com/wg/PCI-SIG/document/16599) for PCIe 5.0 (integrated in 6.0).
 
-PCIe [TDISP ECN](https://members.pcisig.com/wg/PCI-SIG/document/18268) in PCIe 6.1.
+PCIe [TDISP ECN](https://members.pcisig.com/wg/PCI-SIG/document/18268) for PCIe 5.0, 6.0 (integrated in 6.1).
 
 #### CXL
 
