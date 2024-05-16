@@ -94,9 +94,9 @@ void teeio_print(const char *format, ...)
 #define IDE_ASSERT_CONFIG TEEIO_ASSERT_DEADLOOP
 #endif
 
-void teeio_assert(const char *file_name, int line_number, const char *description)
+void debug_lib_assert(const char* which_assert, const char *file_name, int line_number, const char *description)
 {
-    printf("TEEIO_ASSERT: %s(%d): %s\n", file_name, (int32_t)(uint32_t)line_number,
+    printf("%s: %s(%d): %s\n", which_assert, file_name, (int32_t)(uint32_t)line_number,
            description);
 
 #if (IDE_ASSERT_CONFIG == TEEIO_ASSERT_DEADLOOP)
@@ -115,5 +115,10 @@ void teeio_assert(const char *file_name, int line_number, const char *descriptio
 #endif
 
     assert(false);
+}
+
+void teeio_assert(const char *file_name, int line_number, const char *description)
+{
+  debug_lib_assert("TEEIO_ASSERT", file_name, line_number, description);
 }
 #endif /* TEEIO_ASSERT_ENABLE */
