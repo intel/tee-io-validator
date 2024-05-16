@@ -33,6 +33,7 @@ EntryName=EntryValue
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 | pci_log|0/1 |0 | O | enable pci log if 1|
+| libspdm_log|0/1 |0 | O | enable libspdm log if 1|
 | debug_level | verbose/info/warn/error | warn | O | debug level|
 
 [Ports]
