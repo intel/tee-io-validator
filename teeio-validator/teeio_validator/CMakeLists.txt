@@ -30,7 +30,6 @@ SET(src_teeio_validator
     cmdline.c
     ide_test_ini.c
     ide_test.c
-    teeio_debug.c
     ## test cases
     test_case/test_case_query.c
     test_case/test_case_ksetgo_1.c
@@ -83,7 +82,6 @@ SET(teeio_validator_LIBRARY
 SET(src_lside
     tools/lside.c
     tools/ide_common.c
-    teeio_debug.c
     utils.c
     pci_ide.c
     scan_pci.c
@@ -96,7 +94,6 @@ SET(lside_LIBRARY
 SET(src_setide
     tools/setide.c
     tools/ide_common.c
-    teeio_debug.c
     utils.c
     pci_ide.c
     scan_pci.c

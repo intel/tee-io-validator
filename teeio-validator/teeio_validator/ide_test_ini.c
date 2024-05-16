@@ -2321,6 +2321,12 @@ void ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
     test_config->main_config.pci_log = data32 == 1;
   }
 
+  sprintf(entry_name, "libspdm_log");
+  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  {
+    test_config->main_config.libspdm_log = data32 == 1;
+  }
+
   sprintf(entry_name, "debug_level");
   if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
   {

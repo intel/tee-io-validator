@@ -155,6 +155,7 @@ typedef struct
 {
   bool pci_log;
   uint32_t debug_level;
+  bool libspdm_log;
   bool wo_tdisp;
 } IDE_TEST_MAIN_CONFIG;
 
