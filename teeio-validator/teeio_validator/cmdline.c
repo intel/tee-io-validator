@@ -33,6 +33,7 @@ extern int g_top_id;
 extern int g_config_id;
 extern char g_test_case[MAX_CASE_NAME_LENGTH];
 extern TEEIO_DEBUG_LEVEL g_debug_level;
+extern bool g_libspdm_log;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
