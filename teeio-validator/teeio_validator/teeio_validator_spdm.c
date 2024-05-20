@@ -219,7 +219,7 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id)
                     &cert_chain.cert_chain_size,
                     cert_chain.cert_chain);
         if (LIBSPDM_STATUS_IS_ERROR(status)) {
-            TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_certificate (slot=%d) - %x\n", slot_id, (uint32_t)status));
+            TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_get_certificate (slot=%d) - %x\n", slot_id, (uint32_t)status));
             cert_chain.cert_chain_size = 0;
         }
         cert_chain_name[18] = slot_id + '0';
