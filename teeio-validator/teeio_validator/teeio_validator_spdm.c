@@ -55,6 +55,23 @@ void *spdm_client_init(void)
     }
     spdm_context = m_spdm_context;
     libspdm_init_context(spdm_context);
+
+    libspdm_register_device_io_func(spdm_context, device_doe_send_message,
+                                    device_doe_receive_message);
+    libspdm_register_transport_layer_func(
+            spdm_context,
+            LIBSPDM_MAX_SPDM_MSG_SIZE,
+            LIBSPDM_TRANSPORT_HEADER_SIZE,
+            LIBSPDM_TRANSPORT_TAIL_SIZE,
+            libspdm_transport_pci_doe_encode_message,
+            libspdm_transport_pci_doe_decode_message);
+    libspdm_register_device_buffer_func(spdm_context,
+                                        LIBSPDM_SENDER_BUFFER_SIZE,
+                                        LIBSPDM_RECEIVER_BUFFER_SIZE,
+                                        spdm_device_acquire_sender_buffer,
+                                        spdm_device_release_sender_buffer,
+                                        spdm_device_acquire_receiver_buffer,
+                                        spdm_device_release_receiver_buffer);
     scratch_buffer_size = libspdm_get_sizeof_required_scratch_buffer(m_spdm_context);
     m_scratch_buffer = (void *)malloc(scratch_buffer_size);
     if (m_scratch_buffer == NULL) {
@@ -62,18 +79,6 @@ void *spdm_client_init(void)
         m_spdm_context = NULL;
         return NULL;
     }
-
-    libspdm_register_device_io_func(spdm_context, device_doe_send_message,
-                                    device_doe_receive_message);
-    libspdm_register_transport_layer_func(
-            spdm_context, libspdm_transport_pci_doe_encode_message,
-            libspdm_transport_pci_doe_decode_message,
-            libspdm_transport_pci_doe_get_header_size);
-    libspdm_register_device_buffer_func(spdm_context,
-                                        spdm_device_acquire_sender_buffer,
-                                        spdm_device_release_sender_buffer,
-                                        spdm_device_acquire_receiver_buffer,
-                                        spdm_device_release_receiver_buffer);
     libspdm_set_scratch_buffer (spdm_context, m_scratch_buffer, scratch_buffer_size);
 
 
@@ -102,7 +107,7 @@ void *spdm_client_init(void)
     libspdm_set_data(spdm_context, LIBSPDM_DATA_CAPABILITY_FLAGS, &parameter,
                      &data32, sizeof(data32));
 
-    data8 = SPDM_MEASUREMENT_BLOCK_HEADER_SPECIFICATION_DMTF;
+    data8 = SPDM_MEASUREMENT_SPECIFICATION_DMTF;
     libspdm_set_data(spdm_context, LIBSPDM_DATA_MEASUREMENT_SPEC, &parameter,
                      &data8, sizeof(data8));
     data32 = SPDM_ALGORITHMS_BASE_ASYM_ALGO_TPM_ALG_ECDSA_ECC_NIST_P384;
@@ -176,6 +181,7 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id)
     /* setup session based on slot 0 */
     status = libspdm_start_session(
                 spdm_context, false,
+                NULL, 0,
                 SPDM_CHALLENGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH,
                 0,
                 SPDM_KEY_EXCHANGE_REQUEST_SESSION_POLICY_TERMINATION_POLICY_RUNTIME_UPDATE,

@@ -31,7 +31,7 @@
 #include <string.h>
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
-#include "hal/library/platform_lib.h"
+
 #include <library/spdm_return_status.h>
 #include "utils.h"
 #include "teeio_debug.h"

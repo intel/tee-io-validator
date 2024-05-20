@@ -9,7 +9,7 @@
 
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
-#include "hal/library/platform_lib.h"
+
 #include "ide_test.h"
 #include "utils.h"
 #include "teeio_debug.h"

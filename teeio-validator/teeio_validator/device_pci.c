@@ -5,7 +5,7 @@
  **/
 
 #include "teeio_validator.h"
-#include "hal/library/platform_lib.h"
+
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
