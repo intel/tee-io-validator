@@ -77,4 +77,12 @@ const char* get_ide_log_level_string(TEEIO_DEBUG_LEVEL debug_level);
 bool convert_hex_str_to_uint8(char* str, uint8_t* data8);
 void dump_hex_array(uint8_t* data, int size);
 
+/**
+ * Suspends the execution of the current thread until the time-out interval elapses.
+ *
+ * @param microseconds     The time interval for which execution is to be suspended, in microseconds.
+ *
+ **/
+extern void libspdm_sleep(uint64_t microseconds);
+
 #endif

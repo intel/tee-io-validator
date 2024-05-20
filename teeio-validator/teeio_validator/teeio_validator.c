@@ -5,7 +5,7 @@
  **/
 
 #include "teeio_validator.h"
-#include "hal/library/platform_lib.h"
+
 #include <stdlib.h>
 #include <ctype.h>
 #include "ide_test.h"

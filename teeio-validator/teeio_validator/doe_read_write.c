@@ -5,7 +5,7 @@
  **/
 
 #include "teeio_validator.h"
-#include "hal/library/platform_lib.h"
+
 
 /* PCI Express - begin */
 #define PCI_EXPRESS_EXTENDED_CAPABILITY_DOE_ID 0x002E
@@ -32,7 +32,7 @@ extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
 
 bool m_send_receive_buffer_acquired = false;
-uint8_t m_send_receive_buffer[LIBSPDM_SENDER_RECEIVE_BUFFER_SIZE];
+uint8_t m_send_receive_buffer[LIBSPDM_RECEIVER_BUFFER_SIZE];
 size_t m_send_receive_buffer_size;
 
 void check_pcie_advance_error();
@@ -332,10 +332,9 @@ libspdm_return_t device_doe_receive_message(
 }
 
 libspdm_return_t spdm_device_acquire_sender_buffer (
-    void *context, size_t *max_msg_size, void **msg_buf_ptr)
+    void *context, void **msg_buf_ptr)
 {
     TEEIO_ASSERT (!m_send_receive_buffer_acquired);
-    *max_msg_size = sizeof(m_send_receive_buffer);
     *msg_buf_ptr = m_send_receive_buffer;
     libspdm_zero_mem (m_send_receive_buffer, sizeof(m_send_receive_buffer));
     m_send_receive_buffer_acquired = true;
@@ -352,10 +351,9 @@ void spdm_device_release_sender_buffer (
 }
 
 libspdm_return_t spdm_device_acquire_receiver_buffer (
-    void *context, size_t *max_msg_size, void **msg_buf_ptr)
+    void *context, void **msg_buf_ptr)
 {
     TEEIO_ASSERT (!m_send_receive_buffer_acquired);
-    *max_msg_size = sizeof(m_send_receive_buffer);
     *msg_buf_ptr = m_send_receive_buffer;
     libspdm_zero_mem (m_send_receive_buffer, sizeof(m_send_receive_buffer));
     m_send_receive_buffer_acquired = true;

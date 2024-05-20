@@ -14,7 +14,7 @@
 #include <sys/mman.h>
 
 #include "teeio_validator.h"
-#include "hal/library/platform_lib.h"
+
 #include "hal/library/debuglib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
