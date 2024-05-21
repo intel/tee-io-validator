@@ -208,7 +208,7 @@ ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int 
 
 bool pci_doe_init_request()
 {
-    return false;
+    return true;
 }
 void trigger_doe_abort()
 {
