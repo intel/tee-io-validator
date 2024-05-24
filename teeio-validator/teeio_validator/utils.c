@@ -866,3 +866,17 @@ void dump_hex_array(uint8_t* data, int size)
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%04x: %s\n", i * COLUME_SIZE, one_line_buffer));
   }
 }
+
+TEST_IDE_TYPE map_top_type_to_ide_type(IDE_TEST_TOPOLOGY_TYPE top_type)
+{
+  TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
+
+  if(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
+    ide_type = TEST_IDE_TYPE_LNK_IDE;
+  } else if (top_type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE){
+    NOT_IMPLEMENTED("selective_and_link_ide topology");
+    ide_type = TEST_IDE_TYPE_NA;
+  }
+
+  return ide_type;
+}

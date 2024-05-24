@@ -53,6 +53,7 @@ SET(src_teeio_validator
     test_config/test_config_common.c
     test_config/test_config_pcrc.c
     test_config/test_config_default.c
+    test_config/test_config_sel_ide_for_cfg_req.c
     ## test groups
     test_group/test_group.c
     scan_pci.c
