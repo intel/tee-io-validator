@@ -85,4 +85,6 @@ void dump_hex_array(uint8_t* data, int size);
  **/
 extern void libspdm_sleep(uint64_t microseconds);
 
+TEST_IDE_TYPE map_top_type_to_ide_type(IDE_TEST_TOPOLOGY_TYPE top_type);
+
 #endif

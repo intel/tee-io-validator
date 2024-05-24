@@ -1005,6 +1005,54 @@ bool set_pcrc_in_ecap(
     return true;
 }
 
+/**
+ * Set Selective IDE for Configuration Req (bit9) in ide_stream ctrl
+*/
+bool set_sel_ide_for_cfg_req_in_ecap(
+    int fd,
+    TEST_IDE_TYPE ide_type,
+    uint8_t ide_id,
+    uint32_t ide_ecap_offset,
+    bool enable
+)
+{
+    uint32_t offset = get_ide_reg_block_offset(fd, ide_type, ide_id, ide_ecap_offset);
+
+    // For sel_ide, ide_ctrl is preceded by ide_cap.
+    if(ide_type == TEST_IDE_TYPE_SEL_IDE) {
+        offset += 4;
+    }
+    PCIE_SEL_IDE_STREAM_CTRL ide_stream_ctrl = {.raw = 0};
+    ide_stream_ctrl.raw = device_pci_read_32(offset, fd);
+
+    ide_stream_ctrl.cfg_sel_ide = enable ? 1 : 0;
+    device_pci_write_32(offset, ide_stream_ctrl.raw, fd);
+
+    return true;
+}
+
+/**
+ * read ide_stream_ctrl register in ecap
+*/
+uint32_t read_ide_stream_ctrl_in_ecap(
+    int fd,
+    TEST_IDE_TYPE ide_type,
+    uint8_t ide_id,
+    uint32_t ide_ecap_offset
+)
+{
+    uint32_t offset = get_ide_reg_block_offset(fd, ide_type, ide_id, ide_ecap_offset);
+
+    // For sel_ide, ide_stream_ctrl is preceded by ide_cap.
+    if(ide_type == TEST_IDE_TYPE_SEL_IDE) {
+        offset += 4;
+    }
+    uint32_t ide_stream_ctrl = device_pci_read_32(offset, fd);
+
+    return ide_stream_ctrl;
+}
+
+
 // setup the ide ecap regs
 // IDE Extended Capability is defined in [PCI-SIG IDE] Sec 7.9.99
 bool setup_ide_ecap_regs (

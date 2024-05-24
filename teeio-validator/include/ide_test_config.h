@@ -39,4 +39,10 @@ bool test_config_pcrc_disable_sel_link(void *test_context);
 bool test_config_pcrc_support_sel_link(void *test_context);
 bool test_config_pcrc_check_sel_link(void *test_context);
 
+// seleceive ide for configuration request
+bool test_config_sel_ide_for_cfg_req_enable(void *test_context);
+bool test_config_sel_ide_for_cfg_req_disable(void *test_context);
+bool test_config_sel_ide_for_cfg_req_support(void *test_context);
+bool test_config_sel_ide_for_cfg_req_check(void *test_context);
+
 #endif

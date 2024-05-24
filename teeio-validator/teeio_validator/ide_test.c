@@ -89,7 +89,12 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
       test_config_pcrc_check_sel
     },
     {NULL, NULL, NULL, NULL}, // aggregation
-    {NULL, NULL, NULL, NULL}, // selective_ide_for_configuration
+    { // selective_ide for configuration request
+      test_config_sel_ide_for_cfg_req_enable,
+      test_config_sel_ide_for_cfg_req_disable,
+      test_config_sel_ide_for_cfg_req_support,
+      test_config_sel_ide_for_cfg_req_check
+    },
     {NULL, NULL, NULL, NULL}  // tee_limited_stream
   },
   { // link_ide
