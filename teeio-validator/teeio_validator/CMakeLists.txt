@@ -79,35 +79,5 @@ SET(teeio_validator_LIBRARY
     platform_lib
 )
 
-SET(src_lside
-    tools/lside.c
-    tools/ide_common.c
-    utils.c
-    pci_ide.c
-    scan_pci.c
-    ide_test_ini.c
-    rp_pci.c)
-
-SET(lside_LIBRARY
-    debuglib)
-
-SET(src_setide
-    tools/setide.c
-    tools/ide_common.c
-    utils.c
-    pci_ide.c
-    scan_pci.c
-    ide_test_ini.c
-    rp_pci.c)
-
-SET(setide_LIBRARY
-    debuglib)
-
 ADD_EXECUTABLE(teeio_validator ${src_teeio_validator})
 TARGET_LINK_LIBRARIES(teeio_validator ${teeio_validator_LIBRARY})
-
-ADD_EXECUTABLE(lside ${src_lside})
-TARGET_LINK_LIBRARIES(lside ${lside_LIBRARY})
-
-ADD_EXECUTABLE(setide ${src_setide})
-TARGET_LINK_LIBRARIES(setide ${setide_LIBRARY})
