@@ -26,7 +26,7 @@ endif()
 
 SET(LIBSPDM_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu/libspdm)
 SET(SPDM_EMU_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu)
-SET(TEEIO_VALIDATOR_DIR ${PROJECT_SOURCE_DIR})
+SET(TEEIO_VALIDATOR_DIR ${PROJECT_SOURCE_DIR}/teeio_validator)
 SET(SPDM_DEVICE_DIR ${PROJECT_SOURCE_DIR})
 
 #
@@ -246,5 +246,6 @@ ADD_COMPILE_OPTIONS(-DLIBSPDM_CONFIG="${PROJECT_SOURCE_DIR}/include/spdm_lib_con
     ADD_SUBDIRECTORY(${SPDM_EMU_DIR}/library/pci_tdisp_requester_lib out/pci_tdisp_requester_lib.lib)
 
     ADD_SUBDIRECTORY(teeio_validator)
+    ADD_SUBDIRECTORY(tools)
 
 endif()
