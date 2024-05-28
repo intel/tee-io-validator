@@ -2439,10 +2439,10 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
 
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "Dump test_ini:\n"));
 
-  IDE_TEST_MAIN_CONFIG *main = &test_config->main_config;
+  IDE_TEST_MAIN_CONFIG *main_config = &test_config->main_config;
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "[Main]\n"));
-  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pci_log=%s\n", main->pci_log == 0 ? "false":"true"));
-  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  debug_level=%s\n", get_ide_log_level_string(main->debug_level)));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pci_log=%s\n", main_config->pci_log == 0 ? "false":"true"));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  debug_level=%s\n", get_ide_log_level_string(main_config->debug_level)));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
 
   IDE_TEST_PORTS_CONFIG *ports = &test_config->ports_config;
