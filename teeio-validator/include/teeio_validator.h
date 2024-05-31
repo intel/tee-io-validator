@@ -27,7 +27,7 @@
 #include "teeio_debug.h"
 
 #define TEEIO_VALIDATOR_NAME "teeio_validator"
-#define TEEIO_VALIDATOR_VERSION "0.1.0"
+#define TEEIO_VALIDATOR_VERSION "0.2.0"
 
 #define LOGFILE "./teeio_log"
 

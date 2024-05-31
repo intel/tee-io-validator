@@ -10,10 +10,10 @@
 #include "ide_test.h"
 
 #define SET_IDE_NAME "setide"
-#define SET_IDE_VERSION "0.1.0"
+#define SET_IDE_VERSION "0.2.0"
 
 #define LS_IDE_NAME "lside"
-#define LS_IDE_VERSION "0.1.0"
+#define LS_IDE_VERSION "0.2.0"
 
 #define NUM_SEL_IDE_ISSUE
 
