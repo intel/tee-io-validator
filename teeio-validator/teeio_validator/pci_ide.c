@@ -46,8 +46,12 @@
 // bit 3 prefetchable
 #define PCIE_MEM_BASE_PREFETCHABLE_MASK 0x8
 
-extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
+
+uint32_t g_doe_extended_offset = 0;
+uint32_t g_ide_extended_offset = 0;
+uint32_t g_aer_extended_offset = 0;
+int m_dev_fp = 0;
 
 const char *m_ide_type_name[] = {
   "SelectiveIDE",
@@ -1404,5 +1408,10 @@ void dump_ecap(
 void dump_host_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
 {
     dump_kcbar((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index);
+    dump_ecap(cfg_space_fd, ide_id, ecap_offset, ide_type);
+}
+
+void dump_dev_registers(int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
+{
     dump_ecap(cfg_space_fd, ide_id, ecap_offset, ide_type);
 }

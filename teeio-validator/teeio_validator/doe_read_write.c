@@ -35,7 +35,11 @@ bool m_send_receive_buffer_acquired = false;
 uint8_t m_send_receive_buffer[LIBSPDM_RECEIVER_BUFFER_SIZE];
 size_t m_send_receive_buffer_size;
 
-void check_pcie_advance_error();
+// more info please check file - new_cambria_core_regs_RWF_FM85.doc.xml
+void check_pcie_advance_error()
+{
+    return;
+}
 
 uint32_t device_pci_doe_control_read_32 ()
 {
