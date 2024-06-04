@@ -28,6 +28,7 @@ SET(LIBSPDM_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu/libspdm)
 SET(SPDM_EMU_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu)
 SET(TEEIO_VALIDATOR_DIR ${PROJECT_SOURCE_DIR}/teeio_validator)
 SET(SPDM_DEVICE_DIR ${PROJECT_SOURCE_DIR})
+SET(TEEIO_VALIDATOR_LIB_DIR ${PROJECT_SOURCE_DIR}/library)
 
 #
 # OpenSSL specific compiled libraries.
@@ -198,6 +199,7 @@ if(ENABLE_CODEQL STREQUAL "ON")
     ADD_SUBDIRECTORY(${TEEIO_VALIDATOR_DIR}/library/debuglib)
     ADD_SUBDIRECTORY(${TEEIO_VALIDATOR_DIR}/library/helperlib)
     ADD_SUBDIRECTORY(${TEEIO_VALIDATOR_DIR}/library/teeio_spdmlib)
+    ADD_SUBDIRECTORY(${TEEIO_VALIDATOR_DIR}/library/pcie_ide_test_lib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/rnglib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/platform_lib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/platform_lib_null)
@@ -236,6 +238,7 @@ ADD_COMPILE_OPTIONS(-DLIBSPDM_CONFIG="${PROJECT_SOURCE_DIR}/include/spdm_lib_con
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/library/debuglib out/debuglib.lib)
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/library/helperlib out/helperlib.lib)
     ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/library/teeio_spdmlib out/teeio_spdmlib.lib)
+    ADD_SUBDIRECTORY(${PROJECT_SOURCE_DIR}/library/pcie_ide_test_lib out/pcie_ide_test_lib.lib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/rnglib out/spdm_rnglib.lib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/platform_lib out/spdm_platform_lib.lib)
     ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/platform_lib_null out/spdm_platform_lib_null.lib)
