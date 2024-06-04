@@ -21,9 +21,7 @@ SET(src_teeio_validator
     teeio_validator.c
     teeio_validator_spdm.c
     teeio_validator_pci_doe.c
-    teeio_validator_measurement.c
     support.c
-    doe_read_write.c
     rp_pci.c
     utils.c
     cmdline.c
