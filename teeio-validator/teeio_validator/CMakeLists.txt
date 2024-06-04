@@ -23,7 +23,6 @@ SET(src_teeio_validator
     teeio_validator_pci_doe.c
     support.c
     rp_pci.c
-    utils.c
     cmdline.c
     ide_test_ini.c
     ide_test.c
@@ -60,6 +59,7 @@ SET(src_teeio_validator
 SET(teeio_validator_LIBRARY
     memlib
     debuglib
+    helperlib
     spdm_requester_lib
     spdm_common_lib
     ${CRYPTO_LIB_PATHS}
