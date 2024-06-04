@@ -9,34 +9,6 @@
 void *m_spdm_context;
 void *m_scratch_buffer;
 
-/**
- * Send and receive an DOE message
- *
- * @param request                       the PCI DOE request message, start from pci_doe_data_object_header_t.
- * @param request_size                  size in bytes of request.
- * @param response                      the PCI DOE response message, start from pci_doe_data_object_header_t.
- * @param response_size                 size in bytes of response.
- *
- * @retval LIBSPDM_STATUS_SUCCESS               The request is sent and response is received.
- * @return ERROR                        The response is not received correctly.
- **/
-libspdm_return_t pci_doe_send_receive_data(const void *pci_doe_context,
-                                        size_t request_size, const void *request,
-                                        size_t *response_size, void *response)
-{
-    libspdm_return_t status;
-
-    status = device_doe_send_message (NULL, request_size, request, 0);
-    if (LIBSPDM_STATUS_IS_ERROR(status)) {
-        return status;
-    }
-    status = device_doe_receive_message (NULL, response_size, &response, 0);
-    if (LIBSPDM_STATUS_IS_ERROR(status)) {
-        return status;
-    }
-    return LIBSPDM_STATUS_SUCCESS;
-}
-
 void *spdm_client_init(void)
 {
     void *spdm_context;
@@ -147,6 +119,101 @@ void *spdm_client_init(void)
     return m_spdm_context;
 }
 
+/**
+ * This function executes SPDM measurement and extend to TPM.
+ *
+ * @param[in]  spdm_context            The SPDM context for the device.
+ **/
+libspdm_return_t spdm_send_receive_get_measurement(void *spdm_context,
+                                                   const uint32_t *session_id,
+                                                   uint8_t slot_id,
+                                                   uint8_t *measurement_record,
+                                                   uint32_t *measurement_record_length
+                                                   )
+{
+    libspdm_return_t status;
+    uint8_t number_of_blocks;
+    uint8_t number_of_block;
+    uint8_t received_number_of_block;
+    uint32_t one_measurement_record_length;
+    uint8_t one_measurement_record[LIBSPDM_MAX_MEASUREMENT_RECORD_SIZE];
+    uint8_t index;
+    uint8_t request_attribute;
+    uint32_t measurement_record_offset;
+
+    /* request all at one time.*/
+
+    request_attribute =
+            SPDM_GET_MEASUREMENTS_REQUEST_ATTRIBUTES_GENERATE_SIGNATURE;
+    status = libspdm_get_measurement(
+            spdm_context, session_id, request_attribute,
+            SPDM_GET_MEASUREMENTS_REQUEST_MEASUREMENT_OPERATION_ALL_MEASUREMENTS,
+            slot_id, NULL, &number_of_block,
+            measurement_record_length, measurement_record);
+    if (status == LIBSPDM_STATUS_SUCCESS) {
+        return status;
+    }
+
+    /* use one by one */
+    measurement_record_offset = 0;
+    request_attribute = 0;
+
+    /* 1. query the total number of measurements available.*/
+
+    status = libspdm_get_measurement(
+            spdm_context, session_id, request_attribute,
+            SPDM_GET_MEASUREMENTS_REQUEST_MEASUREMENT_OPERATION_TOTAL_NUMBER_OF_MEASUREMENTS,
+            slot_id, NULL, &number_of_blocks, NULL, NULL);
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        return status;
+    }
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "number_of_blocks - 0x%x\n",
+                       number_of_blocks));
+    received_number_of_block = 0;
+    for (index = 1; index <= 0xFE; index++) {
+        if (received_number_of_block == number_of_blocks) {
+            break;
+        }
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "index - 0x%x\n", index));
+
+        /* 2. query measurement one by one
+         * get signature in last message only.*/
+
+        if (received_number_of_block == number_of_blocks - 1) {
+            request_attribute = 0 |
+                                SPDM_GET_MEASUREMENTS_REQUEST_ATTRIBUTES_GENERATE_SIGNATURE;
+        }
+        one_measurement_record_length = sizeof(one_measurement_record);
+        status = libspdm_get_measurement(
+                spdm_context, session_id, request_attribute,
+                index, slot_id, NULL, &number_of_block,
+                &one_measurement_record_length, one_measurement_record);
+        if (LIBSPDM_STATUS_IS_ERROR(status)) {
+            continue;
+        }
+        received_number_of_block += 1;
+
+        TEEIO_ASSERT (*measurement_record_length >= measurement_record_offset);
+
+        if (one_measurement_record_length < *measurement_record_length - measurement_record_offset) {
+            libspdm_copy_mem (measurement_record + measurement_record_offset,
+                              *measurement_record_length - measurement_record_offset,
+                              one_measurement_record,
+                              one_measurement_record_length);
+            measurement_record_offset += one_measurement_record_length;
+        } else {
+            return LIBSPDM_STATUS_BUFFER_TOO_SMALL;
+        }
+    }
+    if (received_number_of_block != number_of_blocks) {
+        return LIBSPDM_STATUS_INVALID_STATE_PEER;
+    }
+
+    *measurement_record_length = measurement_record_offset;
+
+    return LIBSPDM_STATUS_SUCCESS;
+}
+
 bool spdm_connect (void *spdm_context, uint32_t *session_id)
 {
     libspdm_return_t status;
@@ -249,4 +316,3 @@ bool spdm_stop(void *spdm_context, uint32_t session_id)
 
     return true;
 }
-
