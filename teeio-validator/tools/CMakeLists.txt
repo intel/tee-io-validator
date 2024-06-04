@@ -20,26 +20,26 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 SET(src_lside
     lside.c
     ide_common.c
-    ${TEEIO_VALIDATOR_DIR}/utils.c
     ${TEEIO_VALIDATOR_DIR}/pci_ide.c
     ${TEEIO_VALIDATOR_DIR}/scan_pci.c
     ${TEEIO_VALIDATOR_DIR}/ide_test_ini.c
     ${TEEIO_VALIDATOR_DIR}/rp_pci.c)
 
 SET(lside_LIBRARY
-    debuglib)
+    debuglib
+    helperlib)
 
 SET(src_setide
     setide.c
     ide_common.c
-    ${TEEIO_VALIDATOR_DIR}/utils.c
     ${TEEIO_VALIDATOR_DIR}/pci_ide.c
     ${TEEIO_VALIDATOR_DIR}/scan_pci.c
     ${TEEIO_VALIDATOR_DIR}/ide_test_ini.c
     ${TEEIO_VALIDATOR_DIR}/rp_pci.c)
 
 SET(setide_LIBRARY
-    debuglib)
+    debuglib
+    helperlib)
 
 ADD_EXECUTABLE(lside ${src_lside})
 TARGET_LINK_LIBRARIES(lside ${lside_LIBRARY})

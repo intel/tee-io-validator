@@ -8,7 +8,6 @@
 #define __UTILS_H__
 
 #include <stdint.h>
-// #include "intel_ide_test.h"
 #include "pcie.h"
 #include "intel_keyp.h"
 #include "ide_test.h"
