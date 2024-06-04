@@ -19,9 +19,6 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 
 SET(src_teeio_validator
     teeio_validator.c
-    teeio_validator_spdm.c
-    teeio_validator_pci_doe.c
-    support.c
     rp_pci.c
     cmdline.c
     ide_test_ini.c
@@ -60,6 +57,7 @@ SET(teeio_validator_LIBRARY
     memlib
     debuglib
     helperlib
+    teeio_spdmlib
     spdm_requester_lib
     spdm_common_lib
     ${CRYPTO_LIB_PATHS}
