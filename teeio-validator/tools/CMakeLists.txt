@@ -20,10 +20,10 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 SET(src_lside
     lside.c
     ide_common.c
-    ${TEEIO_VALIDATOR_DIR}/pci_ide.c
-    ${TEEIO_VALIDATOR_DIR}/scan_pci.c
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/pci_ide.c
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/scan_pci.c
     ${TEEIO_VALIDATOR_DIR}/ide_test_ini.c
-    ${TEEIO_VALIDATOR_DIR}/rp_pci.c)
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/rp_pci.c)
 
 SET(lside_LIBRARY
     debuglib
@@ -32,10 +32,10 @@ SET(lside_LIBRARY
 SET(src_setide
     setide.c
     ide_common.c
-    ${TEEIO_VALIDATOR_DIR}/pci_ide.c
-    ${TEEIO_VALIDATOR_DIR}/scan_pci.c
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/pci_ide.c
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/scan_pci.c
     ${TEEIO_VALIDATOR_DIR}/ide_test_ini.c
-    ${TEEIO_VALIDATOR_DIR}/rp_pci.c)
+    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/rp_pci.c)
 
 SET(setide_LIBRARY
     debuglib
