@@ -16,9 +16,10 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "ide_test_case.h"
 #include "utils.h"
 #include "teeio_debug.h"
+#include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 void cfg_rc_ide_keys(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr,
@@ -180,12 +181,12 @@ libspdm_return_t test_ide_km_key_prog_case1(const void *pci_doe_context,
 }
 
 // KeyProg Case 2.1
-bool test_keyprog_1_setup(void *test_context)
+bool pcie_ide_test_keyprog_1_setup(void *test_context)
 {
   return test_keyprog_setup_common(test_context);
 }
 
-bool test_keyprog_1_run(void *test_context)
+bool pcie_ide_test_keyprog_1_run(void *test_context)
 {
   libspdm_return_t status;
   bool pass = true;
@@ -348,7 +349,7 @@ bool test_keyprog_1_run(void *test_context)
   return true;
 }
 
-bool test_keyprog_1_teardown(void *test_context)
+bool pcie_ide_test_keyprog_1_teardown(void *test_context)
 {
   return true;
 }

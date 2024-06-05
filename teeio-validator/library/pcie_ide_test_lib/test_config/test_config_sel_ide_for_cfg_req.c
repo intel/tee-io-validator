@@ -87,22 +87,22 @@ static bool test_config_check_sel_ide_for_cfg_req_support(void* test_context)
 }
 
 // selective_ide test sel_ide_for_cfg_req
-bool test_config_sel_ide_for_cfg_req_enable(void *test_context)
+bool pcie_ide_test_config_enable_sel_ide_for_cfg_req(void *test_context)
 {
   return test_config_set_sel_ide_for_cfg_req(test_context, true);
 }
 
-bool test_config_sel_ide_for_cfg_req_disable(void *test_context)
+bool pcie_ide_test_config_disable_sel_ide_for_cfg_req(void *test_context)
 {
   return test_config_set_sel_ide_for_cfg_req(test_context, false);
 }
 
-bool test_config_sel_ide_for_cfg_req_support(void *test_context)
+bool pcie_ide_test_config_support_sel_ide_for_cfg_req(void *test_context)
 {
   return test_config_check_sel_ide_for_cfg_req_support(test_context);
 }
 
-bool test_config_sel_ide_for_cfg_req_check(void *test_context)
+bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);

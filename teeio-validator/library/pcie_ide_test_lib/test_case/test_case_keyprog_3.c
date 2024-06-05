@@ -16,9 +16,10 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "ide_test_case.h"
 #include "utils.h"
 #include "teeio_debug.h"
+#include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 bool test_keyprog_setup_common(void *test_context);
 extern uint8_t m_keyprog_max_port;
@@ -117,7 +118,7 @@ libspdm_return_t test_ide_km_key_prog_case3(const void *pci_doe_context,
     return true;
 }
 
-bool test_keyprog_3_setup(void *test_context)
+bool pcie_ide_test_keyprog_3_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -140,7 +141,7 @@ bool test_keyprog_3_setup(void *test_context)
   return res;
 }
 
-bool test_keyprog_3_run(void *test_context)
+bool pcie_ide_test_keyprog_3_run(void *test_context)
 {
   bool status;
   bool pass = true;
@@ -262,7 +263,7 @@ bool test_keyprog_3_run(void *test_context)
   return true;
 }
 
-bool test_keyprog_3_teardown(void *test_context)
+bool pcie_ide_test_keyprog_3_teardown(void *test_context)
 {
   return true;
 }

@@ -233,7 +233,7 @@ bool test_ksetgo_setup_common(
 }
 
 // case 3.1
-bool test_ksetgo_1_setup(void *test_context)
+bool pcie_ide_test_ksetgo_1_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -250,7 +250,7 @@ bool test_ksetgo_1_setup(void *test_context)
     group_context->upper_port.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS0);
 }
 
-bool test_ksetgo_1_run(void *test_context)
+bool pcie_ide_test_ksetgo_1_run(void *test_context)
 {
   libspdm_return_t status;
   bool res = false;
@@ -350,7 +350,7 @@ Done:
   return true;
 }
 
-bool test_ksetgo_1_teardown(void *test_context)
+bool pcie_ide_test_ksetgo_1_teardown(void *test_context)
 {
   return true;
 }

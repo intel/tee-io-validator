@@ -59,7 +59,7 @@ libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
 bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh);
 
 // case 3.3
-bool test_ksetgo_3_setup(void *test_context)
+bool pcie_ide_test_ksetgo_3_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -265,7 +265,7 @@ Done:
   return res;
 }
 
-bool test_ksetgo_3_run(void *test_context)
+bool pcie_ide_test_ksetgo_3_run(void *test_context)
 {
   bool res = false;
 
@@ -314,7 +314,7 @@ Done:
   return true;
 }
 
-bool test_ksetgo_3_teardown(void *test_context)
+bool pcie_ide_test_ksetgo_3_teardown(void *test_context)
 {
   return true;
 }

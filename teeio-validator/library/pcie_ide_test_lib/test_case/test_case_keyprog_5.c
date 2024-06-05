@@ -16,9 +16,10 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "ide_test_case.h"
 #include "utils.h"
 #include "teeio_debug.h"
+#include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 bool test_keyprog_setup_common(void *test_context);
 void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer);
@@ -116,12 +117,12 @@ bool test_ide_km_key_prog_case5(const void *pci_doe_context,
     return true;
 }
 
-bool test_keyprog_5_setup(void *test_context)
+bool pcie_ide_test_keyprog_5_setup(void *test_context)
 {
   return test_keyprog_setup_common(test_context);
 }
 
-bool test_keyprog_5_run(void *test_context)
+bool pcie_ide_test_keyprog_5_run(void *test_context)
 {
   bool status;
   bool pass = true;
@@ -242,7 +243,7 @@ bool test_keyprog_5_run(void *test_context)
   return true;
 }
 
-bool test_keyprog_5_teardown(void *test_context)
+bool pcie_ide_test_keyprog_5_teardown(void *test_context)
 {
   return true;
 }

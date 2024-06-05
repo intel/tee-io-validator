@@ -58,7 +58,7 @@ libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
                                    uint8_t port_index,
                                    bool phase1, const char *assertion_msg);
 // case 3.4
-bool test_ksetgo_4_setup(void *test_context)
+bool pcie_ide_test_ksetgo_4_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -263,7 +263,7 @@ Done:
   return res;
 }
 
-bool test_ksetgo_4_run(void *test_context)
+bool pcie_ide_test_ksetgo_4_run(void *test_context)
 {
   bool res = false;
 
@@ -313,7 +313,7 @@ Done:
   return true;
 }
 
-bool test_ksetgo_4_teardown(void *test_context)
+bool pcie_ide_test_ksetgo_4_teardown(void *test_context)
 {
   return true;
 }
