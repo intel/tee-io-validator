@@ -251,12 +251,6 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys(
-      (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
-      rp_stream_index,
-      PCIE_IDE_STREAM_RX,
-      ks);
-
   result = ide_km_key_prog(
       doe_context, spdm_context,
       session_id, ks, PCIE_IDE_STREAM_TX, PCIE_IDE_SUB_STREAM_PR,
@@ -292,6 +286,12 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   if(!result) {
     return false;
   }
+
+  prime_host_ide_keys(
+      (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
+      rp_stream_index,
+      PCIE_IDE_STREAM_RX,
+      ks);
 
   prime_host_ide_keys(
       (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
@@ -449,8 +449,6 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_RX, ks);
-
   result = ide_km_key_prog(doe_context, spdm_context,session_id,
                            ks, PCIE_IDE_STREAM_TX, PCIE_IDE_SUB_STREAM_PR,
                            port_index, stream_id, kcbar_addr, k_set, rp_stream_index);
@@ -472,6 +470,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     return false;
   }
 
+  prime_host_ide_keys((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_RX, ks);
   prime_host_ide_keys((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_TX, ks);
 
   if(skip_ksetgo) {
