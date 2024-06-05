@@ -43,7 +43,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
                     ide_common_test_port_context_t* lower_port,
                     uint8_t ks, bool skip_ksetgo);
 
-bool test_full_keyrefresh_setup(void *test_context)
+bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -71,7 +71,7 @@ bool test_full_keyrefresh_setup(void *test_context)
                           0, group_context->top->type, upper_port, lower_port, false);
 }
 
-bool test_full_keyrefresh_run(void *test_context)
+bool pcie_ide_test_full_keyrefresh_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -143,7 +143,7 @@ bool test_full_keyrefresh_run(void *test_context)
   return res;
 }
 
-bool test_full_keyrefresh_teardown(void *test_context)
+bool pcie_ide_test_full_keyrefresh_teardown(void *test_context)
 {
   return true;
 }

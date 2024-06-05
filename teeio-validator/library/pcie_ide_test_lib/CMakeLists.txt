@@ -15,6 +15,7 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
                     ${LIBSPDM_DIR}/os_stub/include
                     ${LIBSPDM_DIR}/os_stub
                     ${SPDM_EMU_DIR}/include
+                    ${TEEIO_VALIDATOR_LIB_DIR}/pcie_ide_test_lib/include
 )
 
 SET(src_pcie_ide_test_lib

@@ -41,7 +41,7 @@ libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
                                    uint8_t port_index,
                                    bool phase1, const char *assertion_msg);
 
-bool test_ksetgo_2_setup(void *test_context)
+bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -58,7 +58,7 @@ bool test_ksetgo_2_setup(void *test_context)
     group_context->upper_port.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
 }
 
-bool test_ksetgo_2_run(void *test_context)
+bool pcie_ide_test_ksetgo_2_run(void *test_context)
 {
   libspdm_return_t status;
   bool res = false;
@@ -158,7 +158,7 @@ Done:
   return true;
 }
 
-bool test_ksetgo_2_teardown(void *test_context)
+bool pcie_ide_test_ksetgo_2_teardown(void *test_context)
 {
   return true;
 }

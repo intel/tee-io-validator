@@ -13,8 +13,6 @@
 #include "pcie.h"
 #include "intel_keyp.h"
 
-#include "ide_test_config.h"
-
 #define NOT_IMPLEMENTED(msg) \
   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not implemented - %s\n", msg)); \
   TEEIO_ASSERT(false)

@@ -117,35 +117,35 @@ static bool common_test_group_teardown(void *test_context)
   return true;
 }
 
-bool test_group_setup_sel(void *test_context)
+bool pcie_ide_test_group_setup_sel(void *test_context)
 {
   return common_test_group_setup(test_context);
 }
 
-bool test_group_teardown_sel(void *test_context)
+bool pcie_ide_test_group_teardown_sel(void *test_context)
 {
   return common_test_group_teardown(test_context);
 }
 
 // link_ide test group
-bool test_group_setup_link(void *test_context)
+bool pcie_ide_test_group_setup_link(void *test_context)
 {
   return common_test_group_setup(test_context);
 }
 
-bool test_group_teardown_link(void *test_context)
+bool pcie_ide_test_group_teardown_link(void *test_context)
 {
   return common_test_group_teardown(test_context);
 }
 
 // selective_and_link_ide test group
-bool test_group_setup_sel_link(void *test_context)
+bool pcie_ide_test_group_setup_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return true;
 }
 
-bool test_group_teardown_sel_link(void *test_context)
+bool pcie_ide_test_group_teardown_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return true;

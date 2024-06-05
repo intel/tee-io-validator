@@ -111,7 +111,7 @@ bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
 }
 
 // KSetStop Case 4.1
-bool test_ksetstop_1_setup(void *test_context)
+bool pcie_ide_test_ksetstop_1_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -131,7 +131,7 @@ bool test_ksetstop_1_setup(void *test_context)
 
 }
 
-bool test_ksetstop_1_run(void *test_context)
+bool pcie_ide_test_ksetstop_1_run(void *test_context)
 {
   // first diable dev_ide and host_ide
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
@@ -226,7 +226,7 @@ TestKSetStopCase1Done:
   return true;
 }
 
-bool test_ksetstop_1_teardown(void *test_context)
+bool pcie_ide_test_ksetstop_1_teardown(void *test_context)
 {
   return true;
 }

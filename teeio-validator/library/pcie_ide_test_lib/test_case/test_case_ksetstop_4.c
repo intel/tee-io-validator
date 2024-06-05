@@ -44,7 +44,7 @@ bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
 bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh);
 
 // KSetStop Case 4.4
-bool test_ksetstop_4_setup(void *test_context)
+bool pcie_ide_test_ksetstop_4_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -83,7 +83,7 @@ bool test_ksetstop_4_setup(void *test_context)
   return res;
 }
 
-bool test_ksetstop_4_run(void *test_context)
+bool pcie_ide_test_ksetstop_4_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -176,7 +176,7 @@ TestKSetStopCase4Done:
   return true;
 }
 
-bool test_ksetstop_4_teardown(void *test_context)
+bool pcie_ide_test_ksetstop_4_teardown(void *test_context)
 {
   return true;
 }

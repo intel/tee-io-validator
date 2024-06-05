@@ -71,67 +71,67 @@ static bool test_config_check_pcrc_support_common(void *test_context)
 }
 
 // selective_ide test pcrc
-bool test_config_pcrc_enable_sel(void *test_context)
+bool pcie_ide_test_config_pcrc_enable_sel(void *test_context)
 {
   return test_config_set_pcrc_common(test_context, true);
 }
 
-bool test_config_pcrc_disable_sel(void *test_context)
+bool pcie_ide_test_config_pcrc_disable_sel(void *test_context)
 {
   return test_config_set_pcrc_common(test_context, false);
 }
 
-bool test_config_pcrc_support_sel(void *test_context)
+bool pcie_ide_test_config_pcrc_support_sel(void *test_context)
 {
   return test_config_check_pcrc_support_common(test_context);
 }
 
-bool test_config_pcrc_check_sel(void *test_context)
+bool pcie_ide_test_config_pcrc_check_sel(void *test_context)
 {
   return true;
 }
 
 // link_ide test pcrc
-bool test_config_pcrc_enable_link(void *test_context)
+bool pcie_ide_test_config_pcrc_enable_link(void *test_context)
 {
     return test_config_set_pcrc_common(test_context, true);
 }
 
-bool test_config_pcrc_disable_link(void *test_context)
+bool pcie_ide_test_config_pcrc_disable_link(void *test_context)
 {
   return test_config_set_pcrc_common(test_context, false);
 }
 
-bool test_config_pcrc_support_link(void *test_context)
+bool pcie_ide_test_config_pcrc_support_link(void *test_context)
 {
   return test_config_check_pcrc_support_common(test_context);
 }
 
-bool test_config_pcrc_check_link(void *test_context)
+bool pcie_ide_test_config_pcrc_check_link(void *test_context)
 {
   return true;
 }
 
 // selective_and_link_ide test pcrc
-bool test_config_pcrc_enable_sel_link(void *test_context)
+bool pcie_ide_test_config_pcrc_enable_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return false;
 }
 
-bool test_config_pcrc_disable_sel_link(void *test_context)
+bool pcie_ide_test_config_pcrc_disable_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return false;
 }
 
-bool test_config_pcrc_support_sel_link(void *test_context)
+bool pcie_ide_test_config_pcrc_support_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return false;
 }
 
-bool test_config_pcrc_check_sel_link(void *test_context)
+bool pcie_ide_test_config_pcrc_check_sel_link(void *test_context)
 {
   NOT_IMPLEMENTED("selective_and_link_ide topology");
   return false;

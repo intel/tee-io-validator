@@ -35,7 +35,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
 bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
 void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 
-bool test_full_1_setup(void *test_context)
+bool pcie_ide_test_full_1_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -55,7 +55,7 @@ bool test_full_1_setup(void *test_context)
 
 }
 
-bool test_full_1_run(void *test_context)
+bool pcie_ide_test_full_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -254,7 +254,7 @@ TestFullTeardownDone:
   return res;
 }
 
-bool test_full_1_teardown(void *test_context)
+bool pcie_ide_test_full_1_teardown(void *test_context)
 {
   return test_full_teardown_common(test_context);
 }

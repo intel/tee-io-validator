@@ -10,9 +10,7 @@
 #include <ctype.h>
 #include "utils.h"
 #include "ide_test.h"
-#include "ide_test_config.h"
-#include "ide_test_group.h"
-#include "ide_test_case.h"
+#include "pcie_ide_test_lib.h"
 
 bool test_config_enable_common(void *test_context);
 bool test_config_check_common(void *test_context, const char* assertion_msg);
@@ -75,35 +73,35 @@ uint32_t m_top_config_bitmasks[] = {
 ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONFIGURATION_TYPE_NUM] = {
   { // selective_ide
     { // Default Config
-      test_config_default_enable_common,
-      test_config_default_disable_common,
-      test_config_default_support_common,
-      test_config_default_check_common
+      pcie_ide_test_config_default_enable_common,
+      pcie_ide_test_config_default_disable_common,
+      pcie_ide_test_config_default_support_common,
+      pcie_ide_test_config_default_check_common
     },
     {NULL, NULL, NULL, NULL}, // switch
     {NULL, NULL, NULL, NULL}, // partial header encryption
     { // pcrc
-      test_config_pcrc_enable_sel,
-      test_config_pcrc_disable_sel,
-      test_config_pcrc_support_sel,
-      test_config_pcrc_check_sel
+      pcie_ide_test_config_pcrc_enable_sel,
+      pcie_ide_test_config_pcrc_disable_sel,
+      pcie_ide_test_config_pcrc_support_sel,
+      pcie_ide_test_config_pcrc_check_sel
     },
     {NULL, NULL, NULL, NULL}, // aggregation
     { // selective_ide for configuration request
-      test_config_sel_ide_for_cfg_req_enable,
-      test_config_sel_ide_for_cfg_req_disable,
-      test_config_sel_ide_for_cfg_req_support,
-      test_config_sel_ide_for_cfg_req_check
+      pcie_ide_test_config_enable_sel_ide_for_cfg_req,
+      pcie_ide_test_config_disable_sel_ide_for_cfg_req,
+      pcie_ide_test_config_support_sel_ide_for_cfg_req,
+      pcie_ide_test_config_check_sel_ide_for_cfg_req
     },
     {NULL, NULL, NULL, NULL}  // tee_limited_stream
   },
   { // link_ide
     {
       // Default Config
-      test_config_default_enable_common,
-      test_config_default_disable_common,
-      test_config_default_support_common,
-      test_config_default_check_common
+      pcie_ide_test_config_default_enable_common,
+      pcie_ide_test_config_default_disable_common,
+      pcie_ide_test_config_default_support_common,
+      pcie_ide_test_config_default_check_common
     },
 
     {NULL, NULL, NULL, NULL},
@@ -111,10 +109,10 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
 
     {
       // pcrc
-      test_config_pcrc_enable_link,
-      test_config_pcrc_disable_link,
-      test_config_pcrc_support_link,
-      test_config_pcrc_check_link
+      pcie_ide_test_config_pcrc_enable_link,
+      pcie_ide_test_config_pcrc_disable_link,
+      pcie_ide_test_config_pcrc_support_link,
+      pcie_ide_test_config_pcrc_check_link
     },
 
     {NULL, NULL, NULL, NULL},
@@ -124,19 +122,19 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
   { // selective_and_link_ide
     {
       // Default Config
-      test_config_default_enable_sel_link,
-      test_config_default_disable_sel_link,
-      test_config_default_support_sel_link,
-      test_config_default_check_sel_link
+      pcie_ide_test_config_default_enable_sel_link,
+      pcie_ide_test_config_default_disable_sel_link,
+      pcie_ide_test_config_default_support_sel_link,
+      pcie_ide_test_config_default_check_sel_link
     },
     {NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL},
     {
       // pcrc
-      test_config_pcrc_enable_sel_link,
-      test_config_pcrc_disable_sel_link,
-      test_config_pcrc_support_sel_link,
-      test_config_pcrc_check_sel_link
+      pcie_ide_test_config_pcrc_enable_sel_link,
+      pcie_ide_test_config_pcrc_disable_sel_link,
+      pcie_ide_test_config_pcrc_support_sel_link,
+      pcie_ide_test_config_pcrc_check_sel_link
     },
     {NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL},
@@ -146,16 +144,16 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
 
 ide_test_group_funcs_t m_group_funcs[] = {
   { // selective_ide
-      test_group_setup_sel,
-      test_group_teardown_sel
+      pcie_ide_test_group_setup_sel,
+      pcie_ide_test_group_teardown_sel
   },
   { // link_ide
-      test_group_setup_link,
-      test_group_teardown_link
+      pcie_ide_test_group_setup_link,
+      pcie_ide_test_group_teardown_link
   },
   { // selective_link_ide
-      test_group_setup_sel_link,
-      test_group_teardown_sel_link
+      pcie_ide_test_group_setup_sel_link,
+      pcie_ide_test_group_teardown_sel_link
   }
 };
 
@@ -173,8 +171,8 @@ ide_test_case_name_t m_test_case_names[IDE_COMMON_TEST_CASE_NUM] = {
 ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] = {
   // Query
   {
-    { test_query_1_setup, test_query_1_run, test_query_1_teardown, false },
-    { test_query_2_setup, test_query_2_run, test_query_2_teardown, false },
+    { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
+    { pcie_ide_test_query_2_setup, pcie_ide_test_query_2_run, pcie_ide_test_query_2_teardown, false },
     {NULL, NULL, NULL, false},
     {NULL, NULL, NULL, false},
     {NULL, NULL, NULL, false},
@@ -182,28 +180,28 @@ ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] =
   },
   // KeyProg
   {
-    {test_keyprog_1_setup, test_keyprog_1_run, test_keyprog_1_teardown, false},
-    {test_keyprog_2_setup, test_keyprog_2_run, test_keyprog_2_teardown, false},
-    {test_keyprog_3_setup, test_keyprog_3_run, test_keyprog_3_teardown, false},
-    {test_keyprog_4_setup, test_keyprog_4_run, test_keyprog_4_teardown, false},
-    {test_keyprog_5_setup, test_keyprog_5_run, test_keyprog_5_teardown, false},
-    {test_keyprog_6_setup, test_keyprog_6_run, test_keyprog_6_teardown, false}
+    {pcie_ide_test_keyprog_1_setup, pcie_ide_test_keyprog_1_run, pcie_ide_test_keyprog_1_teardown, false},
+    {pcie_ide_test_keyprog_2_setup, pcie_ide_test_keyprog_2_run, pcie_ide_test_keyprog_2_teardown, false},
+    {pcie_ide_test_keyprog_3_setup, pcie_ide_test_keyprog_3_run, pcie_ide_test_keyprog_3_teardown, false},
+    {pcie_ide_test_keyprog_4_setup, pcie_ide_test_keyprog_4_run, pcie_ide_test_keyprog_4_teardown, false},
+    {pcie_ide_test_keyprog_5_setup, pcie_ide_test_keyprog_5_run, pcie_ide_test_keyprog_5_teardown, false},
+    {pcie_ide_test_keyprog_6_setup, pcie_ide_test_keyprog_6_run, pcie_ide_test_keyprog_6_teardown, false}
   },
   // KSetGo
   {
-    { test_ksetgo_1_setup, test_ksetgo_1_run, test_ksetgo_1_teardown, true },
-    { test_ksetgo_2_setup, test_ksetgo_2_run, test_ksetgo_2_teardown, true },
-    { test_ksetgo_3_setup, test_ksetgo_3_run, test_ksetgo_3_teardown, true },
-    { test_ksetgo_4_setup, test_ksetgo_4_run, test_ksetgo_4_teardown, true },
+    { pcie_ide_test_ksetgo_1_setup, pcie_ide_test_ksetgo_1_run, pcie_ide_test_ksetgo_1_teardown, true },
+    { pcie_ide_test_ksetgo_2_setup, pcie_ide_test_ksetgo_2_run, pcie_ide_test_ksetgo_2_teardown, true },
+    { pcie_ide_test_ksetgo_3_setup, pcie_ide_test_ksetgo_3_run, pcie_ide_test_ksetgo_3_teardown, true },
+    { pcie_ide_test_ksetgo_4_setup, pcie_ide_test_ksetgo_4_run, pcie_ide_test_ksetgo_4_teardown, true },
     {NULL, NULL, NULL, false},
     {NULL, NULL, NULL, false}
   },
   // KSetStop
   {
-    { test_ksetstop_1_setup, test_ksetstop_1_run, test_ksetstop_1_teardown, false },
-    { test_ksetstop_2_setup, test_ksetstop_2_run, test_ksetstop_2_teardown, false },
-    { test_ksetstop_3_setup, test_ksetstop_3_run, test_ksetstop_3_teardown, false },
-    { test_ksetstop_4_setup, test_ksetstop_4_run, test_ksetstop_4_teardown, false },
+    { pcie_ide_test_ksetstop_1_setup, pcie_ide_test_ksetstop_1_run, pcie_ide_test_ksetstop_1_teardown, false },
+    { pcie_ide_test_ksetstop_2_setup, pcie_ide_test_ksetstop_2_run, pcie_ide_test_ksetstop_2_teardown, false },
+    { pcie_ide_test_ksetstop_3_setup, pcie_ide_test_ksetstop_3_run, pcie_ide_test_ksetstop_3_teardown, false },
+    { pcie_ide_test_ksetstop_4_setup, pcie_ide_test_ksetstop_4_run, pcie_ide_test_ksetstop_4_teardown, false },
     {NULL, NULL, NULL, false},
     {NULL, NULL, NULL, false}
   },
@@ -218,8 +216,8 @@ ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] =
   },
   // Test Full
   {
-    { test_full_1_setup, test_full_1_run, test_full_1_teardown, false },  // IdeStream
-    { test_full_keyrefresh_setup, test_full_keyrefresh_run, test_full_keyrefresh_teardown, false },  // KeyRefresh
+    { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
+    { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false },  // KeyRefresh
     {NULL, NULL, NULL},
     {NULL, NULL, NULL},
     {NULL, NULL, NULL},
