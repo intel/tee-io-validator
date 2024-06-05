@@ -26,6 +26,9 @@ void device_pci_write_32 (uint32_t offset, uint32_t data, int fp);
 void mmio_write_reg32(void *const reg_ptr, const uint32_t reg_val);
 uint32_t mmio_read_reg32(void *reg_ptr);
 
+void mmio_write_reg8(void *const reg_ptr, const uint8_t reg_val);
+uint8_t mmio_read_reg8(void *reg_ptr);
+
 void reg_memcpy_dw(void *dst, uint64_t dst_bytes, void *src, uint64_t nbytes);
 
 void dump_cfg_space_to_file(const char* filepath, int fp);

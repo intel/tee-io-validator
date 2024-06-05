@@ -232,6 +232,22 @@ uint32_t mmio_read_reg32(void *reg_ptr)
     return data;
 }
 
+void mmio_write_reg8(
+    void *const reg_ptr,
+    const uint8_t reg_val)
+{
+    *(volatile uint8_t *)reg_ptr = reg_val;
+}
+
+uint8_t mmio_read_reg8(void *reg_ptr)
+{
+    uint8_t data = 0;
+
+    data = *(volatile uint8_t *)reg_ptr;
+
+    return data;
+}
+
 // memory(reg block) copy in 4Bytes aligned
 void reg_memcpy_dw(void *dst, uint64_t dst_bytes, void *src, uint64_t nbytes)
 {
