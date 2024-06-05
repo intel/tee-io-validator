@@ -1137,6 +1137,14 @@ bool reset_ide_registers(
       port_context->addr_assoc_reg_block.addr_assoc2,
       port_context->addr_assoc_reg_block.addr_assoc3);
 }
+const char *ks_names[] = {
+    "KS0", "KS1"};
+
+const char *direct_names[] = {
+    "RX", "TX"};
+const char *ctrl_reg_names[] = {
+    "tx_ctrl", "rx_ctrl"
+};
 
 void prime_host_ide_keys(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
@@ -1151,15 +1159,26 @@ void prime_host_ide_keys(
     TEEIO_ASSERT(key_set_select < PCIE_IDE_STREAM_KS_NUM);
 
     INTEL_KEYP_STREAM_TXRX_CONTROL stream_txrx_control = {.raw = mmio_read_reg32(ctrl_reg_ptr)};
+    uint8_t* prime_key_set_ptr = (uint8_t *)ctrl_reg_ptr;
+
     if (key_set_select == PCIE_IDE_STREAM_KS0)
     {
-        stream_txrx_control.common.prime_key_set_0 = 1;
+      // prime_key_set_0 is byte1 of stream_rxtx_ctrl
+      prime_key_set_ptr += 1;
     }
     else if (key_set_select == PCIE_IDE_STREAM_KS1)
     {
-        stream_txrx_control.common.prime_key_set_1 = 1;
+      // prime_key_set_1 is byte2 of stream_rxtx_ctrl
+      prime_key_set_ptr += 2;
     }
-    mmio_write_reg32(ctrl_reg_ptr, stream_txrx_control.raw);
+    mmio_write_reg8(prime_key_set_ptr, 1);
+
+    stream_txrx_control.raw = mmio_read_reg32(ctrl_reg_ptr);
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "prime_host_ide_keys direction=%s ks=%s: %s=0x%08x\n",
+      direct_names[direction],
+      ks_names[key_set_select],
+      ctrl_reg_names[direction],
+      stream_txrx_control.raw));
 
     // check if ready_key_set_x is 1 after prime
     uint32_t data32 = mmio_read_reg32(status_reg_ptr);
@@ -1179,20 +1198,21 @@ void set_host_ide_key_set(
     INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_cfg_reg_block = get_stream_cfg_reg_block(kcbar_ptr, rp_stream_index);
     INTEL_KEYP_STREAM_TXRX_CONTROL *ctrl_reg_ptr = &stream_cfg_reg_block->tx_ctrl;
 
-    INTEL_KEYP_STREAM_TXRX_CONTROL stream_txrx_control = {.raw = mmio_read_reg32(ctrl_reg_ptr)};
     if (key_set_select == PCIE_IDE_STREAM_KS0)
     {
-        stream_txrx_control.stream_tx_control.key_set_select = 0b01;
+      mmio_write_reg8(ctrl_reg_ptr, 0b01);
     }
     else if (key_set_select == PCIE_IDE_STREAM_KS1)
     {
-        stream_txrx_control.stream_tx_control.key_set_select = 0b10;
+      mmio_write_reg8(ctrl_reg_ptr, 0b10);
     }
     else
     {
         TEEIO_ASSERT(false);
     }
-    mmio_write_reg32(ctrl_reg_ptr, stream_txrx_control.raw);
+
+    INTEL_KEYP_STREAM_TXRX_CONTROL stream_txrx_control = {.raw = mmio_read_reg32(ctrl_reg_ptr)};
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "set_host_ide_key_set tx_control=0x%08x\n", stream_txrx_control.raw));
 }
 
 bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable){
