@@ -22,6 +22,9 @@ void teeio_print(const char *format, ...);
 void teeio_assert(const char *file_name, int line_number,
                                  const char *description);
 
+TEEIO_DEBUG_LEVEL get_ide_log_level_from_string(const char* debug_level);
+const char* get_ide_log_level_string(TEEIO_DEBUG_LEVEL debug_level);
+
 #define TEEIO_ASSERT_ENABLE
 
 #ifdef TEEIO_ASSERT_ENABLE

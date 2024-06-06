@@ -58,7 +58,7 @@ typedef union
 {
     struct
     {
-        uint8_t en:1;
+        uint8_t enabled:1;
         uint8_t rsvd0:1;
         uint8_t tx_aggr_mode_npr : 2;
         uint8_t tx_aggr_mode_pr : 2;
