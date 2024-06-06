@@ -28,7 +28,7 @@ SET(src_pcie_ide_lib
 SET(pcie_ide_test_lib_LIBRARY
   debuglib
   helperlib
-  # teeio_spdmlib
+  # spdmlib
   # spdm_requester_lib
   # spdm_common_lib
   # ${CRYPTO_LIB_PATHS}

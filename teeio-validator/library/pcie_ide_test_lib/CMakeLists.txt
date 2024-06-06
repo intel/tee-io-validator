@@ -51,7 +51,7 @@ SET(pcie_ide_test_lib_LIBRARY
   memlib
   debuglib
   helperlib
-  teeio_spdmlib
+  spdmlib
   pcie_ide_lib
   spdm_requester_lib
   spdm_common_lib

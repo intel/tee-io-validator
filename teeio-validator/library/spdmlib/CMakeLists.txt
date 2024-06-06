@@ -16,16 +16,16 @@ INCLUDE_DIRECTORIES(
                     ${PROJECT_SOURCE_DIR}/include
 )
 
-SET(src_teeio_spdmlib
+SET(src_spdmlib
     pci_doe.c
     spdm.c
     support.c
 )
 
-SET(teeio_spdmlib_LIBRARY
+SET(spdmlib_LIBRARY
     debuglib
     helperlib
 )
 
-ADD_LIBRARY(teeio_spdmlib STATIC ${src_teeio_spdmlib})
-TARGET_LINK_LIBRARIES(teeio_spdmlib ${teeio_spdmlib_LIBRARY})
+ADD_LIBRARY(spdmlib STATIC ${src_spdmlib})
+TARGET_LINK_LIBRARIES(spdmlib ${spdmlib_LIBRARY})
