@@ -13,7 +13,7 @@
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "teeio_debug.h"
-#include "utils.h"
+#include "helperlib.h"
 
 #include "ide_test.h"
 

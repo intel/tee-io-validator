@@ -12,13 +12,12 @@
 #include "assert.h"
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
-
 #include "library/spdm_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
 #include "teeio_debug.h"
-#include "utils.h"
-
+#include "helperlib.h"
+#include "pcie_ide_internal.h"
 int open_configuration_space(char *bdf);
 
 typedef union {

@@ -11,8 +11,10 @@
 #include "hal/library/debuglib.h"
 
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 bool test_config_enable_common(void *test_context);
 bool test_config_check_common(void *test_context, const char* assertion_msg);

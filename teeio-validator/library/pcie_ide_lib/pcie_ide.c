@@ -14,10 +14,13 @@
 #include <sys/mman.h>
 
 #include "teeio_validator.h"
-
 #include "hal/library/debuglib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
+
+#include "teeio_spdmlib.h"
+#include "pcie_ide_internal.h"
+#include "pcie_ide_lib.h"
 
 #define PCI_DOE_EXT_CAPABILITY_ID 0x002E
 #define PCI_IDE_EXT_CAPABILITY_ID 0x0030
@@ -34,8 +37,6 @@
 #define PREFETCH_MEMORY_LIMIT_OFFSET 0x26
 #define PREFETCH_MEMORY_BASE_UPPER_OFFSET 0x28
 #define PREFETCH_MEMORY_LIMIT_UPPER_OFFSET 0x2c
-
-#define KCBAR_MEMORY_SIZE 1024
 
 #define LINK_IDE_REGISTER_BLOCK_SIZE (sizeof(PCIE_LNK_IDE_STREAM_CTRL) + sizeof(PCIE_LINK_IDE_STREAM_STATUS))
 
@@ -68,20 +69,6 @@ PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK m_addr_assoc_reg_block = {
     .addr_assoc2 = {.raw = 0xffffffff},
     .addr_assoc3 = {.raw = 0},
 };
-
-INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *get_stream_cfg_reg_block(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint16_t rp_stream_index);
-bool scan_devices_at_bus(IDE_PORT* rp, IDE_PORT* ep, ide_common_test_switch_internal_conn_context_t* conn, uint8_t bus);
-bool reset_ide_registers(
-  ide_common_test_port_context_t *port_context,
-  IDE_TEST_TOPOLOGY_TYPE top_type,
-  uint8_t stream_id,
-  uint8_t rp_stream_index,
-  bool reset_kcbar);
-bool pci_doe_init_request();
-void trigger_doe_abort();
-bool is_doe_error_asserted();
 
 int open_configuration_space(char *bdf)
 {
@@ -181,145 +168,12 @@ bool get_doe_extended_cap_offset(int fd, uint32_t* doe_offsets, int* size)
   return cnt > 0;
 }
 
-uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd)
-{
-    // we need to map the kcbar_addr to user space
-    if(addr == 0) {
-        return NULL;
-    }
-
-    int mem_fd = open("/dev/mem", O_RDWR | O_SYNC);
-    if(mem_fd == -1) {
-        TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Failed to open /dev/mem\n"));
-        return NULL;
-    }
-    uint8_t * mem_ptr = (uint8_t *)mmap(NULL, KCBAR_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, addr);
-    if (mem_ptr == MAP_FAILED) {
-        TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Failed to mmap kcbar\n"));
-        close(mem_fd);
-        return NULL;
-    }
-
-    *mapped_fd = mem_fd;
-
-    return mem_ptr;
-}
-
-bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr)
-{
-    if(kcbar_mem_fd > 0 && mapped_kcbar_addr != NULL){
-        munmap(mapped_kcbar_addr, KCBAR_MEMORY_SIZE);
-        close(kcbar_mem_fd);
-        return true;
-    }
-
-    return false;
-}
-
-
-// Parse the KEYP table and map the kcbar address
-bool parse_keyp_table(ide_common_test_port_context_t *port_context)
-{
-  const char *keyp_table = "/sys/firmware/acpi/tables/KEYP";
-  const char KEYP_SIGNATURE[] = {'K', 'E', 'Y', 'P'};
-  uint8_t buffer[4096] = {0};
-  uint32_t i = 0;
-  bool found = false;
-  INTEL_KEYP_KEY_CONFIGURATION_UNIT *kcu = 0;
-  INTEL_KEYP_ROOT_PORT_INFORMATION *krpi = 0;
-  uint32_t offset = 0;
-  uint32_t size = 0;
-  uint64_t kcbar_addr = 0;
-
-  if (port_context == NULL || port_context->port->port_type != IDE_PORT_TYPE_ROOTPORT)
-  {
-    TEEIO_ASSERT(false);
-    return false;
-  }
-
-  port_context->kcbar_fd = -1;
-  port_context->mapped_kcbar_addr = 0;
-
-  int fd = open(keyp_table, O_RDONLY);
-  if (fd == -1)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Error opening KEYP. (%s)\n", keyp_table));
-    return false;
-  }
-
-  size = lseek(fd, 0x0, SEEK_END);
-  TEEIO_ASSERT(size <= 4096);
-
-  lseek(fd, 0, SEEK_SET);
-  size_t bytes_read = read(fd, buffer, size);
-  TEEIO_ASSERT(bytes_read == size);
-
-  INTEL_KEYP_ACPI *keyp = (INTEL_KEYP_ACPI *)buffer;
-  if (memcmp(keyp->signature, KEYP_SIGNATURE, sizeof(keyp->signature)) != 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid KEYP signature.\n"));
-    return false;
-  }
-
-  uint8_t sum = calculate_checksum(buffer, size);
-  if (sum != 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid Checksum.\n"));
-    return false;
-  }
-
-  offset = sizeof(INTEL_KEYP_ACPI);
-  while (offset < size)
-  {
-    kcu = (INTEL_KEYP_KEY_CONFIGURATION_UNIT *)(buffer + offset);
-    TEEIO_ASSERT(offset + kcu->Length <= size);
-    if (kcu->ProtocolType != 1)
-    {
-      offset += kcu->Length;
-      continue;
-    }
-
-    for (i = 0; i < kcu->RootPortCount; i++)
-    {
-      krpi = (INTEL_KEYP_ROOT_PORT_INFORMATION *)(buffer + offset + sizeof(INTEL_KEYP_KEY_CONFIGURATION_UNIT) + i * sizeof(INTEL_KEYP_ROOT_PORT_INFORMATION));
-      if (krpi->Bus == port_context->port->bus && krpi->Bits.Device == port_context->port->device && krpi->Bits.Function == port_context->port->function)
-      {
-        found = true;
-        break;
-      }
-    }
-
-    if (found)
-    {
-      kcbar_addr = kcu->RegisterBaseAddr;
-      break;
-    }
-
-    offset += kcu->Length;
-  }
-
-  if (!found || kcbar_addr == 0)
-  {
-    return false;
-  }
-
-  // we need to map the kcbar_addr to user space
-  port_context->mapped_kcbar_addr = map_kcbar_addr(kcbar_addr, &port_context->kcbar_fd);
-  if (port_context->mapped_kcbar_addr == NULL)
-  {
-    TEEIO_ASSERT(false);
-    return false;
-  }
-
-  return true;
-}
-
-bool close_host_port(ide_common_test_group_context_t *group_context)
+bool close_root_port(ide_common_test_group_context_t *group_context)
 {
   // clean Link/Selective IDE Stream Control Registers and KCBar corresponding registers
   ide_common_test_port_context_t* port_context = &group_context->upper_port;
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_host_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_root_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
 
   port_context->addr_assoc_reg_block.addr_assoc1.raw = 0;
   port_context->addr_assoc_reg_block.addr_assoc2.raw = 0;
@@ -356,33 +210,6 @@ void dump_addr_assoc_reg_block(PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK * reg_block)
                                         reg_block->addr_assoc2.raw, reg_block->addr_assoc2.mem_limit_upper));
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "addr_assoc3.raw = 0x%08x (mem_base_upper = 0x%x)\n",
                                         reg_block->addr_assoc3.raw, reg_block->addr_assoc3.mem_base_upper));
-}
-
-bool scan_devices(void *test_context)
-{
-  bool ret = false;
-  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
-
-  IDE_TEST_TOPOLOGY *top = context->top;
-
-  // first scan pcie devices to populate the complete bdf of each devices in a specific topology
-  if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
-    // root_port and upper_port is the same port
-    ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn1, context->top->bus);
-    if(ret) {
-      context->upper_port.port->bus = context->root_port.port->bus;
-      strncpy(context->upper_port.port->bdf, context->root_port.port->bdf, BDF_LENGTH);
-    }
-  } else if(top->connection == IDE_TEST_CONNECT_P2P) {
-    // root_port and upper_port is not the same port
-    ret = scan_devices_at_bus(context->root_port.port, context->upper_port.port, context->sw_conn1, context->top->bus);
-    if(ret) {
-      ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn2, context->top->bus);
-    }
-  }
-
-  return ret;
 }
 
 bool open_root_port(ide_common_test_port_context_t *port_context)
@@ -518,7 +345,7 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
       PCIE_LINK_IDE_STREAM_STATUS lnk_ide_stream_status = {.raw = device_pci_read_32(offset + 4, port_context->cfg_space_fd)};
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: lnk_ide_stream_ctrl = 0x%08x, lnk_ide_stream_status = 0x%08x\n", i, lnk_ide_stream_ctrl.raw, lnk_ide_stream_status.raw));
 
-      if(lnk_ide_stream_ctrl.en == 0) {
+      if(lnk_ide_stream_ctrl.enabled == 0) {
         // This Link IDE Stream Register Block is not enabled.
         *ide_id = i;
         found = true;
@@ -679,7 +506,7 @@ bool populate_addr_assoc_reg_block(
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
  */
-bool init_host_port(ide_common_test_group_context_t *group_context)
+bool init_root_port(ide_common_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);
@@ -754,23 +581,6 @@ InitHostFail:
   return false;
 }
 
-/**
- * Initialize both root_port and upper_port
- * root_port and upper_port is not the same.
- * upper_port shall be endpoint
-*/
-bool init_both_root_upper_port(ide_common_test_group_context_t *group_context)
-{
-  NOT_IMPLEMENTED("Init both root_port and upper_port for peer2peer connection.");
-  return false;
-}
-
-bool close_both_root_upper_port(ide_common_test_group_context_t *group_context)
-{
-  NOT_IMPLEMENTED("Close both root_port and upper_port for peer2peer connection.");
-  return false;
-}
-
 bool init_pci_doe(int fd)
 {
   uint32_t doe_extended_offsets[MAX_PCI_DOE_CNT] = {0};
@@ -790,7 +600,7 @@ bool init_pci_doe(int fd)
   for(int i = 0; i < doe_cnt; i++) {
     g_doe_extended_offset = doe_extended_offsets[i];
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Try to init pci_doe (doe_offset=0x%04x)\n", g_doe_extended_offset));
-    if(pci_doe_init_request()) {
+    if(pcie_doe_init_request()) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "doe_offset=0x%04x is the one to be used in teeio-validator.\n", g_doe_extended_offset));
       return true;
     }
@@ -915,28 +725,6 @@ InitDevFailed:
   close(port_context->cfg_space_fd);
   unset_device_info(port_context->cfg_space_fd);
   return false;
-}
-
-// Initialize key configuration registers block
-bool initialize_kcbar_registers(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar,
-    const uint8_t stream_id,
-    const uint8_t rp_stream_index)
-{
-  INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + rp_stream_index;
-
-  mmio_write_reg32(&stream_config_reg_block->tx_ctrl, 0);
-  mmio_write_reg32(&stream_config_reg_block->rx_ctrl, 0);
-  mmio_write_reg32(&stream_config_reg_block->tx_key_set_0, 0);
-  mmio_write_reg32(&stream_config_reg_block->tx_key_set_1, 0);
-  mmio_write_reg32(&stream_config_reg_block->rx_key_set_0, 0);
-  mmio_write_reg32(&stream_config_reg_block->rx_key_set_1, 0);
-
-  INTEL_KEYP_STREAM_CONTROL stream_control = {.raw = 0};
-  stream_control.stream_id = stream_id;
-  mmio_write_reg32(&stream_config_reg_block->control, stream_control.raw);
-
-  return true;
 }
 
 uint32_t get_ide_reg_block_offset(int fd, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint32_t ide_ecap_offset)
@@ -1142,7 +930,7 @@ bool reset_ide_registers(
       port_context->addr_assoc_reg_block.addr_assoc3);
 }
 
-void prime_host_ide_keys(
+void prime_rp_ide_key_set(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
     const uint8_t rp_stream_index,
     const uint8_t direction,
@@ -1175,7 +963,7 @@ void prime_host_ide_keys(
     }
 }
 
-void set_host_ide_key_set(
+void set_rp_ide_key_set_select(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
     const uint8_t rp_stream_index,
     const uint8_t key_set_select)
@@ -1220,31 +1008,15 @@ bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_
     return true;
 }
 
-void enable_ide_stream_in_kcbar(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index,
-    bool enable
-)
-{
-    INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_cfg_reg_block = get_stream_cfg_reg_block(kcbar_ptr, rp_stream_index);
-
-    // enable ide stream in kcbar
-    INTEL_KEYP_STREAM_CONTROL *stream_ctrl_ptr = &stream_cfg_reg_block->control;
-    INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(stream_ctrl_ptr)};
-    stream_ctrl.en = enable ? 1 : 0;
-
-    mmio_write_reg32(stream_ctrl_ptr, stream_ctrl.raw);
-}
-
-// enable root port selective ide stream
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable)
+// enable root port ide stream
+void enable_rootport_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable)
 {
     enable_ide_stream_in_kcbar((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, enable);
 
     enable_ide_stream_in_ecap(cfg_space_fd, ecap_offset, ide_type, ide_id, enable);
 }
 
-uint32_t read_host_stream_status_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id)
+uint32_t read_stream_status_in_rp_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id)
 {
     uint32_t data;
     uint32_t offset = get_ide_reg_block_offset(cfg_space_fd, ide_type, ide_id, ecap_offset);
@@ -1272,67 +1044,8 @@ bool is_ide_enabled(int cfg_space_fd, TEST_IDE_TYPE ide_type, uint8_t ide_id, ui
       offset += 4;
   }
 
-  PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg = {.raw = device_pci_read_32(offset, cfg_space_fd)};
-
-  return stream_ctrl_reg.enabled ? true : false;
-}
-
-void dump_kcbar(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index
-)
-{
-    INTEL_KEYP_PCIE_STREAM_CAP *stream_cap_ptr = &kcbar_ptr->capabilities;
-    INTEL_KEYP_PCIE_STREAM_CAP stream_cap = {.raw = mmio_read_reg32(stream_cap_ptr)};
-    TEEIO_PRINT(("stream_cap: %08x\n", stream_cap.raw));
-    TEEIO_PRINT(("    num_stream_supported=%d, num_tx_key_slots=%d, num_rx_key_slots=%d\n",
-                                        stream_cap.num_stream_supported,
-                                        stream_cap.num_tx_key_slots,
-                                        stream_cap.num_rx_key_slots));
-
-    TEEIO_PRINT(("stream_config_reg: (stream_%c)\n", 'a' + rp_stream_index));
-    INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_cfg_reg_ptr = get_stream_cfg_reg_block(kcbar_ptr, rp_stream_index);
-
-    INTEL_KEYP_STREAM_CONTROL stream_control = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->control)};
-    TEEIO_PRINT(("    stream_control : %08x (enable=%x, stream_id=%x)\n", stream_control.raw, stream_control.en, stream_control.stream_id));
-
-    INTEL_KEYP_STREAM_TXRX_CONTROL tx_control = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->tx_ctrl)};
-    TEEIO_PRINT(("    tx_control     : %08x (key_set_select=%x, prime_key_set_0=%x, prime_key_set_1=%x)\n",
-                                        tx_control.raw,
-                                        tx_control.stream_tx_control.key_set_select,
-                                        tx_control.stream_tx_control.prime_key_set_0,
-                                        tx_control.stream_tx_control.prime_key_set_1));
-
-    INTEL_KEYP_STREAM_TXRX_STATUS tx_status = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->tx_status)};
-    TEEIO_PRINT(("    tx_status      : %08x (key_set_status=%x, ready_key_set_0=%x, ready_key_set_1=%x)\n",
-                                        tx_status.raw,
-                                        tx_status.stream_tx_status.key_set_status,
-                                        tx_status.stream_tx_status.ready_key_set_0,
-                                        tx_status.stream_tx_status.ready_key_set_1));
-
-    INTEL_KEYP_STREAM_TXRX_CONTROL rx_control = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->rx_ctrl)};
-    TEEIO_PRINT(("    rx_control     : %08x (prime_key_set_0=%x, prime_key_set_1=%x)\n",
-                                        rx_control.raw,
-                                        rx_control.stream_rx_control.prime_key_set_0,
-                                        rx_control.stream_rx_control.prime_key_set_1));
-
-    INTEL_KEYP_STREAM_TXRX_STATUS rx_status = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->rx_status)};
-    TEEIO_PRINT(("    rx_status      : %08x (ready_key_set_0=%x, ready_key_set_1=%x)\n",
-                                        rx_status.raw,
-                                        rx_status.stream_rx_status.ready_key_set_0,
-                                        rx_status.stream_rx_status.ready_key_set_1));
-
-    INTEL_KEYP_STREAM_KEYSET_SLOT_ID tx_ks0 = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->tx_key_set_0)};
-    TEEIO_PRINT(("    tx_keyset_0    : pr=%x, npr=%x, cpl=%x\n", tx_ks0.pr, tx_ks0.npr, tx_ks0.cpl));
-
-    INTEL_KEYP_STREAM_KEYSET_SLOT_ID rx_ks0 = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->rx_key_set_0)};
-    TEEIO_PRINT(("    rx_keyset_0    : pr=%x, npr=%x, cpl=%x\n", rx_ks0.pr, rx_ks0.npr, rx_ks0.cpl));
-
-    INTEL_KEYP_STREAM_KEYSET_SLOT_ID tx_ks1 = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->tx_key_set_1)};
-    TEEIO_PRINT(("    tx_keyset_1    : pr=%x, npr=%x, cpl=%x\n", tx_ks1.pr, tx_ks1.npr, tx_ks1.cpl));
-
-    INTEL_KEYP_STREAM_KEYSET_SLOT_ID rx_ks1 = {.raw = mmio_read_reg32(&stream_cfg_reg_ptr->rx_key_set_1)};
-    TEEIO_PRINT(("    rx_keyset_1    : pr=%x, npr=%x, cpl=%x\n", rx_ks1.pr, rx_ks1.npr, rx_ks1.cpl));
+  uint32_t stream_ctrl_reg = device_pci_read_32(offset, cfg_space_fd);
+  return (stream_ctrl_reg & (uint32_t)IDE_STREAM_CTRL_ENABLE) == IDE_STREAM_CTRL_ENABLE;
 }
 
 void dump_ecap(
@@ -1405,7 +1118,7 @@ void dump_ecap(
     }
 }
 
-void dump_host_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
+void dump_rootport_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
 {
     dump_kcbar((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index);
     dump_ecap(cfg_space_fd, ide_id, ecap_offset, ide_type);

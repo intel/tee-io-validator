@@ -13,9 +13,10 @@
 
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "ide_tools.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
 
 bool g_pci_log = false;
 int g_top_id = 0;

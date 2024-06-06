@@ -5,9 +5,44 @@
  **/
 
 #include "teeio_validator.h"
+#include "teeio_spdmlib.h"
 
 void *m_spdm_context;
 void *m_scratch_buffer;
+
+bool libspdm_write_output_file(const char *file_name, const void *file_data,
+                               size_t file_size);
+
+typedef struct {
+    size_t cert_chain_size;
+    uint8_t cert_chain[LIBSPDM_MAX_CERT_CHAIN_SIZE];
+} spdm_attester_cert_chain_struct_t;
+
+libspdm_return_t device_doe_send_message(
+    void *spdm_context,
+    size_t request_size,
+    const void *request,
+    uint64_t timeout);
+
+libspdm_return_t device_doe_receive_message(
+    void *spdm_context,
+    size_t *response_size,
+    void **response,
+    uint64_t timeout);
+
+libspdm_return_t spdm_device_acquire_sender_buffer (
+    void *context, void **msg_buf_ptr);
+
+void spdm_device_release_sender_buffer (
+    void *context, const void *msg_buf_ptr);
+
+libspdm_return_t spdm_device_acquire_receiver_buffer (
+    void *context, void **msg_buf_ptr);
+
+void spdm_device_release_receiver_buffer (
+    void *context, const void *msg_buf_ptr);
+
+libspdm_return_t pci_doe_process_session_test(void *spdm_context, uint32_t session_id);
 
 void *spdm_client_init(void)
 {

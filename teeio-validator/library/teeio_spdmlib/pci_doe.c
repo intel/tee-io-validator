@@ -5,7 +5,7 @@
  **/
 
 #include "teeio_validator.h"
-
+#include "teeio_spdmlib.h"
 
 /* PCI Express - begin */
 #define PCI_EXPRESS_EXTENDED_CAPABILITY_DOE_ID 0x002E
@@ -411,7 +411,7 @@ libspdm_return_t pci_doe_send_receive_data(const void *pci_doe_context,
     return LIBSPDM_STATUS_SUCCESS;
 }
 
-bool pci_doe_init_request()
+bool pcie_doe_init_request()
 {
     pci_doe_data_object_protocol_t data_object_protocol[6];
     size_t data_object_protocol_size;

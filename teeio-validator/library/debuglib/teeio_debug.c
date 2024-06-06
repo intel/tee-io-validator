@@ -11,16 +11,46 @@
 #include <time.h>
 #include <assert.h>
 #include <stdarg.h>
-#include "utils.h"
 #include "teeio_debug.h"
+#include "helperlib.h"
 
 #define IDE_MAX_LOG_MESSAGE_LENGTH  1024
 
 extern FILE* m_logfile;
 extern TEEIO_DEBUG_LEVEL g_debug_level;
 
+const char* m_ide_log_level[] = {
+  "error",
+  "warn",
+  "info",
+  "verbose"
+};
+
 #define TIME_STAMP_LENGTH 64
 char m_timestamp[TIME_STAMP_LENGTH];
+
+TEEIO_DEBUG_LEVEL get_ide_log_level_from_string(const char* debug_level)
+{
+  if(debug_level == NULL) {
+    return TEEIO_DEBUG_WARN;
+  }
+
+  for(int i = 0; i < TEEIO_DEBUG_NUM; i++) {
+    if(strcmp(debug_level, m_ide_log_level[i]) == 0) {
+      return i;
+    }
+  }
+  return TEEIO_DEBUG_WARN;
+}
+
+const char* get_ide_log_level_string(TEEIO_DEBUG_LEVEL debug_level)
+{
+  if(debug_level > TEEIO_DEBUG_NUM) {
+    return "na";
+  }
+
+  return m_ide_log_level[debug_level];
+}
 
 char * current_time()
 {

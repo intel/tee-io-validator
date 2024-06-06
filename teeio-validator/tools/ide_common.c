@@ -12,9 +12,10 @@
 
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
-#include "utils.h"
 #include "ide_tools.h"
 #include "teeio_debug.h"
+#include "helperlib.h"
+#include "pcie_ide_lib.h"
 
 ide_common_test_switch_internal_conn_context_t *alloc_switch_internal_conn_context(IDE_TEST_CONFIG *test_config, IDE_TEST_TOPOLOGY *top, IDE_SWITCH_INTERNAL_CONNECTION *conn)
 {
@@ -206,13 +207,15 @@ ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int 
     return NULL;
 }
 
-bool pci_doe_init_request()
+bool pcie_doe_init_request()
 {
     return true;
 }
+
 void trigger_doe_abort()
 {
 }
+
 bool is_doe_error_asserted()
 {
     return false;

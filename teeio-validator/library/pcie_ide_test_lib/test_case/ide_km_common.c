@@ -16,8 +16,10 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 const char *k_set_names[] = {
     "KS0", "KS1"};
@@ -27,34 +29,6 @@ const char *direction_names[] = {
 
 const char *substream_names[] = {
     "PR", "NPR", "CPL"};
-
-uint32_t read_host_stream_status_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id);
-bool is_ide_enabled(int cfg_space_fd, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint32_t ecap_offset);
-
-void cfg_rc_ide_keys(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr,
-    const uint8_t rp_stream_index,        // N
-    const uint8_t direction,     // RX TX
-    const uint8_t key_set_select,// KS0 KS1
-    const uint8_t sub_stream,    // PR NPR CPL
-    const uint8_t slot_id,       // n
-    INTEL_KEYP_KEY_SLOT * key_val_ptr,      // key vals
-    INTEL_KEYP_IV_SLOT * iv_ptr             // iv vals
-    );
-
-void prime_host_ide_keys(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index,
-    const uint8_t direction,
-    const uint8_t key_set_select);
-
-void set_host_ide_key_set(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index,
-    const uint8_t key_set_select);
-
-bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 
 void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer)
 {
@@ -129,7 +103,7 @@ bool ide_km_key_prog(
     // program key in root port kcbar registers
     revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
     slot_id = k_set[ks].slot_id[direction][substream];
-    cfg_rc_ide_keys(kcbar_ptr, rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+    cfg_rootport_ide_keys(kcbar_ptr, rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp key_prog %s|%s|%s - @key/iv slot[%02x]\n", k_set_names[ks], direction_names[direction], substream_names[substream], slot_id));
     // dump_key_iv(RP_TYPE, (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -251,7 +225,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys(
+  prime_rp_ide_key_set(
       (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
       rp_stream_index,
       PCIE_IDE_STREAM_RX,
@@ -293,7 +267,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys(
+  prime_rp_ide_key_set(
       (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr,
       rp_stream_index,
       PCIE_IDE_STREAM_TX,
@@ -335,7 +309,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
 
   // set key_set_select in host ide
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  set_host_ide_key_set(kcbar, rp_stream_index, ks);
+  set_rp_ide_key_set_select(kcbar, rp_stream_index, ks);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|PR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
@@ -379,7 +353,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   enable_ide_stream_in_ecap(lower_port_cfg_space_fd, lower_port_ecap_offset, ide_type, lower_port->ide_id, true);
 
   // enable host ide stream
-  enable_host_ide_stream(upper_port_cfg_space_fd,
+  enable_rootport_ide_stream(upper_port_cfg_space_fd,
                          upper_port_ecap_offset,
                          ide_type, upper_port->ide_id,
                          kcbar_addr,
@@ -389,7 +363,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_host_stream_status_in_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
+  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   if (stream_status.state != IDE_STREAM_STATUS_SECURE)
   {
@@ -449,7 +423,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_RX, ks);
+  prime_rp_ide_key_set((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_RX, ks);
 
   result = ide_km_key_prog(doe_context, spdm_context,session_id,
                            ks, PCIE_IDE_STREAM_TX, PCIE_IDE_SUB_STREAM_PR,
@@ -472,7 +446,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     return false;
   }
 
-  prime_host_ide_keys((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_TX, ks);
+  prime_rp_ide_key_set((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index, PCIE_IDE_STREAM_TX, ks);
 
   if(skip_ksetgo) {
     return true;
@@ -510,7 +484,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
 
   // set key_set_select in host ide
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  set_host_ide_key_set(kcbar, rp_stream_index, ks);
+  set_rp_ide_key_set_select(kcbar, rp_stream_index, ks);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|PR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,

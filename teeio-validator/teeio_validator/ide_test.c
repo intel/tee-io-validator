@@ -8,7 +8,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
-#include "utils.h"
+#include "helperlib.h"
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
 
