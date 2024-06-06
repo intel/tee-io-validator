@@ -7,7 +7,7 @@
 #ifndef __TEEIO_SPDMLIB_H__
 #define __TEEIO_SPDMLIB_H__
 
-// teeio_spdmlib header file
+// spdmlib header file
 
 /**
  * initialize pcie doe

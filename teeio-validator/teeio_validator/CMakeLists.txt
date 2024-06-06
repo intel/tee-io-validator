@@ -27,7 +27,7 @@ SET(src_teeio_validator
 SET(teeio_validator_LIBRARY
     debuglib
     helperlib
-    teeio_spdmlib
+    spdmlib
     pcie_ide_test_lib
     )
 
