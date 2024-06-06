@@ -14,13 +14,13 @@
 #include "library/spdm_requester_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 extern const char *k_set_names[];
-
-bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 
 bool setup_ide_stream(void* doe_context, void* spdm_context,
                                 uint32_t* session_id, uint8_t* kcbar_addr,
@@ -86,7 +86,7 @@ bool pcie_ide_test_ksetstop_2_run(void *test_context)
   enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, false);
 
   // disable host ide stream
-  enable_host_ide_stream(upper_port->cfg_space_fd,
+  enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
                          ide_type, upper_port->ide_id,
                          upper_port->mapped_kcbar_addr,

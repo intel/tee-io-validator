@@ -14,7 +14,7 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "hal/library/memlib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
 
 #pragma pack(1)

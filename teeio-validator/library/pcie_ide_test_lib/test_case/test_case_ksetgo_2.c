@@ -14,8 +14,10 @@
 #include "library/spdm_requester_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 //
 // case 3.2
@@ -27,13 +29,6 @@ bool test_ksetgo_setup_common(
   uint32_t* session_id, uint8_t* kcbar_addr,
   uint8_t stream_id, uint8_t rp_stream_index, uint8_t ide_id,
   ide_key_set_t *k_set, uint8_t port_index, uint8_t ks);
-
-bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
-void set_host_ide_key_set(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index,
-    const uint8_t key_set_select);
 
 libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
                                    void *spdm_context, const uint32_t *session_id,
@@ -102,7 +97,7 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
 
   // set key_set_select in host ide
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)group_context->upper_port.mapped_kcbar_addr;
-  set_host_ide_key_set(kcbar, group_context->rp_stream_index, PCIE_IDE_STREAM_KS0);
+  set_rp_ide_key_set_select(kcbar, group_context->rp_stream_index, PCIE_IDE_STREAM_KS0);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|PR\n"));
   status = test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
@@ -141,7 +136,7 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
   enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, group_context->lower_port.ide_id, true);
 
   // enable host ide stream
-  enable_host_ide_stream(group_context->upper_port.cfg_space_fd,
+  enable_rootport_ide_stream(group_context->upper_port.cfg_space_fd,
                          group_context->upper_port.ecap_offset,
                          ide_type, group_context->upper_port.ide_id,
                          group_context->upper_port.mapped_kcbar_addr,

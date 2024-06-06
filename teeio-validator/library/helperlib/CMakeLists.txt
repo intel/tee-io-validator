@@ -13,9 +13,12 @@ INCLUDE_DIRECTORIES(
                     ${LIBSPDM_DIR}/include
                     ${LIBSPDM_DIR}/include/hal
                     ${PROJECT_SOURCE_DIR}/include
+                    ${TEEIO_VALIDATOR_LIB_DIR}/helperlib/include
 )
 
 SET(src_helperlib
+    ide_ini_helper.c
+    pcie_helper.c
     utils.c
 )
 

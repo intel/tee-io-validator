@@ -16,27 +16,11 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
 #include "pcie_ide_test_internal.h"
-
-void cfg_rc_ide_keys(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr,
-    const uint8_t rp_stream_index,        // N
-    const uint8_t direction,     // RX TX
-    const uint8_t key_set_select,// KS0 KS1
-    const uint8_t sub_stream,    // PR NPR CPL
-    const uint8_t slot_id,       // n
-    INTEL_KEYP_KEY_SLOT * key_val_ptr,      // key vals
-    INTEL_KEYP_IV_SLOT * iv_ptr             // iv vals
-    );
-
-void prime_host_ide_keys(
-    INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
-    const uint8_t rp_stream_index,
-    const uint8_t direction,
-    const uint8_t key_set_select);
 
 void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer);
 
@@ -240,7 +224,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
   // KS0|RX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -258,7 +242,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
   // KS0|RX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -276,9 +260,9 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
-  prime_host_ide_keys(
+  prime_rp_ide_key_set(
       kcbar_ptr,
       group_context->rp_stream_index,
       PCIE_IDE_STREAM_RX,
@@ -300,7 +284,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
   // KS0|TX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -318,7 +302,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
   // KS0|TX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -336,9 +320,9 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   // program key in root port kcbar registers
   revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
-  cfg_rc_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
-  prime_host_ide_keys(
+  prime_rp_ide_key_set(
       kcbar_ptr,
       group_context->rp_stream_index,
       PCIE_IDE_STREAM_TX,

@@ -16,8 +16,9 @@
 #include "library/pci_ide_km_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
 #include "pcie_ide_test_internal.h"
 

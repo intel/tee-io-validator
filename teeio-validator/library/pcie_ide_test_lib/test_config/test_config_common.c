@@ -14,19 +14,12 @@
 
 #include "ide_test.h"
 #include "pcie.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
-int open_configuration_space(char *bdf);
-uint32_t get_extended_cap_offset(int fd, uint32_t ext_id);
-uint32_t read_host_stream_status_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id);
-bool reset_ide_registers(
-    ide_common_test_port_context_t *port_context,
-    IDE_TEST_TOPOLOGY_TYPE top_type,
-    uint8_t stream_id,
-    uint8_t rp_stream_index,
-    bool reset_kcbar);
 
 const char *IDE_STREAM_STATUS_NAME[] = {
     "Secure",
@@ -62,7 +55,7 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
     NOT_IMPLEMENTED("selective_and_link_ide topology");
   }
 
-  uint32_t data = read_host_stream_status_in_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, port->ide_id);
+  uint32_t data = read_stream_status_in_rp_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, port->ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   uint8_t state = stream_status.state;
   IDE_STREAM_STATUS_TYPE status = IDE_STREAM_STATUS_TYPE_UNKNOWN;

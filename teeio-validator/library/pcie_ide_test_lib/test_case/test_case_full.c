@@ -16,13 +16,12 @@
 #include "library/spdm_requester_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern const char *k_set_names[];
-
-void dump_host_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type);
-void dump_dev_registers(int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type);
 
 bool setup_ide_stream(void* doe_context, void* spdm_context,
                                 uint32_t* session_id, uint8_t* kcbar_addr,
@@ -32,8 +31,6 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
                                 ide_common_test_port_context_t* upper_port,
                                 ide_common_test_port_context_t* lower_port,
                                 bool skip_ksetgo);
-bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 
 bool pcie_ide_test_full_1_setup(void *test_context)
 {
@@ -78,7 +75,7 @@ bool pcie_ide_test_full_1_run(void *test_context)
   // dump registers
   TEEIO_PRINT(("\n"));
   TEEIO_PRINT(("Print host registers.\n"));
-  dump_host_registers(group_context->upper_port.mapped_kcbar_addr,
+  dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                     group_context->rp_stream_index,
                     group_context->upper_port.cfg_space_fd,
                     group_context->upper_port.ide_id,
@@ -195,7 +192,7 @@ bool test_full_teardown_common(void *test_context)
   enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, false);
 
   // disable host ide stream
-  enable_host_ide_stream(upper_port->cfg_space_fd,
+  enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
                          ide_type, upper_port->ide_id,
                          upper_port->mapped_kcbar_addr,

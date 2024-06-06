@@ -19,9 +19,6 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 )
 
 SET(src_pcie_ide_test_lib
-  scan_pci.c
-  pci_ide.c
-  rp_pci.c
   # test_case
   test_case/test_case_query.c
   test_case/test_case_ksetgo_1.c
@@ -55,6 +52,7 @@ SET(pcie_ide_test_lib_LIBRARY
   debuglib
   helperlib
   teeio_spdmlib
+  pcie_ide_lib
   spdm_requester_lib
   spdm_common_lib
   ${CRYPTO_LIB_PATHS}

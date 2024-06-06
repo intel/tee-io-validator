@@ -15,23 +15,37 @@
 #include "library/spdm_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "teeio_spdmlib.h"
 
-extern void *m_pci_doe_context;
+bool scan_devices(void *test_context)
+{
+  bool ret = false;
+  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
+  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
-// void trigger_doe_abort();
-// bool is_doe_error_asserted();
-bool init_host_port(ide_common_test_group_context_t *group_context);
-bool close_host_port(ide_common_test_group_context_t *group_context);
-bool init_both_root_upper_port(ide_common_test_group_context_t *group_context);
-bool close_both_root_upper_port(ide_common_test_group_context_t *group_context);
-bool init_dev_port(ide_common_test_group_context_t *group_context);
-bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOLOGY_TYPE top_type);
-void *spdm_client_init(void);
-bool spdm_connect (void *spdm_context, uint32_t *session_id);
-bool spdm_stop(void *spdm_context, uint32_t session_id);
-bool scan_devices(void *test_context);
+  IDE_TEST_TOPOLOGY *top = context->top;
+
+  // first scan pcie devices to populate the complete bdf of each devices in a specific topology
+  if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
+    // root_port and upper_port is the same port
+    ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn1, context->top->bus);
+    if(ret) {
+      context->upper_port.port->bus = context->root_port.port->bus;
+      strncpy(context->upper_port.port->bdf, context->root_port.port->bdf, BDF_LENGTH);
+    }
+  } else if(top->connection == IDE_TEST_CONNECT_P2P) {
+    // root_port and upper_port is not the same port
+    ret = scan_devices_at_bus(context->root_port.port, context->upper_port.port, context->sw_conn1, context->top->bus);
+    if(ret) {
+      ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn2, context->top->bus);
+    }
+  }
+
+  return ret;
+}
 
 // selective_ide test group
 
@@ -63,11 +77,9 @@ static bool common_test_group_setup(void *test_context)
 
   IDE_TEST_TOPOLOGY *top = context->top;
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
-    ret = init_host_port(context);
+    ret = init_root_port(context);
   } else if(top->connection == IDE_TEST_CONNECT_P2P ){
-    // TODO
-    // init both root_port and upper_port
-    ret = init_both_root_upper_port(context);
+    NOT_IMPLEMENTED("Open both root_port and upper_port for peer2peer connection.");
   } else {
     ret = false;
   }
@@ -108,10 +120,10 @@ static bool common_test_group_teardown(void *test_context)
   close_dev_port(&context->lower_port, top->type);
 
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
-    close_host_port(context);
+    close_root_port(context);
   } else if(top->connection == IDE_TEST_CONNECT_P2P ){
     // close both root_port and upper_port
-    close_both_root_upper_port(context);
+    NOT_IMPLEMENTED("Close both root_port and upper_port for peer2peer connection.");
   }
 
   return true;

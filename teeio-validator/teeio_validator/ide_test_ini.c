@@ -33,7 +33,7 @@
 #include "hal/library/debuglib.h"
 
 #include <library/spdm_return_status.h>
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
 
@@ -92,39 +92,39 @@ typedef struct
   COMMENT_LINE *CommentHead;
 } INI_PARSING_LIB_CONTEXT;
 
-/**
-  Return if the digital char is valid.
+// /**
+//   Return if the digital char is valid.
 
-  @param[in] DigitalChar    The digital char to be checked.
-  @param[in] IncludeHex     If it include HEX char.
+//   @param[in] DigitalChar    The digital char to be checked.
+//   @param[in] IncludeHex     If it include HEX char.
 
-  @retval true   The digital char is valid.
-  @retval false  The digital char is invalid.
-**/
-bool IsValidDigitalChar(
-    uint8_t DigitalChar,
-    bool IncludeHex)
-{
-  if ((DigitalChar >= '0') && (DigitalChar <= '9'))
-  {
-    return true;
-  }
+//   @retval true   The digital char is valid.
+//   @retval false  The digital char is invalid.
+// **/
+// bool IsValidDigitalChar(
+//     uint8_t DigitalChar,
+//     bool IncludeHex)
+// {
+//   if ((DigitalChar >= '0') && (DigitalChar <= '9'))
+//   {
+//     return true;
+//   }
 
-  if (IncludeHex)
-  {
-    if ((DigitalChar >= 'a') && (DigitalChar <= 'f'))
-    {
-      return true;
-    }
+//   if (IncludeHex)
+//   {
+//     if ((DigitalChar >= 'a') && (DigitalChar <= 'f'))
+//     {
+//       return true;
+//     }
 
-    if ((DigitalChar >= 'A') && (DigitalChar <= 'F'))
-    {
-      return true;
-    }
-  }
+//     if ((DigitalChar >= 'A') && (DigitalChar <= 'F'))
+//     {
+//       return true;
+//     }
+//   }
 
-  return false;
-}
+//   return false;
+// }
 
 /**
   Return if the name char is valid.
@@ -163,80 +163,80 @@ bool IsValidNameChar(
   return false;
 }
 
-/**
-  Return if the digital string is valid.
+// /**
+//   Return if the digital string is valid.
 
-  @param[in] Digital        The digital to be checked.
-  @param[in] Length         The length of digital string in bytes.
-  @param[in] IncludeHex     If it include HEX char.
+//   @param[in] Digital        The digital to be checked.
+//   @param[in] Length         The length of digital string in bytes.
+//   @param[in] IncludeHex     If it include HEX char.
 
-  @retval true   The digital string is valid.
-  @retval false  The digital string is invalid.
-**/
-bool IsValidDigital(
-    uint8_t *Digital,
-    uint32_t Length,
-    bool IncludeHex)
-{
-  uint32_t Index;
+//   @retval true   The digital string is valid.
+//   @retval false  The digital string is invalid.
+// **/
+// bool IsValidDigital(
+//     uint8_t *Digital,
+//     uint32_t Length,
+//     bool IncludeHex)
+// {
+//   uint32_t Index;
 
-  for (Index = 0; Index < Length; Index++)
-  {
-    if (!IsValidDigitalChar(Digital[Index], IncludeHex))
-    {
-      return false;
-    }
-  }
+//   for (Index = 0; Index < Length; Index++)
+//   {
+//     if (!IsValidDigitalChar(Digital[Index], IncludeHex))
+//     {
+//       return false;
+//     }
+//   }
 
-  return true;
-}
+//   return true;
+// }
 
-/**
-  Return if the decimal string is valid.
+// /**
+//   Return if the decimal string is valid.
 
-  @param[in] Decimal The decimal string to be checked.
-  @param[in] Length  The length of decimal string in bytes.
+//   @param[in] Decimal The decimal string to be checked.
+//   @param[in] Length  The length of decimal string in bytes.
 
-  @retval true   The decimal string is valid.
-  @retval false  The decimal string is invalid.
-**/
-bool IsValidDecimalString(
-    uint8_t *Decimal,
-    uint32_t Length)
-{
-  return IsValidDigital(Decimal, Length, false);
-}
+//   @retval true   The decimal string is valid.
+//   @retval false  The decimal string is invalid.
+// **/
+// bool IsValidDecimalString(
+//     uint8_t *Decimal,
+//     uint32_t Length)
+// {
+//   return IsValidDigital(Decimal, Length, false);
+// }
 
-/**
-  Return if the hexadecimal string is valid.
+// /**
+//   Return if the hexadecimal string is valid.
 
-  @param[in] Hex     The hexadecimal string to be checked.
-  @param[in] Length  The length of hexadecimal string in bytes.
+//   @param[in] Hex     The hexadecimal string to be checked.
+//   @param[in] Length  The length of hexadecimal string in bytes.
 
-  @retval true   The hexadecimal string is valid.
-  @retval false  The hexadecimal string is invalid.
-**/
-bool IsValidHexString(
-    uint8_t *Hex,
-    uint32_t Length)
-{
-  if (Length <= 2)
-  {
-    return false;
-  }
+//   @retval true   The hexadecimal string is valid.
+//   @retval false  The hexadecimal string is invalid.
+// **/
+// bool IsValidHexString(
+//     uint8_t *Hex,
+//     uint32_t Length)
+// {
+//   if (Length <= 2)
+//   {
+//     return false;
+//   }
 
-  if (Hex[0] != '0')
-  {
-    return false;
-  }
+//   if (Hex[0] != '0')
+//   {
+//     return false;
+//   }
 
-  if ((Hex[1] != 'x') && (Hex[1] != 'X'))
-  {
-    return false;
-  }
+//   if ((Hex[1] != 'x') && (Hex[1] != 'X'))
+//   {
+//     return false;
+//   }
 
-  return IsValidDigital(&Hex[2], Length - 2, true);
-}
+//   return IsValidDigital(&Hex[2], Length - 2, true);
+// }
 
 /**
   Return if the name string is valid.

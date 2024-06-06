@@ -14,8 +14,11 @@
 #include "library/spdm_requester_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 extern const char *k_set_names[];
 
@@ -35,13 +38,10 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
                     ide_common_test_port_context_t* upper_port,
                     ide_common_test_port_context_t* lower_port,
                     uint8_t ks, bool skip_ksetgo);
-bool enable_ide_stream_in_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, bool enable);
-void enable_host_ide_stream(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id, uint8_t *kcbar_addr, uint8_t rp_stream_index, bool enable);
 bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
                             void *spdm_context, const uint32_t *session_id,
                             uint8_t stream_id, uint8_t key_sub_stream,
                             uint8_t port_index, const char* case_msg);
-bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh);
 
 // KSetStop Case 4.3
 bool pcie_ide_test_ksetstop_3_setup(void *test_context)
@@ -109,7 +109,7 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
   enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, false);
 
   // disable host ide stream
-  enable_host_ide_stream(upper_port->cfg_space_fd,
+  enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
                          ide_type, upper_port->ide_id,
                          upper_port->mapped_kcbar_addr,

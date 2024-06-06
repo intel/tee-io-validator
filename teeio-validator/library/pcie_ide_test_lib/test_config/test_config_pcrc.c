@@ -11,14 +11,10 @@
 #include "hal/library/debuglib.h"
 
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
-
-bool set_pcrc_in_ecap(
-    int fd, TEST_IDE_TYPE ide_type,
-    uint8_t ide_id, uint32_t ide_ecap_offset,
-    bool enable
-);
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern const char *m_ide_test_topology_name[];
 

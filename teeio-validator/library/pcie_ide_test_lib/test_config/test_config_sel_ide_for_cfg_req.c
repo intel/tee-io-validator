@@ -10,8 +10,10 @@
 #include "hal/base.h"
 #include "hal/library/debuglib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern const char *m_ide_type_name[];
 const char* m_config_name = "Selective IDE for Configuration Request";
@@ -22,13 +24,6 @@ bool set_sel_ide_for_cfg_req_in_ecap(
     uint8_t ide_id,
     uint32_t ide_ecap_offset,
     bool enable
-);
-
-uint32_t read_ide_stream_ctrl_in_ecap(
-    int fd,
-    TEST_IDE_TYPE ide_type,
-    uint8_t ide_id,
-    uint32_t ide_ecap_offset
 );
 
 /**

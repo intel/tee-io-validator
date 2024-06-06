@@ -16,14 +16,12 @@
 #include "library/spdm_requester_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
 #include "ide_test.h"
-#include "utils.h"
+#include "helperlib.h"
 #include "teeio_debug.h"
+#include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 
 static uint8_t mKeySet = 0;
-
-void dump_host_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type);
-void dump_dev_registers(int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type);
-bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh);
 
 bool setup_ide_stream(void* doe_context, void* spdm_context,
                                 uint32_t* session_id, uint8_t* kcbar_addr,
@@ -106,7 +104,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     TEEIO_PRINT(("\n"));
     TEEIO_PRINT(("Current KeySet=%d. Check the registers below.\n", mKeySet));
     TEEIO_PRINT(("Print host registers.\n"));
-    dump_host_registers(group_context->upper_port.mapped_kcbar_addr,
+    dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                       group_context->rp_stream_index,
                       group_context->upper_port.cfg_space_fd,
                       group_context->upper_port.ide_id,
