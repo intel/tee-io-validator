@@ -22,8 +22,6 @@
 #include "pcie_ide_test_lib.h"
 #include "pcie_ide_test_internal.h"
 
-void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer);
-
 static const char* mKeyProgAssersion[] = {
     "ide_km_key_prog send receive_data",        // .0
     "sizeof(IdeKmMessage) == sizeof(KP_ACK)",   // .1

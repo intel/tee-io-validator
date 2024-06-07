@@ -22,20 +22,6 @@
 
 extern const char *k_set_names[];
 
-bool setup_ide_stream(void* doe_context, void* spdm_context,
-                                uint32_t* session_id, uint8_t* kcbar_addr,
-                                uint8_t stream_id, uint8_t ks,
-                                ide_key_set_t* k_set, uint8_t rp_stream_index,
-                                uint8_t port_index, IDE_TEST_TOPOLOGY_TYPE top_type,
-                                ide_common_test_port_context_t* upper_port,
-                                ide_common_test_port_context_t* lower_port,
-                                bool skip_ksetgo);
-
-bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
-                            void *spdm_context, const uint32_t *session_id,
-                            uint8_t stream_id, uint8_t key_sub_stream,
-                            uint8_t port_index, const char* case_msg);
-
 // KSetStop Case 4.2
 bool pcie_ide_test_ksetstop_2_setup(void *test_context)
 {

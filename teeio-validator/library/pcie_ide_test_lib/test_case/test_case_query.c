@@ -16,20 +16,7 @@
 #include "ide_test.h"
 #include "helperlib.h"
 #include "teeio_debug.h"
-
-#pragma pack(1)
-typedef struct
-{
-  pci_ide_km_header_t header;
-  uint8_t reserved;
-  uint8_t port_index;
-  uint8_t dev_func_num;
-  uint8_t bus_num;
-  uint8_t segment;
-  uint8_t max_port_index;
-  uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT];
-} test_pci_ide_km_query_resp_t;
-#pragma pack()
+#include "pcie_ide_test_internal.h"
 
 static const char *mAssertion[] = {
     "ide_km_query send_receive_data",
