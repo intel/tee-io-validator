@@ -188,6 +188,31 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   int lower_port_cfg_space_fd = lower_port->cfg_space_fd;
   uint32_t lower_port_ecap_offset = lower_port->ecap_offset;
 
+  uint8_t dev_func_num;
+  uint8_t bus_num;
+  uint8_t segment;
+  uint8_t max_port_index;
+  uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
+  uint32_t ide_reg_block_count;
+
+  // first query
+  ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
+  status = pci_ide_km_query(doe_context,
+                            spdm_context,
+                            session_id,
+                            port_index,
+                            &dev_func_num,
+                            &bus_num,
+                            &segment,
+                            &max_port_index,
+                            ide_reg_block,
+                            &ide_reg_block_count);
+  if (LIBSPDM_STATUS_IS_ERROR(status))
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_ide_km_query failed with status=0x%x\n", status));
+    return false;
+  }
+
   // ide_km_key_prog
   result = ide_km_key_prog(
       doe_context, spdm_context,
