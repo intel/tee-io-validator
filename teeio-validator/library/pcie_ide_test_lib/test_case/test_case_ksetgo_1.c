@@ -19,6 +19,7 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 static const char* mAssertionMsg[] = {
     "ide_km_set_go send_receive_data",
@@ -28,19 +29,6 @@ static const char* mAssertionMsg[] = {
     "IdeKmMessage.StreamID == KEY_PROG.StreamID",
     "IdeKmMessage.KeySet == KEY_PROG.KeySet && IdeKmMessage.RxTx == KEY_PROG.RxTx && IdeKmMessage.SubStream == KEY_PROG.SubStream",
 };
-
-bool ide_km_key_prog(
-    const void *pci_doe_context,
-    void *spdm_context,
-    const uint32_t *session_id,
-    uint8_t ks,
-    uint8_t direction,
-    uint8_t substream,
-    uint8_t port_index,
-    uint8_t stream_id,
-    uint8_t *kcbar_addr,
-    ide_key_set_t *k_set,
-    uint8_t rp_stream_index);
 
 libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
                                    void *spdm_context, const uint32_t *session_id,

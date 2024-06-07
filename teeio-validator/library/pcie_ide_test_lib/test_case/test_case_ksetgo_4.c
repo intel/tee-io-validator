@@ -19,6 +19,7 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 //
 // case 3.4
@@ -27,31 +28,6 @@
 
 extern const char *k_set_names[];
 
-bool setup_ide_stream(void* doe_context, void* spdm_context,
-                                uint32_t* session_id, uint8_t* kcbar_addr,
-                                uint8_t stream_id, uint8_t ks,
-                                ide_key_set_t* k_set, uint8_t rp_stream_index,
-                                uint8_t port_index, IDE_TEST_TOPOLOGY_TYPE top_type,
-                                ide_common_test_port_context_t* upper_port,
-                                ide_common_test_port_context_t* lower_port,
-                                bool skip_ksetgo);
-
-
-bool ide_key_switch_to(void* doe_context, void* spdm_context,
-                    uint32_t* session_id, uint8_t* kcbar_addr,
-                    uint8_t stream_id, ide_key_set_t* k_set, uint8_t rp_stream_index,
-                    uint8_t port_index, IDE_TEST_TOPOLOGY_TYPE top_type,
-                    ide_common_test_port_context_t* upper_port,
-                    ide_common_test_port_context_t* lower_port,
-                    uint8_t ks, bool skip_ksetgo);
-
-// uint32_t read_stream_status_in_rp_ecap(int cfg_space_fd, uint32_t ecap_offset, TEST_IDE_TYPE ide_type, uint8_t ide_id);
-// bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh);
-libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
-                                   void *spdm_context, const uint32_t *session_id,
-                                   uint8_t stream_id, uint8_t key_sub_stream,
-                                   uint8_t port_index,
-                                   bool phase1, const char *assertion_msg);
 // case 3.4
 bool pcie_ide_test_ksetgo_4_setup(void *test_context)
 {

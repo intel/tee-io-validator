@@ -18,23 +18,12 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
+#include "pcie_ide_test_internal.h"
 
 //
 // case 3.2
 // IDE_KM responder shall return valid K_GOSTOP_ACK, if it receives a K_SET_GO with KeySet=1.
 //
-
-bool test_ksetgo_setup_common(
-  void *doe_context, void* spdm_context,
-  uint32_t* session_id, uint8_t* kcbar_addr,
-  uint8_t stream_id, uint8_t rp_stream_index, uint8_t ide_id,
-  ide_key_set_t *k_set, uint8_t port_index, uint8_t ks);
-
-libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
-                                   void *spdm_context, const uint32_t *session_id,
-                                   uint8_t stream_id, uint8_t key_sub_stream,
-                                   uint8_t port_index,
-                                   bool phase1, const char *assertion_msg);
 
 bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 {
