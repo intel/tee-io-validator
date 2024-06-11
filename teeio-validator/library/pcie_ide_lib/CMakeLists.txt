@@ -25,25 +25,9 @@ SET(src_pcie_ide_lib
   scan_pcie.c
 )
 
-SET(pcie_ide_test_lib_LIBRARY
+SET(pcie_ide_lib_LIBRARY
   debuglib
   helperlib
-  # spdmlib
-  # spdm_requester_lib
-  # spdm_common_lib
-  # ${CRYPTO_LIB_PATHS}
-  # rnglib
-  # cryptlib_${CRYPTO}
-  # malloclib
-  # spdm_crypt_lib
-  # spdm_crypt_ext_lib
-  # spdm_secured_message_lib
-  # spdm_transport_pcidoe_lib
-  # spdm_device_secret_lib_sample
-  # pci_doe_requester_lib
-  # pci_ide_km_requester_lib
-  # pci_tdisp_requester_lib
-  # platform_lib
 )
 
 ADD_LIBRARY(pcie_ide_lib STATIC ${src_pcie_ide_lib})
