@@ -59,6 +59,15 @@ const char *m_ide_type_name[] = {
   "LinkIDE",
 };
 
+const char *ks_names[] = {
+    "KS0", "KS1"};
+
+const char *direct_names[] = {
+    "RX", "TX"};
+const char *ctrl_reg_names[] = {
+    "tx_ctrl", "rx_ctrl"
+};
+
 PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK m_rid_assoc_reg_block = {
     .rid_assoc1 = {.raw = 0xffff00},
     .rid_assoc2 = {.raw = 0x1}
@@ -943,15 +952,30 @@ void prime_rp_ide_key_set(
     TEEIO_ASSERT(key_set_select < PCIE_IDE_STREAM_KS_NUM);
 
     INTEL_KEYP_STREAM_TXRX_CONTROL stream_txrx_control = {.raw = mmio_read_reg32(ctrl_reg_ptr)};
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Before prime_rp_ide_key_set direction=%s ks=%s: %s=0x%08x\n",
+      direct_names[direction],
+      ks_names[key_set_select],
+      ctrl_reg_names[direction],
+      stream_txrx_control.raw));
+
     if (key_set_select == PCIE_IDE_STREAM_KS0)
     {
         stream_txrx_control.common.prime_key_set_0 = 1;
+        stream_txrx_control.common.prime_key_set_1 = 0;
     }
     else if (key_set_select == PCIE_IDE_STREAM_KS1)
     {
+        stream_txrx_control.common.prime_key_set_0 = 0;
         stream_txrx_control.common.prime_key_set_1 = 1;
     }
     mmio_write_reg32(ctrl_reg_ptr, stream_txrx_control.raw);
+
+    stream_txrx_control.raw = mmio_read_reg32(ctrl_reg_ptr);
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "After prime_rp_ide_key_set direction=%s ks=%s: %s=0x%08x\n",
+      direct_names[direction],
+      ks_names[key_set_select],
+      ctrl_reg_names[direction],
+      stream_txrx_control.raw));
 
     // check if ready_key_set_x is 1 after prime
     uint32_t data32 = mmio_read_reg32(status_reg_ptr);
