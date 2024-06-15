@@ -14,6 +14,7 @@ INCLUDE_DIRECTORIES(
                     ${LIBSPDM_DIR}/include/hal
                     ${SPDM_EMU_DIR}/include
                     ${PROJECT_SOURCE_DIR}/include
+                    ${TEEIO_VALIDATOR_LIB_DIR}/helperlib/include
 )
 
 SET(src_spdmlib

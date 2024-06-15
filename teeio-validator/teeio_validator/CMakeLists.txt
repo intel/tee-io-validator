@@ -15,6 +15,7 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
                     ${LIBSPDM_DIR}/os_stub/include
                     ${LIBSPDM_DIR}/os_stub
                     ${SPDM_EMU_DIR}/include
+                    ${SPDM_EMU_DIR}/spdm_emu/spdm_emu_common
 )
 
 SET(src_teeio_validator

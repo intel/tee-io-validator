@@ -155,6 +155,7 @@ typedef struct
   uint32_t debug_level;
   bool libspdm_log;
   bool wo_tdisp;
+  bool pcap_enable;
 } IDE_TEST_MAIN_CONFIG;
 
 typedef struct {

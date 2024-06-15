@@ -27,5 +27,6 @@
 #define TEEIO_VALIDATOR_VERSION "0.2.0"
 
 #define LOGFILE "./teeio_log"
+#define PCAPFILE "./teeio_pcap"
 
 #endif

@@ -2333,6 +2333,12 @@ void ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
   {
     test_config->main_config.debug_level = get_ide_log_level_from_string((const char*)entry_value);
   }
+
+  sprintf(entry_name, "pcap_enable");
+  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  {
+    test_config->main_config.pcap_enable = data32 == 1;
+  }
 }
 
 void ParsePortsSection(void *context, IDE_TEST_CONFIG *test_config, IDE_PORT_TYPE port_type)
