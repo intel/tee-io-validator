@@ -14,6 +14,7 @@
 #include "teeio_debug.h"
 #include "helperlib.h"
 #include "helper_internal.h"
+#include "pcap.h"
 
 extern FILE* m_logfile;
 
@@ -374,4 +375,34 @@ void log_file_close(){
     if(!m_logfile){
         fclose(m_logfile);
     }
+}
+
+bool pcap_file_init(const char* pcap_file, uint32_t transport_layer)
+{
+  bool ret;
+
+  char full_pcap_file[MAX_FILE_NAME] = {0};
+  char current_time_stamp[MAX_TIME_STAMP_LENGTH] = {0};
+  struct timeval currentTime;
+  gettimeofday(&currentTime, NULL);
+
+  // Convert to local time
+  time_t rawtime = currentTime.tv_sec;
+  struct tm *localTime = localtime(&rawtime);
+
+  strftime(current_time_stamp, MAX_TIME_STAMP_LENGTH, "%Y-%m-%d_%H-%M-%S", localTime);
+
+  snprintf(full_pcap_file, MAX_FILE_NAME, "%s_%s.pcap", pcap_file, current_time_stamp);
+  ret = open_pcap_packet_file(full_pcap_file, transport_layer);
+  if(!ret){
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to open pcap file [%s]\n", full_pcap_file));
+    return false;
+  }
+
+  return true;
+}
+
+void pcap_file_close()
+{
+  close_pcap_packet_file();
 }

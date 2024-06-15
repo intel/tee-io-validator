@@ -6,6 +6,7 @@
 
 #include "teeio_validator.h"
 #include "teeio_spdmlib.h"
+#include "pcap.h"
 
 /* PCI Express - begin */
 #define PCI_EXPRESS_EXTENDED_CAPABILITY_DOE_ID 0x002E
@@ -208,6 +209,7 @@ libspdm_return_t device_doe_send_message(
             /* Write 1b to the DOE Abort bit. */
             trigger_doe_abort();
         } else {
+            append_pcap_packet_data(NULL, 0, (const void *)request, request_size);
             status = LIBSPDM_STATUS_SUCCESS;
         }
     }
@@ -336,6 +338,7 @@ libspdm_return_t device_doe_receive_message(
             /* Write 1b to the DOE Abort bit. */
             trigger_doe_abort();
         } else {
+            append_pcap_packet_data(NULL, 0, (const void *)*response, *response_size);
             status = LIBSPDM_STATUS_SUCCESS;
         }
     }

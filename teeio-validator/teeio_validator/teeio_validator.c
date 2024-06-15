@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ide_test.h"
+#include "command.h"
 
 char g_bdf[] = {'2','a',':','0','0','.','0','\0'};
 char g_rp_bdf[] = {'2','9',':','0','2','.','0','\0'};
@@ -30,7 +31,9 @@ uint8_t g_scan_bus = INVALID_SCAN_BUS;
 FILE* m_logfile = NULL;
 
 bool log_file_init(const char* filepath);
+bool pcap_file_init(const char* filepath, uint32_t transport_layer);
 void log_file_close();
+void pcap_file_close();
 
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 
@@ -94,11 +97,24 @@ int main(int argc, char *argv[])
         }
     }
 
+    // Open pcap file
+    if (ide_test_config.main_config.pcap_enable) {
+       if (!pcap_file_init(PCAPFILE, SOCKET_TRANSPORT_TYPE_PCI_DOE)) {
+           TEEIO_PRINT(("Failed to open pcap file!\n"));
+           goto MainDone;
+       }
+    }
+
     srand((unsigned int)time(NULL));
 
     run(&ide_test_config);
 
     ret = 0;
+
+    // Close pcap file
+    if (ide_test_config.main_config.pcap_enable) {
+       pcap_file_close();
+    }
 
 MainDone:
     log_file_close();

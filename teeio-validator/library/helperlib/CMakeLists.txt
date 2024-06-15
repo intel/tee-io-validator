@@ -12,14 +12,17 @@ SET(CMAKE_EXE_LINKER_FLAGS "-static")
 INCLUDE_DIRECTORIES(
                     ${LIBSPDM_DIR}/include
                     ${LIBSPDM_DIR}/include/hal
+                    ${LIBSPDM_DIR}/os_stub/include/
                     ${PROJECT_SOURCE_DIR}/include
                     ${TEEIO_VALIDATOR_LIB_DIR}/helperlib/include
+                    ${SPDM_EMU_DIR}/spdm_emu/spdm_emu_common
 )
 
 SET(src_helperlib
     ide_ini_helper.c
     pcie_helper.c
     utils.c
+    pcap.c
 )
 
 SET(helperlib_LIBRARY
