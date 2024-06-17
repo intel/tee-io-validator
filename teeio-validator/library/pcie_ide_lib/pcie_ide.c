@@ -184,10 +184,12 @@ bool close_root_port(ide_common_test_group_context_t *group_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_root_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
 
-  port_context->addr_assoc_reg_block.addr_assoc1.raw = 0;
-  port_context->addr_assoc_reg_block.addr_assoc2.raw = 0;
-  port_context->rid_assoc_reg_block.rid_assoc1.raw = 0;
-  port_context->rid_assoc_reg_block.rid_assoc2.raw = 0;
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+
+  pcie_data->addr_assoc_reg_block.addr_assoc1.raw = 0;
+  pcie_data->addr_assoc_reg_block.addr_assoc2.raw = 0;
+  pcie_data->rid_assoc_reg_block.rid_assoc1.raw = 0;
+  pcie_data->rid_assoc_reg_block.rid_assoc2.raw = 0;
 
   reset_ide_registers(port_context, group_context->top->type, 0, group_context->rp_stream_index, true);
 
@@ -252,7 +254,7 @@ bool open_root_port(ide_common_test_port_context_t *port_context)
   port_context->ecap_offset = ecap_offset;
 
   // parse KEYP table and map the kcbar to user space
-  if (!parse_keyp_table(port_context))
+  if (!parse_keyp_table(port_context, INTEL_KEYP_PROTOCOL_TYPE_PCIE_CXLIO))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "parse_keyp_table failed.\n"));
     goto InitRootPortFail;
@@ -260,10 +262,11 @@ bool open_root_port(ide_common_test_port_context_t *port_context)
 
   // store the stream_cap in kcbar and pci_ide_cap in ecap(@configuration space)
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
-  port_context->stream_cap.raw = mmio_read_reg32(&kcbar->capabilities);
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+  pcie_data->stream_cap.raw = mmio_read_reg32(&kcbar->capabilities);
 
   uint32_t offset = ecap_offset + 4;
-  port_context->ide_cap.raw = device_pci_read_32(offset, fd);
+  pcie_data->ide_cap.raw = device_pci_read_32(offset, fd);
 
   return true;
 
@@ -333,7 +336,8 @@ bool find_free_rp_stream_index_and_ide_id(ide_common_test_port_context_t* port_c
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "find_free_rp_stream_index_and_ide_id for %s\n", port_context->port->port_name));
 
-  PCIE_IDE_CAP ide_cap = {.raw = port_context->ide_cap.raw};
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+  PCIE_IDE_CAP ide_cap = {.raw = pcie_data->ide_cap.raw};
 
   int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
   int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
@@ -542,11 +546,12 @@ bool init_root_port(ide_common_test_group_context_t *group_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host ide_id=%d, rp_stream_index=%d\n", ide_id, rp_stream_index));
   group_context->rp_stream_index = rp_stream_index;
-  port_context->ide_id = ide_id;
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+  pcie_data->ide_id = ide_id;
 
   // rid & addr assoc_reg_block
   ide_common_test_port_context_t *lower_port_context = &group_context->lower_port;
-  populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
+  populate_rid_assoc_reg_block(&pcie_data->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
   ide_common_test_switch_internal_conn_context_t *itr = NULL;
   char* bdf = NULL;
@@ -568,17 +573,17 @@ bool init_root_port(ide_common_test_group_context_t *group_context)
     bdf = port_context->port->bdf;
   }
 
-  if(!populate_addr_assoc_reg_block(bdf, &port_context->addr_assoc_reg_block)) {
+  if(!populate_addr_assoc_reg_block(bdf, &pcie_data->addr_assoc_reg_block)) {
     goto InitHostFail;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump host assoc_reg_block:\n"));
-  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
-  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
+  dump_rid_assoc_reg_block(&pcie_data->rid_assoc_reg_block);
+  dump_addr_assoc_reg_block(&pcie_data->addr_assoc_reg_block);
 
   // kset
   // pre-allocate the slot_ids
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, port_context->stream_cap.num_rx_key_slots, false)) {
+  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, pcie_data->stream_cap.num_rx_key_slots, false)) {
     goto InitHostFail;
   }
 
@@ -622,11 +627,13 @@ bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOL
 {
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_dev_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
 
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+
   // clean Link/Selective IDE Stream Control Registers
-  port_context->addr_assoc_reg_block.addr_assoc1.raw = 0;
-  port_context->addr_assoc_reg_block.addr_assoc2.raw = 0;
-  port_context->rid_assoc_reg_block.rid_assoc1.raw = 0;
-  port_context->rid_assoc_reg_block.rid_assoc2.raw = 0;
+  pcie_data->addr_assoc_reg_block.addr_assoc1.raw = 0;
+  pcie_data->addr_assoc_reg_block.addr_assoc2.raw = 0;
+  pcie_data->rid_assoc_reg_block.rid_assoc1.raw = 0;
+  pcie_data->rid_assoc_reg_block.rid_assoc2.raw = 0;
 
   reset_ide_registers(port_context, top_type, 0, 0, false);
 
@@ -683,7 +690,8 @@ bool open_dev_port(ide_common_test_port_context_t *port_context)
   port_context->doe_offset = g_doe_extended_offset;
 
   uint32_t offset = ecap_offset + 4;
-  port_context->ide_cap.raw = device_pci_read_32(offset, fd);
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+  pcie_data->ide_cap.raw = device_pci_read_32(offset, fd);
 
   return true;
 
@@ -714,19 +722,21 @@ bool init_dev_port(ide_common_test_group_context_t *group_context)
   if(!find_free_rp_stream_index_and_ide_id(port_context, NULL, &ide_id, top_type, false)) {
     goto InitDevFailed;
   }
+
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device ide_id = %d\n", ide_id));
-  port_context->ide_id = ide_id;
+  pcie_data->ide_id = ide_id;
 
   // rid&addr assoc_reg_block
-  port_context->rid_assoc_reg_block.rid_assoc1.raw = m_rid_assoc_reg_block.rid_assoc1.raw;
-  port_context->rid_assoc_reg_block.rid_assoc2.raw = m_rid_assoc_reg_block.rid_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
-  port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
+  pcie_data->rid_assoc_reg_block.rid_assoc1.raw = m_rid_assoc_reg_block.rid_assoc1.raw;
+  pcie_data->rid_assoc_reg_block.rid_assoc2.raw = m_rid_assoc_reg_block.rid_assoc2.raw;
+  pcie_data->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
+  pcie_data->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
+  pcie_data->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump dev assoc_reg_block:\n"));
-  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
-  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
+  dump_rid_assoc_reg_block(&pcie_data->rid_assoc_reg_block);
+  dump_addr_assoc_reg_block(&pcie_data->addr_assoc_reg_block);
 
   return true;
 
@@ -926,17 +936,19 @@ bool reset_ide_registers(
   PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg = {.raw = 0};
   stream_ctrl_reg.stream_id = stream_id;
 
+  PCIE_PRIV_DATA* pcie_data = &port_context->priv_data.pcie;
+
   return setup_ide_ecap_regs(
       port_context->cfg_space_fd,
       ide_type,
-      port_context->ide_id,
+      pcie_data->ide_id,
       port_context->ecap_offset,
       stream_ctrl_reg,
-      port_context->rid_assoc_reg_block.rid_assoc1,
-      port_context->rid_assoc_reg_block.rid_assoc2,
-      port_context->addr_assoc_reg_block.addr_assoc1,
-      port_context->addr_assoc_reg_block.addr_assoc2,
-      port_context->addr_assoc_reg_block.addr_assoc3);
+      pcie_data->rid_assoc_reg_block.rid_assoc1,
+      pcie_data->rid_assoc_reg_block.rid_assoc2,
+      pcie_data->addr_assoc_reg_block.addr_assoc1,
+      pcie_data->addr_assoc_reg_block.addr_assoc2,
+      pcie_data->addr_assoc_reg_block.addr_assoc3);
 }
 
 void prime_rp_ide_key_set(
