@@ -202,7 +202,7 @@ ReadIdeCapCtrlFailed:
     return ret;
 }
 
-ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int *index)
+ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int *index, IDE_HW_TYPE ide_type)
 {
     return NULL;
 }
