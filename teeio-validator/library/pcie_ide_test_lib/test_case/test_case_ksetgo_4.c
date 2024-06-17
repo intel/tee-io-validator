@@ -44,7 +44,7 @@ bool pcie_ide_test_ksetgo_4_setup(void *test_context)
 
   // by default slot_ids are not allocated for key_refresh.
   // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->stream_cap.num_rx_key_slots, true)) {
+  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->priv_data.pcie.stream_cap.num_rx_key_slots, true)) {
     return false;
   }
 
@@ -141,12 +141,12 @@ bool test_ksetgo_4_run_phase1(void* doe_context, void* spdm_context, uint32_t* s
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, true);
+  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->priv_data.pcie.ide_id, true);
 
   // enable host ide stream
   enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
-                         ide_type, upper_port->ide_id,
+                         ide_type, upper_port->priv_data.pcie.ide_id,
                          kcbar_addr,
                          rp_stream_index, true);
 
@@ -154,7 +154,7 @@ bool test_ksetgo_4_run_phase1(void* doe_context, void* spdm_context, uint32_t* s
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_stream_status_in_rp_ecap(upper_port->cfg_space_fd, upper_port->ecap_offset, ide_type, upper_port->ide_id);
+  uint32_t data = read_stream_status_in_rp_ecap(upper_port->cfg_space_fd, upper_port->ecap_offset, ide_type, upper_port->priv_data.pcie.ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   if (stream_status.state != IDE_STREAM_STATUS_SECURE)
   {
@@ -275,7 +275,7 @@ bool pcie_ide_test_ksetgo_4_run(void *test_context)
 
   // phase 2
   res = test_ksetgo_4_run_phase2(doe_context, spdm_context, &session_id,
-                                stream_id, group_context->rp_stream_index, upper_port->ide_id,
+                                stream_id, group_context->rp_stream_index, upper_port->priv_data.pcie.ide_id,
                                 upper_port->mapped_kcbar_addr, group_context->top->type);
 
 Done:

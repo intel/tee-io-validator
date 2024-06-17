@@ -375,12 +375,12 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(lower_port_cfg_space_fd, lower_port_ecap_offset, ide_type, lower_port->ide_id, true);
+  enable_ide_stream_in_ecap(lower_port_cfg_space_fd, lower_port_ecap_offset, ide_type, lower_port->priv_data.pcie.ide_id, true);
 
   // enable host ide stream
   enable_rootport_ide_stream(upper_port_cfg_space_fd,
                          upper_port_ecap_offset,
-                         ide_type, upper_port->ide_id,
+                         ide_type, upper_port->priv_data.pcie.ide_id,
                          kcbar_addr,
                          rp_stream_index, true);
 
@@ -388,7 +388,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
+  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->priv_data.pcie.ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   if (stream_status.state != IDE_STREAM_STATUS_SECURE)
   {
@@ -416,11 +416,11 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     }
 
     // step1: ensure host_ide and dev_ide is enabled
-    if(!is_ide_enabled(upper_port->cfg_space_fd, ide_type, upper_port->ide_id, upper_port->ecap_offset)) {
+    if(!is_ide_enabled(upper_port->cfg_space_fd, ide_type, upper_port->priv_data.pcie.ide_id, upper_port->ecap_offset)) {
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "upper_port ide is not enabled.\n"));
         return false;
     }
-    if(!is_ide_enabled(lower_port->cfg_space_fd, ide_type, lower_port->ide_id, lower_port->ecap_offset)) {
+    if(!is_ide_enabled(lower_port->cfg_space_fd, ide_type, lower_port->priv_data.pcie.ide_id, lower_port->ecap_offset)) {
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "lower_port ide is not enabled.\n"));
         return false;
     }
