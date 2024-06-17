@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include "pcie.h"
+#include "cxl.h"
 #include "intel_keyp.h"
 
 #define NOT_IMPLEMENTED(msg) \
@@ -53,8 +54,20 @@
 #define MAX_KSETSTOP_CASE_ID 4
 #define MAX_SPDMSESSION_CASE_ID 2
 #define MAX_FULL_CASE_ID 1
-#define MAX_CASE_ID \
+#define MAX_PCIE_CASE_ID \
   (MAX(MAX_QUERY_CASE_ID, MAX(MAX_KEYPROG_CASE_ID, MAX(MAX_KSETGO_CASE_ID, MAX(MAX_KSETSTOP_CASE_ID, MAX(MAX_SPDMSESSION_CASE_ID, MAX_FULL_CASE_ID))))))
+
+#define MAX_CXL_QUERY_CASE_ID 2
+#define MAX_CXL_KEYPROG_CASE_ID 9
+#define MAX_CXL_KSETGO_CASE_ID 1
+#define MAX_CXL_KSETSTOP_CASE_ID 1
+#define MAX_CXL_GETKEY_CASE_ID 1
+#define MAX_CXL_FULL_CASE_ID 2
+#define MAX_CXL_CASE_ID \
+  (MAX(MAX_CXL_QUERY_CASE_ID, MAX(MAX_CXL_KEYPROG_CASE_ID, MAX(MAX_CXL_KSETGO_CASE_ID, MAX(MAX_CXL_KSETSTOP_CASE_ID, MAX(MAX_CXL_GETKEY_CASE_ID, MAX_CXL_FULL_CASE_ID))))))
+
+#define MAX_CASE_ID \
+  (MAX(MAX_PCIE_CASE_ID, MAX_CXL_CASE_ID))
 
 #define INVALID_PORT_ID 0
 
@@ -101,6 +114,13 @@ typedef enum {
 } IDE_TEST_TOPOLOGY_TYPE;
 
 typedef enum {
+  IDE_HW_TYPE_PCIE = 0,
+  IDE_HW_TYPE_CXL_IO,
+  IDE_HW_TYPE_CXL_MEM,
+  IDE_HW_TYPE_NUM
+} IDE_HW_TYPE;
+
+typedef enum {
   IDE_COMMON_TEST_CASE_QUERY = 0,
   IDE_COMMON_TEST_CASE_KEYPROG,
   IDE_COMMON_TEST_CASE_KSETGO,
@@ -109,6 +129,16 @@ typedef enum {
   IDE_COMMON_TEST_CASE_TEST,
   IDE_COMMON_TEST_CASE_NUM
 } IDE_COMMON_TEST_CASE;
+
+typedef enum {
+  CXL_MEM_IDE_TEST_CASE_QUERY = 0,
+  CXL_MEM_IDE_TEST_CASE_KEYPROG,
+  CXL_MEM_IDE_TEST_CASE_KSETGO,
+  CXL_MEM_IDE_TEST_CASE_KSETSTOP,
+  CXL_MEM_IDE_TEST_CASE_GETKEY,
+  CXL_MEM_IDE_TEST_CASE_TEST,
+  CXL_MEM_IDE_TEST_CASE_NUM
+} CXL_MEM_IDE_TEST_CASE;
 
 typedef struct
 {
@@ -162,6 +192,7 @@ typedef struct
 typedef struct {
   int id;
   bool enabled;
+  IDE_HW_TYPE ide_type;
   IDE_TEST_TOPOLOGY_TYPE type;
   IDE_TEST_CONNECT_TYPE connection;
   int root_port;
@@ -245,6 +276,13 @@ typedef enum {
   IDE_TEST_CONFIGURATION_TYPE_NUM
 } IDE_TEST_CONFIGURATION_TYPE;
 
+typedef enum {
+  CXL_IDE_CONFIGURATION_TYPE_DEFAULT = 0,
+  CXL_IDE_CONFIGURATION_TYPE_PCRC,
+  CXL_IDE_CONFIGURATION_TYPE_IDE_STOP,
+  CXL_IDE_CONFIGURATION_TYPE_NUM
+} CXL_IDE_CONFIGURATION_TYPE;
+
 #define BIT_MASK(n) ((uint32_t)(1<<n))
 
 #define SELECTIVE_IDE_CONFIGURATION_BITMASK \
@@ -288,25 +326,45 @@ typedef enum {
 } IDE_COMMON_TEST_CONFIG_RESULT;
 
 typedef struct {
+  INTEL_KEYP_PCIE_STREAM_CAP stream_cap;
+
+  // ecap related data
+  PCIE_IDE_CAP ide_cap;
+  // ide_id
+  uint8_t ide_id;
+  // rid/addr assoc_reg_block
+  PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
+  PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+} PCIE_PRIV_DATA;
+
+typedef struct {
+  // ecap data
+  CXL_CAPABILITY cap;
+  CXL_CAPABILITY2 cap2;
+  CXL_CAPABILITY3 cap3;
+
+  // key programming data
+  INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG link_enc_global_config;
+} CXL_PRIV_DATA;
+
+typedef union {
+  PCIE_PRIV_DATA  pcie;
+  CXL_PRIV_DATA cxl;
+} CXL_PCIE_PRIV_DATA;
+
+typedef struct {
   IDE_PORT *port;
 
   // configuration space related data
   int cfg_space_fd;
   uint32_t ecap_offset;
   uint32_t doe_offset;
-  PCIE_IDE_CAP ide_cap;
 
   // kcbar related data
   uint8_t *mapped_kcbar_addr;
   int kcbar_fd;
-  INTEL_KEYP_PCIE_STREAM_CAP stream_cap;
-
-  // ide_id
-  uint8_t ide_id;
-
-  // rid/addr assoc_reg_block
-  PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
-  PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+    
+  CXL_PCIE_PRIV_DATA priv_data;
 } ide_common_test_port_context_t;
 
 typedef struct _ide_common_test_switch_internal_conn_context_t ide_common_test_switch_internal_conn_context_t;
@@ -457,6 +515,7 @@ typedef struct {
   char *class;
   char *names;
   int class_id;
+  IDE_HW_TYPE ide_type;
 } ide_test_case_name_t;
 
 typedef bool(*ide_common_test_group_setup_func_t) (void *test_context);
