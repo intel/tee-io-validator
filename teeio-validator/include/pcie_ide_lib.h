@@ -16,6 +16,11 @@
 //
 
 /**
+ * initialize pcie doe
+*/
+bool init_pci_doe(int fd);
+
+/**
  * open PCIE's configuration space
 */
 int open_configuration_space(char *bdf);
@@ -170,7 +175,7 @@ get_stream_cfg_reg_block(
 /**
  * parse KEYP table
 */
-bool parse_keyp_table(ide_common_test_port_context_t *port_context);
+bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol);
 
 /**
  * map KCBAR into memory

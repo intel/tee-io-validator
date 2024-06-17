@@ -16,6 +16,7 @@
 #include "helperlib.h"
 
 #include "ide_test.h"
+#include "teeio_validator_internal.h"
 
 extern const char *IDE_PORT_TYPE_NAMES[];
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
@@ -37,7 +38,7 @@ extern bool g_libspdm_log;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
-bool is_valid_test_case(const char* test_case_name);
+bool is_valid_test_case(const char* test_case_name, IDE_HW_TYPE ide_type);
 
 void print_usage()
 {
@@ -54,6 +55,7 @@ void print_usage()
   TEEIO_PRINT(("  -s <test_case>      : Test case to be tested. For example Test.IdeStream\n"));
   TEEIO_PRINT(("  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
   TEEIO_PRINT(("  -b <scan_bus>       : Bus number in hex format. For example 0x1a\n"));
+  TEEIO_PRINT(("  -i <scan_bus>       : ide type. pcie/cxl.io/cxl.mem\n"));
   TEEIO_PRINT(("  -h                  : Display this usage\n"));
 }
 
@@ -65,7 +67,9 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   int opt, v;
   uint8_t data8;
   char buf[MAX_LINE_LENGTH] = {0};
+  char test_case_name[MAX_CASE_NAME_LENGTH] = {0};
   int pos = 0;
+  IDE_HW_TYPE ide_type = IDE_HW_TYPE_PCIE;
 
   TEEIO_ASSERT(argc > 0);
   TEEIO_ASSERT(argv != NULL);
@@ -85,7 +89,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   }
   TEEIO_PRINT(("%s\n", buf));
 
-  while ((opt = getopt(argc, argv, "f:t:c:s:l:b:h")) != -1) {
+  while ((opt = getopt(argc, argv, "f:t:c:s:l:i:b:h")) != -1) {
       switch (opt) {
           case 'f':
               if(!validate_file_name(optarg)) {
@@ -96,12 +100,8 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
               break;
 
           case 's':
-              if(!is_valid_test_case(optarg)) {
-                TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -f parameter. %s\n", optarg));
-                return false;
-              }
-              sprintf(g_test_case, "%s", optarg);
-              g_run_test_suite = false;
+              strncpy(test_case_name, optarg, MAX_CASE_NAME_LENGTH);
+              // we will check the test_case_name later because it depends on ide_type which is designated by -i
               break;
 
           case 't':
@@ -135,6 +135,14 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
         case 'l':
             *debug_level = get_ide_log_level_from_string(optarg);
             break;
+        
+        case 'i':
+            ide_type = get_ide_hw_type_from_name(optarg);
+            if(ide_type == IDE_HW_TYPE_NUM) {
+              TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -i parameter. %s\n", optarg));
+              return false;
+            }
+            break;
 
           case 'h':
               *print_usage = true;
@@ -143,6 +151,16 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
           default:
               return false;
       }  
+  }
+
+  if(strlen(test_case_name) > 0) {
+    // test_case is designated in command line
+    if(!is_valid_test_case(test_case_name, ide_type)) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -f parameter. %s\n", test_case_name));
+      return false;
+    }
+    sprintf(g_test_case, "%s", test_case_name);
+    g_run_test_suite = false;
   }
 
   return true;
