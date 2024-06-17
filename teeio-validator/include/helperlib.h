@@ -18,8 +18,16 @@ void libspdm_sleep(uint64_t microseconds);
 // PCIE & MMIO helper APIs
 uint32_t device_pci_read_32 (uint32_t offset, int fp);
 void device_pci_write_32 (uint32_t offset, uint32_t data, int fp);
+
+uint16_t device_pci_read_16 (uint32_t offset, int fp);
+void device_pci_write_16 (uint32_t offset, uint16_t data, int fp);
+
 void mmio_write_reg32(void *const reg_ptr, const uint32_t reg_val);
 uint32_t mmio_read_reg32(void *reg_ptr);
+
+void mmio_write_reg64(void *const reg_ptr, const uint64_t reg_val);
+uint64_t mmio_read_reg64(void *reg_ptr);
+
 void reg_memcpy_dw(void *dst, uint64_t dst_bytes, void *src, uint64_t nbytes);
 bool parse_bdf_string(uint8_t* bdf, uint8_t* bus, uint8_t* device, uint8_t* function);
 bool is_valid_dev_func(uint8_t *df);
@@ -30,6 +38,10 @@ uint8_t calculate_checksum(uint8_t *table, size_t length);
 // ide_test.ini helper APIs
 bool is_valid_topology_type(uint8_t *type);
 IDE_TEST_TOPOLOGY_TYPE get_topology_type_from_name(uint8_t* name);
+
+bool is_valid_ide_hw_type(uint8_t *type);
+IDE_HW_TYPE get_ide_hw_type_from_name(const char* name);
+
 bool is_valid_topology_connection(uint8_t *connection);
 IDE_TEST_CONNECT_TYPE get_connection_from_name(uint8_t* name);
 bool is_valid_port(IDE_TEST_PORTS_CONFIG *ports, uint8_t* port);
