@@ -16,6 +16,7 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
                     ${LIBSPDM_DIR}/os_stub
                     ${SPDM_EMU_DIR}/include
                     ${SPDM_EMU_DIR}/spdm_emu/spdm_emu_common
+                    ${TEEIO_VALIDATOR_DIR}/include
 )
 
 SET(src_teeio_validator
@@ -23,6 +24,7 @@ SET(src_teeio_validator
     cmdline.c
     ide_test_ini.c
     ide_test.c
+    test_factory.c
     )
 
 SET(teeio_validator_LIBRARY
@@ -30,6 +32,7 @@ SET(teeio_validator_LIBRARY
     helperlib
     spdmlib
     pcie_ide_test_lib
+    cxl_ide_test_lib
     )
 
 ADD_EXECUTABLE(teeio_validator ${src_teeio_validator})
