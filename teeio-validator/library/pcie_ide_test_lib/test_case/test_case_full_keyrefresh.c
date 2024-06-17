@@ -57,7 +57,7 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
 
   // by default slot_ids are not allocated for key_refresh.
   // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->stream_cap.num_rx_key_slots, true)) {
+  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->priv_data.pcie.stream_cap.num_rx_key_slots, true)) {
     return false;
   }
 
@@ -108,14 +108,14 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                       group_context->rp_stream_index,
                       group_context->upper_port.cfg_space_fd,
-                      group_context->upper_port.ide_id,
+                      group_context->upper_port.priv_data.pcie.ide_id,
                       group_context->upper_port.ecap_offset,
                       ide_type);
 
     TEEIO_PRINT(("\n"));
     TEEIO_PRINT(("Print device registers.\n"));
     dump_dev_registers(group_context->lower_port.cfg_space_fd,
-                      group_context->lower_port.ide_id,
+                      group_context->lower_port.priv_data.pcie.ide_id,
                       group_context->lower_port.ecap_offset,
                       ide_type);
 
