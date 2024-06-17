@@ -11,10 +11,8 @@
 #include "helperlib.h"
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
-
-bool test_config_enable_common(void *test_context);
-bool test_config_check_common(void *test_context, const char* assertion_msg);
-bool test_config_support_common(void *test_context);
+#include "cxl_ide_test_lib.h"
+#include "test_factory.h"
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
 {
@@ -70,225 +68,6 @@ uint32_t m_top_config_bitmasks[] = {
   (uint32_t)SELECTIVE_LINK_IDE_CONFIGURATION_BITMASK
 };
 
-ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONFIGURATION_TYPE_NUM] = {
-  { // selective_ide
-    { // Default Config
-      pcie_ide_test_config_default_enable_common,
-      pcie_ide_test_config_default_disable_common,
-      pcie_ide_test_config_default_support_common,
-      pcie_ide_test_config_default_check_common
-    },
-    {NULL, NULL, NULL, NULL}, // switch
-    {NULL, NULL, NULL, NULL}, // partial header encryption
-    { // pcrc
-      pcie_ide_test_config_pcrc_enable_sel,
-      pcie_ide_test_config_pcrc_disable_sel,
-      pcie_ide_test_config_pcrc_support_sel,
-      pcie_ide_test_config_pcrc_check_sel
-    },
-    {NULL, NULL, NULL, NULL}, // aggregation
-    { // selective_ide for configuration request
-      pcie_ide_test_config_enable_sel_ide_for_cfg_req,
-      pcie_ide_test_config_disable_sel_ide_for_cfg_req,
-      pcie_ide_test_config_support_sel_ide_for_cfg_req,
-      pcie_ide_test_config_check_sel_ide_for_cfg_req
-    },
-    {NULL, NULL, NULL, NULL}  // tee_limited_stream
-  },
-  { // link_ide
-    {
-      // Default Config
-      pcie_ide_test_config_default_enable_common,
-      pcie_ide_test_config_default_disable_common,
-      pcie_ide_test_config_default_support_common,
-      pcie_ide_test_config_default_check_common
-    },
-
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-
-    {
-      // pcrc
-      pcie_ide_test_config_pcrc_enable_link,
-      pcie_ide_test_config_pcrc_disable_link,
-      pcie_ide_test_config_pcrc_support_link,
-      pcie_ide_test_config_pcrc_check_link
-    },
-
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
-  },
-  { // selective_and_link_ide
-    {
-      // Default Config
-      pcie_ide_test_config_default_enable_sel_link,
-      pcie_ide_test_config_default_disable_sel_link,
-      pcie_ide_test_config_default_support_sel_link,
-      pcie_ide_test_config_default_check_sel_link
-    },
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {
-      // pcrc
-      pcie_ide_test_config_pcrc_enable_sel_link,
-      pcie_ide_test_config_pcrc_disable_sel_link,
-      pcie_ide_test_config_pcrc_support_sel_link,
-      pcie_ide_test_config_pcrc_check_sel_link
-    },
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
-  }
-};
-
-ide_test_group_funcs_t m_group_funcs[] = {
-  { // selective_ide
-      pcie_ide_test_group_setup_sel,
-      pcie_ide_test_group_teardown_sel
-  },
-  { // link_ide
-      pcie_ide_test_group_setup_link,
-      pcie_ide_test_group_teardown_link
-  },
-  { // selective_link_ide
-      pcie_ide_test_group_setup_sel_link,
-      pcie_ide_test_group_teardown_sel_link
-  }
-};
-
-#define TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh"
-
-ide_test_case_name_t m_test_case_names[IDE_COMMON_TEST_CASE_NUM] = {
-  {"Query",       "1,2",                  IDE_COMMON_TEST_CASE_QUERY},
-  {"KeyProg",     "1,2,3,4,5,6",          IDE_COMMON_TEST_CASE_KEYPROG},
-  {"KSetGo",      "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETGO},
-  {"KSetStop",    "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETSTOP},
-  {"SpdmSession", "1,2",                  IDE_COMMON_TEST_CASE_SPDMSESSION},
-  {"Test",        TEST_CLASS_CASE_NAMES,  IDE_COMMON_TEST_CASE_TEST}
-};
-
-ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] = {
-  // Query
-  {
-    { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
-    { pcie_ide_test_query_2_setup, pcie_ide_test_query_2_run, pcie_ide_test_query_2_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-  },
-  // KeyProg
-  {
-    {pcie_ide_test_keyprog_1_setup, pcie_ide_test_keyprog_1_run, pcie_ide_test_keyprog_1_teardown, false},
-    {pcie_ide_test_keyprog_2_setup, pcie_ide_test_keyprog_2_run, pcie_ide_test_keyprog_2_teardown, false},
-    {pcie_ide_test_keyprog_3_setup, pcie_ide_test_keyprog_3_run, pcie_ide_test_keyprog_3_teardown, false},
-    {pcie_ide_test_keyprog_4_setup, pcie_ide_test_keyprog_4_run, pcie_ide_test_keyprog_4_teardown, false},
-    {pcie_ide_test_keyprog_5_setup, pcie_ide_test_keyprog_5_run, pcie_ide_test_keyprog_5_teardown, false},
-    {pcie_ide_test_keyprog_6_setup, pcie_ide_test_keyprog_6_run, pcie_ide_test_keyprog_6_teardown, false}
-  },
-  // KSetGo
-  {
-    { pcie_ide_test_ksetgo_1_setup, pcie_ide_test_ksetgo_1_run, pcie_ide_test_ksetgo_1_teardown, true },
-    { pcie_ide_test_ksetgo_2_setup, pcie_ide_test_ksetgo_2_run, pcie_ide_test_ksetgo_2_teardown, true },
-    { pcie_ide_test_ksetgo_3_setup, pcie_ide_test_ksetgo_3_run, pcie_ide_test_ksetgo_3_teardown, true },
-    { pcie_ide_test_ksetgo_4_setup, pcie_ide_test_ksetgo_4_run, pcie_ide_test_ksetgo_4_teardown, true },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KSetStop
-  {
-    { pcie_ide_test_ksetstop_1_setup, pcie_ide_test_ksetstop_1_run, pcie_ide_test_ksetstop_1_teardown, false },
-    { pcie_ide_test_ksetstop_2_setup, pcie_ide_test_ksetstop_2_run, pcie_ide_test_ksetstop_2_teardown, false },
-    { pcie_ide_test_ksetstop_3_setup, pcie_ide_test_ksetstop_3_run, pcie_ide_test_ksetstop_3_teardown, false },
-    { pcie_ide_test_ksetstop_4_setup, pcie_ide_test_ksetstop_4_run, pcie_ide_test_ksetstop_4_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // SpdmSession
-  {
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  },
-  // Test Full
-  {
-    { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
-    { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false },  // KeyRefresh
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  }
-};
-
-ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index)
-{
-  if(test_case_name == NULL) {
-    return NULL;
-  }
-  char buf1[MAX_LINE_LENGTH] = {0};
-  char buf2[MAX_LINE_LENGTH] = {0};
-  strncpy(buf1, test_case_name, MAX_LINE_LENGTH);
-
-  int pos = find_char_in_str(buf1, '.');
-  if(pos == -1) {
-    return NULL;
-  }
-
-  buf1[pos] = '\0';
-  char* ptr1 = buf1 + pos + 1;
-
-  int i = 0;
-  for(; i < IDE_COMMON_TEST_CASE_NUM; i++) {
-    if(strcmp(buf1, m_test_case_names[i].class) == 0) {
-      break;
-    }
-  }
-  if(i == IDE_COMMON_TEST_CASE_NUM) {
-    return NULL;
-  }
-
-  bool hit = false;
-  strncpy(buf2, m_test_case_names[i].names, MAX_LINE_LENGTH);
-  char *ptr2 = buf2;
-  int j = 0;
-
-  pos = find_char_in_str(ptr2, ',');
-
-  do {
-    if(pos != -1) {
-      ptr2[pos] = '\0';
-    }
-    if(strcmp(ptr1, ptr2) == 0) {
-      hit = true;
-      break;
-    }
-
-    if(pos == -1) {
-      break;
-    }
-
-    ptr2 += (pos + 1);
-    pos = find_char_in_str(ptr2, ',');
-    j++;
-  } while(true);
-
-  if(index != NULL) {
-    *index = j;
-  }
-
-  return hit ? m_test_case_names + i : NULL;
-}
-
-bool is_valid_test_case(const char* test_case_name)
-{
-  return get_test_case_from_string(test_case_name, NULL) != NULL;
-}
-
 ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFIG *test_config)
 {
   ide_run_test_suite_t *rts = (ide_run_test_suite_t *)malloc(sizeof(ide_run_test_suite_t));
@@ -314,7 +93,8 @@ bool alloc_run_test_config_item(ide_run_test_config_t *rtc, int config_type, IDE
   TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
   TEEIO_ASSERT(config_type < IDE_TEST_CONFIGURATION_TYPE_NUM);
 
-  ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_type];
+  // ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_type];
+  ide_test_config_funcs_t *config_func = test_factory_get_test_config_funcs(IDE_HW_TYPE_PCIE, top_type, config_type);
 
   ide_run_test_config_item_t *config_item = (ide_run_test_config_item_t*)malloc(sizeof(ide_run_test_config_item_t));
   TEEIO_ASSERT(config_item != NULL);
@@ -457,7 +237,8 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 
   sprintf(run_test_group->name, "%s", m_ide_test_topology_name[top->type]);
 
-  ide_test_group_funcs_t *group_funcs = &m_group_funcs[top->type];
+  // ide_test_group_funcs_t *group_funcs = &m_group_funcs[top->type];
+  ide_test_group_funcs_t *group_funcs = test_factory_get_test_group_funcs(IDE_HW_TYPE_PCIE, top->type);
   run_test_group->setup_func = group_funcs->setup;
   run_test_group->teardown_func = group_funcs->teardown;
 
@@ -516,7 +297,8 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   sprintf(run_test_case->name, "%s.%d", m_ide_test_case_name[(int)test_case], case_id);
   // run_test_case->action = IDE_COMMON_TEST_ACTION_RUN;
 
-  ide_test_case_funcs_t* case_funcs = &m_test_case_funcs[test_case][case_id - 1];
+  // ide_test_case_funcs_t* case_funcs = &m_test_case_funcs[test_case][case_id - 1];
+  ide_test_case_funcs_t* case_funcs = test_factory_get_test_case_funcs(IDE_HW_TYPE_PCIE, test_case, case_id - 1);
   run_test_case->run_func = case_funcs->run;
   run_test_case->setup_func = case_funcs->setup;
   run_test_case->teardown_func = case_funcs->teardown;
@@ -702,7 +484,11 @@ static bool do_run_test_config_support(ide_run_test_config_t *run_test_config)
 {
   bool ret = false;
 
-  if(!test_config_support_common(run_test_config->test_context)) {
+  // if(!test_config_support_common(run_test_config->test_context)) {
+  //   return false;
+  // }
+  ide_common_test_config_support_func_t support_func = test_factory_get_common_test_config_support_func(IDE_HW_TYPE_PCIE);
+  if(!support_func(run_test_config->test_context)) {
     return false;
   }
 
@@ -721,7 +507,11 @@ static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config)
 {
   bool ret = false;
 
-  if(!test_config_enable_common(run_test_config->test_context)) {
+  // if(!test_config_enable_common(run_test_config->test_context)) {
+  //   return false;
+  // }
+  ide_common_test_config_enable_func_t enable_func = test_factory_get_common_test_config_enable_func(IDE_HW_TYPE_PCIE);
+  if(!enable_func(run_test_config->test_context)) {
     return false;
   }
 
@@ -740,7 +530,11 @@ static bool do_run_test_config_check(ide_run_test_config_t *run_test_config)
 {
   bool ret = false;
 
-  if(!test_config_check_common(run_test_config->test_context, "Check Common Assertion")) {
+  // if(!test_config_check_common(run_test_config->test_context)) {
+  //   return false;
+  // }
+  ide_common_test_config_check_func_t check_func = test_factory_get_common_test_config_check_func(IDE_HW_TYPE_PCIE);
+  if(!check_func(run_test_config->test_context)) {
     return false;
   }
 
