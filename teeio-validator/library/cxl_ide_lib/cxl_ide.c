@@ -48,6 +48,119 @@ bool cxl_init_root_port(ide_common_test_group_context_t *group_context)
   return true;
 }
 
+// walk thru configuration space to find out all CXL DVSEC
+bool cxl_find_dvsec_in_config_space(int fd, IDE_TEST_CXL_PCIE_DVSEC* dvsec, int* count)
+{
+  uint32_t walker = PCIE_EXT_CAP_START;
+  uint32_t cap_ext_header = 0;
+  int dvsec_cnt = 0;
+  CXL_DVSEC_COMMON_HEADER header = {0};
+
+  TEEIO_ASSERT(dvsec != NULL);
+  TEEIO_ASSERT(count != NULL);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_find_dvsec_in_config_space\n"));
+
+  while (walker < PCIE_CONFIG_SPACE_SIZE && walker != 0)
+  {
+    cap_ext_header = device_pci_read_32(walker, fd);
+
+    if (((PCIE_CAP_ID *)&cap_ext_header)->id == PCI_DVSCE_EXT_CAPABILITY_ID)
+    {
+      header.ide_ecap.raw = device_pci_read_32(walker, fd);
+      header.header1.raw = device_pci_read_32(walker + 4, fd);
+      header.header2.raw = device_pci_read_16(walker + 8, fd);
+
+      if(header.header1.vendor_id == DVSEC_VENDOR_ID_CXL) {
+        // This is CXL DVSEC block
+        TEEIO_ASSERT(dvsec_cnt < *count);
+        dvsec->offset = walker;
+        dvsec->dvsec_id = header.header2.id;
+        dvsec += 1;
+        dvsec_cnt += 1;
+      }
+    }
+
+    walker = ((PCIE_CAP_ID *)&cap_ext_header)->next_cap_offset;
+  }
+
+  *count = dvsec_cnt;
+
+  return true;
+}
+
+static CXL_DVSEC_ID mandatory_rootport_dvsec_id[] = {
+  CXL_DVSEC_ID_CXL_EXTENSIONS_DVSEC_FOR_PORTS,
+  CXL_DVSEC_ID_GPF_DVSEC_FOR_CXL_PORTS,
+  CXL_DVSEC_ID_PCIE_DVSEC_FOR_FLEX_BUS_PORT,
+  CXL_DVSEC_ID_REGISTER_LOCATOR_DVSEC,
+  CXL_DVSEC_IN_INVALID
+};
+
+static CXL_DVSEC_ID mandatory_endpoint_dvsec_id[] = {
+  CXL_DVSEC_ID_PCIE_DVSEC_FOR_CXL_DEVICES,
+  CXL_DVSEC_ID_GPF_DVSEC_FOR_CXL_DEVICES,
+  CXL_DVSEC_ID_PCIE_DVSEC_FOR_FLEX_BUS_PORT,
+  CXL_DVSEC_ID_REGISTER_LOCATOR_DVSEC,
+  CXL_DVSEC_IN_INVALID
+};
+
+// check if CXL DVSECs in rootport are valid
+bool cxl_check_rootport_dvsecs(IDE_TEST_CXL_PCIE_DVSEC* dvsec, int count)
+{
+  bool valid = false;
+  int i = 0;
+
+  while(mandatory_rootport_dvsec_id[i] != CXL_DVSEC_IN_INVALID) {
+    valid = false;
+
+    for(int j = 0; j < count; j++) {
+      if(mandatory_rootport_dvsec_id[i] == dvsec[j].dvsec_id) {
+        valid = true;
+        break;
+      }
+    }
+    if(!valid) {
+      break;
+    }
+    i++;
+  }
+
+  return valid;
+}
+
+// check if CXL DVSECs in endpoint are valid
+bool cxl_check_ep_dvsec(IDE_TEST_CXL_PCIE_DVSEC* dvsec, int count)
+{
+  bool valid = false;
+  int i = 0;
+
+  while(mandatory_endpoint_dvsec_id[i] != CXL_DVSEC_IN_INVALID) {
+    valid = false;
+
+    for(int j = 0; j < count; j++) {
+      if(mandatory_endpoint_dvsec_id[i] == dvsec[j].dvsec_id) {
+        valid = true;
+        break;
+      }
+    }
+    if(!valid) {
+      break;
+    }
+    i++;
+  }
+
+  return valid;
+}
+
+void cxl_dump_dvsecs(IDE_TEST_CXL_PCIE_DVSEC* dvsec, int count)
+{
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL DVSECs\n"));
+  for(int i = 0; i < count; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  DVSEC %04x, offset = 0x%04x\n", dvsec[i].dvsec_id, dvsec[i].offset));
+  }
+}
+
 /*
  * Open rootcomplex port
  */
@@ -68,18 +181,33 @@ bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
   sprintf(str, "cxl.host : %s", port->bdf);
   set_deivce_info(fd, str);
 
-  uint32_t ecap_offset = get_extended_cap_offset(fd, PCI_IDE_EXT_CAPABILITY_ID);
-  if (ecap_offset == 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ECAP Offset of CXL IDE is NOT found\n"));
+  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
+  if(!cxl_find_dvsec_in_config_space(fd, port_context->priv_data.cxl.desecs, &dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
     goto InitRootPortFail;
   }
-  else
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of CXL IDE: 0x%016x\n", ecap_offset));
+
+  cxl_dump_dvsecs(port_context->priv_data.cxl.desecs, dvsec_cnt);
+
+  // check CXL DVSECs
+  if(!cxl_check_rootport_dvsecs(port_context->priv_data.cxl.desecs, dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
+    goto InitRootPortFail;
   }
 
-  port_context->ecap_offset = ecap_offset;
+
+  // uint32_t ecap_offset = get_extended_cap_offset(fd, PCI_IDE_EXT_CAPABILITY_ID);
+  // if (ecap_offset == 0)
+  // {
+  //   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ECAP Offset of CXL IDE is NOT found\n"));
+  //   goto InitRootPortFail;
+  // }
+  // else
+  // {
+  //   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of CXL IDE: 0x%016x\n", ecap_offset));
+  // }
+
+  port_context->ecap_offset = 0;
 
   // parse KEYP table and map the kcbar to user space
   if (!parse_keyp_table(port_context, INTEL_KEYP_PROTOCOL_TYPE_CXL_MEMCACHE))
@@ -93,16 +221,16 @@ bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
   CXL_PRIV_DATA * cxl_data = &port_context->priv_data.cxl;
   cxl_data->link_enc_global_config.raw = mmio_read_reg32(&kcbar->link_enc_global_config);
 
-  // check CXL_DVS_HEADER1 CXL_DVS_HEADER2
-  CXL_DVS_HEADER1 header1 = {.raw = device_pci_read_32(ecap_offset + CXL_DVS_HEADER1_OFFSET, fd)};
-  CXL_DVS_HEADER2 header2 = {.raw = device_pci_read_16(ecap_offset + CXL_DVS_HEADER2_OFFSET, fd)};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Rootport (%s) header1=0x%08x, header2=0x%04x\n", port->bdf, header1.raw, header2.raw));
+  // // check CXL_DVS_HEADER1 CXL_DVS_HEADER2
+  // CXL_DVS_HEADER1 header1 = {.raw = device_pci_read_32(ecap_offset + CXL_DVS_HEADER1_OFFSET, fd)};
+  // CXL_DVS_HEADER2 header2 = {.raw = device_pci_read_16(ecap_offset + CXL_DVS_HEADER2_OFFSET, fd)};
+  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Rootport (%s) header1=0x%08x, header2=0x%04x\n", port->bdf, header1.raw, header2.raw));
 
-  // read and save cap/cap2/cap3
-  cxl_data->cap.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY_OFFSET, fd);
-  cxl_data->cap2.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY2_OFFSET, fd);
-  cxl_data->cap3.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY3_OFFSET, fd);
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Rootport (%s) cap=0x%04x, cap2=0x%04x, cap3=0x%04x\n", port->bdf, cxl_data->cap.raw, cxl_data->cap2.raw, cxl_data->cap3.raw));
+  // // read and save cap/cap2/cap3
+  // cxl_data->cap.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY_OFFSET, fd);
+  // cxl_data->cap2.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY2_OFFSET, fd);
+  // cxl_data->cap3.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY3_OFFSET, fd);
+  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Rootport (%s) cap=0x%04x, cap2=0x%04x, cap3=0x%04x\n", port->bdf, cxl_data->cap.raw, cxl_data->cap2.raw, cxl_data->cap3.raw));
 
   return true;
 
@@ -198,6 +326,8 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context)
 
   char str[MAX_NAME_LENGTH] = {0};
 
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_open_dev_port %s\n", port->bdf));
+
   // open configuration space and get ecap offset
   int fd = open_configuration_space(port->bdf);
   if (fd == -1)
@@ -208,17 +338,31 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context)
   sprintf(str, "cxl.dev : %s", port->bdf);
   set_deivce_info(fd, str);
 
-  uint32_t ecap_offset = get_extended_cap_offset(fd, PCI_IDE_EXT_CAPABILITY_ID);
-  if (ecap_offset == 0)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ECAP Offset of CXL IDE is NOT found\n"));
+  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
+  if(!cxl_find_dvsec_in_config_space(fd, &port_context->priv_data.cxl.desecs[0], &dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
     goto OpenDevFail;
   }
-  else
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of CXL IDE: 0x%016x\n", ecap_offset));
+
+  cxl_dump_dvsecs(port_context->priv_data.cxl.desecs, dvsec_cnt);
+
+  // check CXL DVSECs
+  if(!cxl_check_ep_dvsec(port_context->priv_data.cxl.desecs, dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
+    goto OpenDevFail;
   }
-  port_context->ecap_offset = ecap_offset;
+
+  // uint32_t ecap_offset = get_extended_cap_offset(fd, PCI_IDE_EXT_CAPABILITY_ID);
+  // if (ecap_offset == 0)
+  // {
+  //   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ECAP Offset of CXL IDE is NOT found\n"));
+  //   goto OpenDevFail;
+  // }
+  // else
+  // {
+  //   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of CXL IDE: 0x%016x\n", ecap_offset));
+  // }
+  // port_context->ecap_offset = ecap_offset;
 
   // TODO
   // m_dev_fp indicates the device ide card. It is used in doe_read_write.c.
@@ -232,18 +376,18 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context)
   port_context->doe_offset = g_doe_extended_offset;
 
   // TODO
-  // check CXL_DVS_HEADER1 CXL_DVS_HEADER2
-  CXL_DVS_HEADER1 header1 = {.raw = device_pci_read_32(ecap_offset + CXL_DVS_HEADER1_OFFSET, fd)};
-  CXL_DVS_HEADER2 header2 = {.raw = device_pci_read_16(ecap_offset + CXL_DVS_HEADER2_OFFSET, fd)};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Dev (%s) header1=0x%08x, header2=0x%04x\n", port->bdf, header1.raw, header2.raw));
+  // // check CXL_DVS_HEADER1 CXL_DVS_HEADER2
+  // CXL_DVS_HEADER1 header1 = {.raw = device_pci_read_32(ecap_offset + CXL_DVS_HEADER1_OFFSET, fd)};
+  // CXL_DVS_HEADER2 header2 = {.raw = device_pci_read_16(ecap_offset + CXL_DVS_HEADER2_OFFSET, fd)};
+  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Dev (%s) header1=0x%08x, header2=0x%04x\n", port->bdf, header1.raw, header2.raw));
 
-  // read and save cap/cap2/cap3
-  CXL_PRIV_DATA* cxl_data = &port_context->priv_data.cxl;
+  // // read and save cap/cap2/cap3
+  // CXL_PRIV_DATA* cxl_data = &port_context->priv_data.cxl;
 
-  cxl_data->cap.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY_OFFSET, fd);
-  cxl_data->cap2.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY2_OFFSET, fd);
-  cxl_data->cap3.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY3_OFFSET, fd);
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Dev (%s) cap=0x%04x, cap2=0x%04x, cap3=0x%04x\n", port->bdf, cxl_data->cap.raw, cxl_data->cap2.raw, cxl_data->cap3.raw));
+  // cxl_data->cap.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY_OFFSET, fd);
+  // cxl_data->cap2.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY2_OFFSET, fd);
+  // cxl_data->cap3.raw = device_pci_read_16(ecap_offset + CXL_CAPABILITY3_OFFSET, fd);
+  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL Dev (%s) cap=0x%04x, cap2=0x%04x, cap3=0x%04x\n", port->bdf, cxl_data->cap.raw, cxl_data->cap2.raw, cxl_data->cap3.raw));
 
   return true;
 

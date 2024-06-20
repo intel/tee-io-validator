@@ -58,14 +58,18 @@ static bool common_test_group_setup(void *test_context)
   ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
   TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup start\n"));
+
   // first scan devices
   if(!cxl_scan_devices(test_context)) {
+    TEEIO_ASSERT(false);
     return false;
   }
 
   // initialize lower_port
   ret = cxl_init_dev_port(context);
   if(!ret) {
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -74,6 +78,7 @@ static bool common_test_group_setup(void *test_context)
 
   ret = cxl_init_root_port(context);
   if (!ret) {
+    TEEIO_ASSERT(false);
     return false;
   }
 
@@ -85,11 +90,15 @@ static bool common_test_group_setup(void *test_context)
   ret = spdm_connect(spdm_context, &session_id);
   if (!ret) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_connect failed.\n"));
+    TEEIO_ASSERT(false);
     return false;
   }
 
   context->spdm_context = spdm_context;
   context->session_id = session_id;
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
+  TEEIO_ASSERT(false);
 
   return true;
 }

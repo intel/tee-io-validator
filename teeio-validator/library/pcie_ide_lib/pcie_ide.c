@@ -22,9 +22,9 @@
 #include "pcie_ide_internal.h"
 #include "pcie_ide_lib.h"
 
-#define PCI_DOE_EXT_CAPABILITY_ID 0x002E
-#define PCI_IDE_EXT_CAPABILITY_ID 0x0030
-#define PCI_AER_EXT_CAPABILITY_ID 0x0001
+// #define PCI_DOE_EXT_CAPABILITY_ID 0x002E
+// #define PCI_IDE_EXT_CAPABILITY_ID 0x0030
+// #define PCI_AER_EXT_CAPABILITY_ID 0x0001
 
 #define MAX_PCI_DOE_CNT 32
 

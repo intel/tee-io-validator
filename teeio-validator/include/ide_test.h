@@ -336,6 +336,12 @@ typedef struct {
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
 } PCIE_PRIV_DATA;
 
+#define MAX_IDE_TEST_DVSEC_COUNT  16
+typedef struct {
+  uint32_t offset;          // offset in configuration space
+  CXL_DVSEC_ID dvsec_id;    // DVSEC ID. 0xff is invalid DVSEC
+} IDE_TEST_CXL_PCIE_DVSEC;
+
 typedef struct {
   // ecap data
   CXL_CAPABILITY cap;
@@ -344,6 +350,9 @@ typedef struct {
 
   // key programming data
   INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG link_enc_global_config;
+
+  // DVSECs in Configuration Space
+  IDE_TEST_CXL_PCIE_DVSEC desecs[MAX_IDE_TEST_DVSEC_COUNT];
 } CXL_PRIV_DATA;
 
 typedef union {
