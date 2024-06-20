@@ -41,12 +41,12 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context);
 bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOLOGY_TYPE top_type);
 
 /**
- * enable/disable cache_enable bit in CXL_CONTROL
+ * enable/disable cache_enable bit in CXL_DEV_CONTROL
  */
 void cxl_cfg_cache_enable(int fd, uint32_t ecap_offset, bool enable);
 
 /**
- * enable/disable mem_enable bit in CXL_CONTROL
+ * enable/disable mem_enable bit in CXL_DEV_CONTROL
  */
 void cxl_cfg_mem_enable(int fd, uint32_t ecap_offset, bool enable);
 
@@ -70,5 +70,5 @@ void cxl_cfg_rp_start_trigger(
 
 void cxl_dump_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);
 
-void cxl_dump_ecap(int fd, uint32_t ecap_offset);
+void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap);
 #endif

@@ -21,10 +21,11 @@
 #include "teeio_spdmlib.h"
 #include "pcie_ide_internal.h"
 #include "pcie_ide_lib.h"
+// #include "pcie.h"
 
-#define PCI_DOE_EXT_CAPABILITY_ID 0x002E
-#define PCI_IDE_EXT_CAPABILITY_ID 0x0030
-#define PCI_AER_EXT_CAPABILITY_ID 0x0001
+// #define PCI_DOE_EXT_CAPABILITY_ID 0x002E
+// #define PCI_IDE_EXT_CAPABILITY_ID 0x0030
+// #define PCI_AER_EXT_CAPABILITY_ID 0x0001
 
 #define MAX_PCI_DOE_CNT 32
 
@@ -39,13 +40,6 @@
 #define PREFETCH_MEMORY_LIMIT_UPPER_OFFSET 0x2c
 
 #define LINK_IDE_REGISTER_BLOCK_SIZE (sizeof(PCIE_LNK_IDE_STREAM_CTRL) + sizeof(PCIE_LINK_IDE_STREAM_STATUS))
-
-#define PCIE_BAR0_OFFSETE 0x10
-// PCIE Base 6.1 Table 7-9
-#define PCIE_MEM_BASE_ADDR_MASK 0x6
-#define PCIE_MEM_BASE_ADDR_64 0x4
-// bit 3 prefetchable
-#define PCIE_MEM_BASE_PREFETCHABLE_MASK 0x8
 
 extern uint32_t g_doe_extended_offset;
 
@@ -461,7 +455,7 @@ bool check_use_prefetchable(char* bdf)
 
   bool use_prefetchable = false;
 
-  uint32_t  bar0 = device_pci_read_32(PCIE_BAR0_OFFSETE, fd);
+  uint32_t  bar0 = device_pci_read_32(PCIE_BAR0_OFFSET, fd);
   if((bar0 & PCIE_MEM_BASE_ADDR_MASK) == PCIE_MEM_BASE_ADDR_64) {
     // check bit 3
     if((bar0 & PCIE_MEM_BASE_PREFETCHABLE_MASK) != 0) {

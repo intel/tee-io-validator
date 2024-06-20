@@ -337,14 +337,41 @@ typedef struct {
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
 } PCIE_PRIV_DATA;
 
+#define MAX_IDE_TEST_DVSEC_COUNT  16
 typedef struct {
-  // ecap data
-  CXL_CAPABILITY cap;
-  CXL_CAPABILITY2 cap2;
-  CXL_CAPABILITY3 cap3;
+  uint32_t offset;          // offset in configuration space
+  CXL_DVSEC_ID dvsec_id;    // DVSEC ID. 0xff is invalid DVSEC
+} IDE_TEST_CXL_PCIE_DVSEC;
 
-  // key programming data
+typedef struct {
+  // DVSECs in Configuration Space
+  IDE_TEST_CXL_PCIE_DVSEC dvsecs[MAX_IDE_TEST_DVSEC_COUNT];
+  int dvsec_cnt;
+
+  CXL_DEV_CAPABILITY cap;
+  CXL_DEV_CAPABILITY2 cap2;
+  CXL_DEV_CAPABILITY3 cap3;
+} CXL_PRIV_DATA_ECAP;
+
+typedef struct {
+  // KCBar data
   INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG link_enc_global_config;
+} CXL_PRIV_DATA_KCBAR;
+
+typedef struct {
+  int mapped_fd;
+  uint8_t* mapped_memcache_reg_block;
+
+  CXL_CAPABILITY_XXX_HEADER cap_headers[CXL_CAPABILITY_ID_NUM];
+  int cap_headers_cnt;
+
+  CXL_IDE_CAPABILITY ide_cap;
+} CXL_PRIV_DATA_MEMCACHE_REG_DATA;
+
+typedef struct {
+  CXL_PRIV_DATA_ECAP ecap;
+  CXL_PRIV_DATA_KCBAR kcbar;
+  CXL_PRIV_DATA_MEMCACHE_REG_DATA memcache;
 } CXL_PRIV_DATA;
 
 typedef union {

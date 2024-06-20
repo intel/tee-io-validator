@@ -13,6 +13,9 @@
 #include "ide_test.h"
 #include "teeio_debug.h"
 
+// Define the macro to get the offset of a field in a struct
+#define OFFSET_OF(type, field) ((size_t) &(((type *)0)->field))
+
 void libspdm_sleep(uint64_t microseconds);
 
 // PCIE & MMIO helper APIs
