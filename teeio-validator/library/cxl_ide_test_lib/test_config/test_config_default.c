@@ -54,6 +54,7 @@ bool cxl_ide_test_config_check_common(void *test_context)
   // IDE_TEST_TOPOLOGY* top = group_context->top;
   // TEEIO_ASSERT(top->connection == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
 
+
   return true;
 }
 
@@ -68,11 +69,13 @@ bool cxl_ide_test_config_support_common(void *test_context)
   CXL_PRIV_DATA* rp_cxl_data = &group_context->upper_port.priv_data.cxl;
   CXL_PRIV_DATA* ep_cxl_data = &group_context->lower_port.priv_data.cxl;
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_ide_test_config_support_common cxl_rp.cap=0x%04x, ep_cxl.cap=0x%04x\n", rp_cxl_data->cap.raw, ep_cxl_data->cap.raw));
-
   // TODO
-  bool supported = rp_cxl_data->cap.mem_capable == 1 && ep_cxl_data->cap.mem_capable;
+  bool supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1 && ep_cxl_data->memcache.ide_cap.cxl_ide_capable == 1
+                  && ep_cxl_data->ecap.cap.mem_capable == 1;
 
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rootport cxl_ide_capable=%d\n", rp_cxl_data->memcache.ide_cap.cxl_ide_capable));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "endpoint cxl_ide_capable=%d mem_capable=%d\n", rp_cxl_data->memcache.ide_cap.cxl_ide_capable, ep_cxl_data->ecap.cap.mem_capable));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_ide_test_config_support_common supported=%d\n", supported));
   return supported;
 }
 

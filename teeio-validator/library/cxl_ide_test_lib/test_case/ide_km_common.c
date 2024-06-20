@@ -113,6 +113,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_query failed with status=0x%x\n", status));
+    TEEIO_ASSERT(false);
     return false;
   }
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "max_port_index - 0x%02x\n", max_port_index));
@@ -122,6 +123,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%04x: 0x%08x\n", index, ide_reg_block[index]));
   }
+
+  TEEIO_ASSERT(false);
 
   // get_key
   // status = cxl_ide_km_get_key(doe_context, spdm_context,
