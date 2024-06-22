@@ -2449,6 +2449,8 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "[Main]\n"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pci_log=%s\n", main_config->pci_log == 0 ? "false":"true"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  debug_level=%s\n", get_ide_log_level_string(main_config->debug_level)));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  libspdm_log=%s\n", main_config->libspdm_log == 0 ? "false":"true"));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pcap_enable=%s\n", main_config->pcap_enable == 0 ? "false":"true"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
 
   IDE_TEST_PORTS_CONFIG *ports = &test_config->ports_config;
