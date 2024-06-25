@@ -447,9 +447,14 @@ bool populate_rid_assoc_reg_block(
 }
 
 // If the device is 64-bit and bit3 (prefetchable bit) is set, then use_prefetchable registers
-bool check_use_prefetchable(int fd)
+bool check_use_prefetchable(char* bdf)
 {
-  TEEIO_ASSERT(fd > 0);
+  int fd = open_configuration_space(bdf);
+  if(fd == -1) {
+    TEEIO_ASSERT(false);
+    return false;
+  }
+
   bool use_prefetchable = false;
 
   uint32_t  bar0 = device_pci_read_32(PCIE_BAR0_OFFSETE, fd);
@@ -462,25 +467,22 @@ bool check_use_prefetchable(int fd)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device bar0 is 0x%08x, use_prefetchable = %d\n", bar0, use_prefetchable));
 
+  close(fd);
+
   return use_prefetchable;
 }
 
 bool populate_addr_assoc_reg_block(
-    char* dev_bdf,
+    int cfg_space_fd,
+    bool use_prefetch_memory,
     PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK *addr_assoc_reg_block)
 {
-    if(addr_assoc_reg_block == NULL || dev_bdf == NULL) {
-        return false;
-    }
-
-    int cfg_space_fd = open_configuration_space(dev_bdf);
-    if(cfg_space_fd == -1) {
+    if(addr_assoc_reg_block == NULL) {
       return false;
     }
 
-    bool use_prefetch_memory = check_use_prefetchable(cfg_space_fd);
+    // populate addr_assoc_1
     int mem_base_offset = MEMORY_BASE_OFFSET;
-
     if(use_prefetch_memory) {
         mem_base_offset = PREFETCH_MEMORY_BASE_OFFSET;
     }
@@ -496,6 +498,7 @@ bool populate_addr_assoc_reg_block(
         .valid = 1};
     addr_assoc_reg_block->addr_assoc1.raw = addr_assoc1.raw;
 
+    // populate addr_assoc 2/3
     PCIE_SEL_IDE_ADDR_ASSOC_2 addr_assoc2 = {.raw = 0};
     PCIE_SEL_IDE_ADDR_ASSOC_3 addr_assoc3 = {.raw = 0};
     if(use_prefetch_memory) {
@@ -505,8 +508,6 @@ bool populate_addr_assoc_reg_block(
 
     addr_assoc_reg_block->addr_assoc2.raw = addr_assoc2.raw;
     addr_assoc_reg_block->addr_assoc3.raw = addr_assoc3.raw;
-
-    close(cfg_space_fd);
 
     return true;
 }
@@ -549,26 +550,27 @@ bool init_root_port(ide_common_test_group_context_t *group_context)
   populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
   ide_common_test_switch_internal_conn_context_t *itr = NULL;
-  char* bdf = NULL;
+  char* dev_bdf = NULL;
   if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH) {
 
     itr = group_context->sw_conn1;
     while(itr->next != NULL) {
       itr = itr->next;
     }
-    bdf = itr->dps.port->bdf;
+    dev_bdf = itr->dps.port->bdf;
   } else if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
     itr = group_context->sw_conn2;
     while(itr->next != NULL) {
       itr = itr->next;
     }
-    bdf = itr->dps.port->bdf;
+    dev_bdf = itr->dps.port->bdf;
 
   } else {
-    bdf = port_context->port->bdf;
+    dev_bdf = port_context->port->bdf;
   }
 
-  if(!populate_addr_assoc_reg_block(bdf, &port_context->addr_assoc_reg_block)) {
+  bool use_prefetch_memory = check_use_prefetchable(dev_bdf);
+  if(!populate_addr_assoc_reg_block(port_context->cfg_space_fd, use_prefetch_memory, &port_context->addr_assoc_reg_block)) {
     goto InitHostFail;
   }
 
