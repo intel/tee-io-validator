@@ -31,7 +31,7 @@
 
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
-
+extern bool g_doe_log;
 void *m_pci_doe_context;
 
 // The must supported pci_doe_data_object_type for TEEIO-Validator
@@ -45,6 +45,13 @@ uint8_t m_pci_doe_data_object_type[] = {
 bool m_send_receive_buffer_acquired = false;
 uint8_t m_send_receive_buffer[LIBSPDM_RECEIVER_BUFFER_SIZE];
 size_t m_send_receive_buffer_size;
+
+#define TEEIO_DOE_DEBUG(expression) \
+    do {                            \
+        if(g_doe_log) {             \
+          TEEIO_DEBUG(expression);  \
+        }                           \
+    } while (false)
 
 // more info please check file - new_cambria_core_regs_RWF_FM85.doc.xml
 void check_pcie_advance_error()
@@ -137,8 +144,8 @@ libspdm_return_t device_doe_send_message(
 
     check_pcie_advance_error();
 
-    TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Start ... \n"));
-    TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] RequestSize = 0x%x \n", request_size));
+    TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Start ... \n"));
+    TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] RequestSize = 0x%x \n", request_size));
 
     if (request == NULL) {
         return LIBSPDM_STATUS_INVALID_PARAMETER;
@@ -152,7 +159,7 @@ libspdm_return_t device_doe_send_message(
     data_object_count = (uint32_t)(request_size / sizeof(uint32_t));
     data_object_buffer = (uint32_t *)(uintptr_t)request; // cast discards ‘const’ qualifier from pointer target type
 
-    TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Start ... \n"));
+    TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Start ... \n"));
 
     if (timeout == 0) {
       timeout = PCI_EXPRESS_DOE_MAILBOX_TIMEOUT;
@@ -161,7 +168,7 @@ libspdm_return_t device_doe_send_message(
     delay = timeout / 30 + 1;
 
     if (is_doe_error_asserted()) {
-        TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Error' bit is set. Clearing...\n"));
+        TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Error' bit is set. Clearing...\n"));
         /* Write 1b to the DOE Abort bit. */
         trigger_doe_abort();
     }
@@ -170,26 +177,26 @@ libspdm_return_t device_doe_send_message(
         /* Check the DOE Busy bit is Clear to ensure that the DOE instance is ready to receive a DOE request. */
         if (!is_doe_busy_asserted()) {
             /* Write the entire data object a DWORD at a time via the DOE Write Data Mailbox register. */
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Busy' bit is cleared. Start writing Mailbox ...\n"));
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"Requester: \n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Busy' bit is cleared. Start writing Mailbox ...\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE, "Requester: \n"));
             for (index = 0; index < data_object_count; index++) { 
                 device_pci_doe_write_mailbox_write_32 (data_object_buffer[index]);
-                TEEIO_DEBUG((TEEIO_DEBUG_INFO, "mailbox: 0x%08x\n", data_object_buffer[index]));
-                TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + index) + 0),
+                TEEIO_DOE_DEBUG((TEEIO_DEBUG_VERBOSE, "mailbox: 0x%08x\n", data_object_buffer[index]));
+                TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + index) + 0),
                                                             *((uint8_t*)(data_object_buffer + index) + 1),
                                                             *((uint8_t*)(data_object_buffer + index) + 2),
                                                             *((uint8_t*)(data_object_buffer + index) + 3)));
             }
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"\n"));
 
             /* Write 1b to the DOE Go bit. */
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Set 'DOE Go' bit, the instance start consuming the data object.\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Set 'DOE Go' bit, the instance start consuming the data object.\n"));
             trigger_doe_go();
 
             break;
         } else {
             /* Stall for 30 microseconds. */
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Busy' bit is not cleared! Waiting ...\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Busy' bit is not cleared! Waiting ...\n"));
             if(is_doe_error_asserted()){
                 TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_send_message] DOE error is found. Exiting!\n"));
                 exit(-1);
@@ -235,8 +242,8 @@ libspdm_return_t device_doe_receive_message(
 
     check_pcie_advance_error();
 
-    TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Start ... \n"));
-    TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Response_size = 0x%x \n", *response_size));
+    TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Start ... \n"));
+    TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Response_size = 0x%x \n", *response_size));
 
     if (*response == NULL) {
         return LIBSPDM_STATUS_INVALID_PARAMETER;
@@ -262,7 +269,7 @@ libspdm_return_t device_doe_receive_message(
 
     /* check error bit */
     if (is_doe_error_asserted()) {
-        TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Error' bit is set. Clearing...\n"));
+        TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Error' bit is set. Clearing...\n"));
         /* Write 1b to the DOE Abort bit. */
         trigger_doe_abort();
     }
@@ -270,8 +277,8 @@ libspdm_return_t device_doe_receive_message(
     do {
         /* Poll the Data Object Ready bit. */
         if (is_doe_data_object_ready_asserted()) {
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] 'Data Object Ready' bit is set. Start reading Mailbox ...\n"));
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"Responder: \n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] 'Data Object Ready' bit is set. Start reading Mailbox ...\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"Responder: \n"));
             /* Get DataObjectHeader1. */
             data_object_buffer[0] = device_pci_doe_read_mailbox_read_32 ();
             /* Write to the DOE Read Data Mailbox to indicate a successful read. */
@@ -284,13 +291,13 @@ libspdm_return_t device_doe_receive_message(
             if (data_object_count == 0) {
                 data_object_count = 0x40000;
             }
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] data_object_count = 0x%x\n", data_object_count));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE, "[device_doe_receive_message] data_object_count = 0x%x\n", data_object_count));
 
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + 0) + 0),
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + 0) + 0),
                                                             *((uint8_t*)(data_object_buffer + 0) + 1),
                                                             *((uint8_t*)(data_object_buffer + 0) + 2),
                                                             *((uint8_t*)(data_object_buffer + 0) + 3)));
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + 1) + 0),
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + 1) + 0),
                                                             *((uint8_t*)(data_object_buffer + 1) + 1),
                                                             *((uint8_t*)(data_object_buffer + 1) + 2),
                                                             *((uint8_t*)(data_object_buffer + 1) + 3)));
@@ -307,20 +314,20 @@ libspdm_return_t device_doe_receive_message(
                 data_object_buffer[index] = device_pci_doe_read_mailbox_read_32 ();
                 /* Write to the DOE Read Data Mailbox to indicate a successful read. */
                 device_pci_doe_read_mailbox_write_32 (data_object_buffer[index]);
-                TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + index) + 0),
+                TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + index) + 0),
                                                             *((uint8_t*)(data_object_buffer + index) + 1),
                                                             *((uint8_t*)(data_object_buffer + index) + 2),
                                                             *((uint8_t*)(data_object_buffer + index) + 3)));
             }
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO,"\n"));
+            TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"\n"));
 
             break;
         } else {
             /* Stall for 30 microseconds.. */
-            //TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] 'Data Object Ready' bit is not set! Waiting ...\n"));
-            TEEIO_DEBUG((TEEIO_DEBUG_INFO, "z"));
+            //TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] 'Data Object Ready' bit is not set! Waiting ...\n"));
+            TEEIO_DOE_DEBUG((TEEIO_DEBUG_INFO, "z"));
             if(is_doe_error_asserted()){
-                TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] DOE error is found. Exiting!\n"));
+                TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_receive_message] DOE error is found. Exiting!\n"));
                 exit(-1);
             }
             libspdm_sleep (30 * 1000);
@@ -334,7 +341,7 @@ libspdm_return_t device_doe_receive_message(
         /* check ERROR bit again */
         if (is_doe_error_asserted()) {
             status = LIBSPDM_STATUS_SEND_FAIL;
-            TEEIO_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] 'DOE Error' bit is set. Send failure...\n"));
+            TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_send_message] 'DOE Error' bit is set. Send failure...\n"));
             /* Write 1b to the DOE Abort bit. */
             trigger_doe_abort();
         } else {
@@ -429,7 +436,7 @@ bool pcie_doe_init_request()
     }
 
     for (index = 0; index < data_object_protocol_size/sizeof(pci_doe_data_object_protocol_t); index++) {
-        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "DOE(0x%x) VendorId-0x%04x, DataObjectType-0x%02x\n",
+        TEEIO_DOE_DEBUG((TEEIO_DEBUG_INFO, "DOE(0x%x) VendorId-0x%04x, DataObjectType-0x%02x\n",
                         index, data_object_protocol[index].vendor_id,
                         data_object_protocol[index].data_object_type));
     }

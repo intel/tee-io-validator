@@ -36,6 +36,7 @@ EntryName=EntryValue
 | libspdm_log|0/1 |0 | O | enable libspdm log if 1|
 | debug_level | verbose/info/warn/error | warn | O | debug level|
 | pcap_enable | 0/1 | 0 | O | enable pcap capture if 1|
+| doe_log|0/1 |0 | O | enable doe log if 1|
 
 [Ports]
 |Entry|Value|Default|Mandatory|Comment|
