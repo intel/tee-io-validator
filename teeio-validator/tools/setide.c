@@ -28,6 +28,7 @@ bool g_run_test_suite = false;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 bool g_libspdm_log = false;
+bool g_doe_log = false;
 uint8_t g_scan_bus = INVALID_SCAN_BUS;
 FILE* m_logfile = NULL;
 

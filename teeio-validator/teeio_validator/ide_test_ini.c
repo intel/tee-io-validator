@@ -2324,6 +2324,12 @@ void ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
     test_config->main_config.libspdm_log = data32 == 1;
   }
 
+  sprintf(entry_name, "doe_log");
+  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  {
+    test_config->main_config.doe_log = data32 == 1;
+  }
+
   sprintf(entry_name, "debug_level");
   if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
   {
@@ -2450,6 +2456,7 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pci_log=%s\n", main_config->pci_log == 0 ? "false":"true"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  debug_level=%s\n", get_ide_log_level_string(main_config->debug_level)));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  libspdm_log=%s\n", main_config->libspdm_log == 0 ? "false":"true"));
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  doe_log=%s\n", main_config->doe_log == 0 ? "false":"true"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  pcap_enable=%s\n", main_config->pcap_enable == 0 ? "false":"true"));
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
 

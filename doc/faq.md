@@ -29,6 +29,8 @@ If you find anything missing or incorrect in the FAQ, feel free to create an iss
 
 - [How to enable spdm log?](#how-to-enable-spdm-log)
 
+- [How to enable doe log?](#how-to-enable-doe-log)
+
 ### What is TEE-IO Device Validation Utility?
 Intel TDX Connect adds “device” to TEE scope. “Device” need to follow standard protocols (SPDM, IDE, TDISP) to communicate with Intel Root Port and Intel TDX TSM. 
 TEE-IO Device Validation Utility is proposed to validate the interoperability of standard protocols (SPDM/IDE/TDISP) between the device and Intel component.
@@ -97,3 +99,6 @@ TEE-IO Device Validation Utility set debug_level in 2 ways: ide_test.ini and com
 
 ### How to enable spdm log?
 TEE-IO Device Validation Utility enables spdm log output by setting ide_test.ini. Refer to [Issue#57](https://github.com/intel/tee-io-validator/issues/57#issuecomment-2116503580)
+
+### How to enable doe log?
+TEE-IO Device Validation Utility enables doe log output by setting ide_test.ini. Refer to [Issue#94](https://github.com/intel/tee-io-validator/issues/94#issuecomment-2192973993)
