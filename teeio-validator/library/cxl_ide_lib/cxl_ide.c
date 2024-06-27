@@ -661,10 +661,6 @@ void cxl_cfg_rp_link_enc_key_iv(
   INTEL_KEYP_CXL_TXRX_IV* txrx_iv = NULL;
   TEEIO_ASSERT(key_slot < CXL_LINK_ENC_KEYS_SLOT_NUM);
   TEEIO_ASSERT(key_size == 32);
-  // TODO iv_size == 8?
-  // in cxl_ide_common_lib.h, 
-  // uint32_t iv[3]
-  TEEIO_ASSERT(iv_size == 8);
 
   if(direction == CXL_IDE_STREAM_DIRECTION_RX) {
     enc_keys = &kcbar_ptr->tx_enc_keys;
@@ -672,6 +668,10 @@ void cxl_cfg_rp_link_enc_key_iv(
   } else {
     enc_keys = &kcbar_ptr->rx_enc_keys;
     txrx_iv = &kcbar_ptr->tx_iv;
+  }
+
+  if(iv_size > sizeof(txrx_iv->iv)) {
+    iv_size = sizeof(txrx_iv->iv);
   }
 
   reg_memcpy_dw(enc_keys, key_size, key, key_size);

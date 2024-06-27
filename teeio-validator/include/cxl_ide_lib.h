@@ -71,4 +71,5 @@ void cxl_cfg_rp_start_trigger(
 void cxl_dump_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);
 
 void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap);
+
 #endif
