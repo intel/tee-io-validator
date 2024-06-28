@@ -32,6 +32,7 @@ typedef union {
 
 #define PCI_HEADER_TYPE0  0
 #define PCI_HEADER_TYPE1  1
+#define PCI_HEADER_LAYOUT_MASK  0x7f
 
 bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint8_t bus, uint8_t* SecBus, uint8_t* SubBus)
 {
@@ -49,9 +50,10 @@ bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint8_t bus, uint8_t* S
     goto ScanSwitchInternalPortDone;
   }
 
-  // check headertype shall be 1
+  // PCIe Spec 6.1 Section 7.5.1.1.9
+  // check header layout (bit 0:6) shall be 1
   data32.raw = device_pci_read_32(0x0c, fd);
-  if(data32.byte2 != PCI_HEADER_TYPE1) {
+  if((data32.byte2 & PCI_HEADER_LAYOUT_MASK) != PCI_HEADER_TYPE1) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "rootport/switch_internal_port(%s) HEADER_TYPE is not 1. (%x)\n", port->bdf, data32.byte2));
     goto ScanSwitchInternalPortDone;
   }
@@ -122,10 +124,11 @@ bool scan_endpoint_at_bus(uint8_t bus, IDE_PORT* port)
     goto ScanEndpointDone;
   }
 
-  // check headertype shall be 1
+  // PCIe Spec 6.1 Section 7.5.1.1.9
+  // check header layout (bit 0:6) shall be 0
   data32.raw = device_pci_read_32(0x0c, fd);
-  if(data32.byte2 != PCI_HEADER_TYPE0) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "endpoint(%s) HEADER_TYPE is not 1. (%x)\n", port->bdf, data32.byte2));
+  if((data32.byte2 & PCI_HEADER_LAYOUT_MASK) != PCI_HEADER_TYPE0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "endpoint(%s) HEADER_TYPE is not 0. (%x)\n", port->bdf, data32.byte2));
     goto ScanEndpointDone;
   }
 
