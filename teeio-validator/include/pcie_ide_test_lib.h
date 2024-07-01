@@ -107,6 +107,11 @@ bool pcie_ide_test_full_keyrefresh_teardown(void *test_context);
 // PCIE_IDE Test Config
 //
 
+// common function
+bool pcie_ide_test_config_enable_common(void *test_context);
+bool pcie_ide_test_config_check_common(void *test_context);
+bool pcie_ide_test_config_support_common(void *test_context);
+
 // default config
 bool pcie_ide_test_config_default_enable_common(void *test_context);
 bool pcie_ide_test_config_default_disable_common(void *test_context);

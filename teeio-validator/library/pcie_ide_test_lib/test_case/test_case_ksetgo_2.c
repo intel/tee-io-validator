@@ -39,7 +39,7 @@ bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 
   return test_ksetgo_setup_common(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
     group_context->upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
-    group_context->upper_port.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
+    group_context->upper_port.priv_data.pcie.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
 }
 
 bool pcie_ide_test_ksetgo_2_run(void *test_context)
@@ -122,12 +122,12 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, group_context->lower_port.ide_id, true);
+  enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, group_context->lower_port.priv_data.pcie.ide_id, true);
 
   // enable host ide stream
   enable_rootport_ide_stream(group_context->upper_port.cfg_space_fd,
                          group_context->upper_port.ecap_offset,
-                         ide_type, group_context->upper_port.ide_id,
+                         ide_type, group_context->upper_port.priv_data.pcie.ide_id,
                          group_context->upper_port.mapped_kcbar_addr,
                          group_context->rp_stream_index, true);
 

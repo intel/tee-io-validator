@@ -70,14 +70,14 @@ bool pcie_ide_test_full_1_run(void *test_context)
   dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                     group_context->rp_stream_index,
                     group_context->upper_port.cfg_space_fd,
-                    group_context->upper_port.ide_id,
+                    group_context->upper_port.priv_data.pcie.ide_id,
                     group_context->upper_port.ecap_offset,
                     ide_type);
 
   TEEIO_PRINT(("\n"));
   TEEIO_PRINT(("Print device registers.\n"));
   dump_dev_registers(group_context->lower_port.cfg_space_fd,
-                    group_context->lower_port.ide_id,
+                    group_context->lower_port.priv_data.pcie.ide_id,
                     group_context->lower_port.ecap_offset,
                     ide_type);
 
@@ -181,12 +181,12 @@ bool test_full_teardown_common(void *test_context)
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
 
-  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, false);
+  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->priv_data.pcie.ide_id, false);
 
   // disable host ide stream
   enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
-                         ide_type, upper_port->ide_id,
+                         ide_type, upper_port->priv_data.pcie.ide_id,
                          upper_port->mapped_kcbar_addr,
                          group_context->rp_stream_index, false);
 

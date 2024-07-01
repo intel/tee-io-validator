@@ -158,7 +158,7 @@ uint32_t device_pci_read_32(uint32_t off_to_the_cfg_start, int fd){
     if(g_pci_log) {
         device = get_device_info_by_fd(fd);
         if(device) {
-          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_READ  : 0x%04x => 0x%08x (%s)\n", off_to_the_cfg_start, data, device->device_name));
+          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_READ32  : 0x%04x => 0x%08x (%s)\n", off_to_the_cfg_start, data, device->device_name));
         }
     }
 
@@ -176,9 +176,58 @@ void device_pci_write_32(uint32_t off_to_the_cfg_start, uint32_t value, int fd){
     if(g_pci_log) {
         device = get_device_info_by_fd(fd);
         if(device) {
-          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_WRITE : 0x%04x <= 0x%08x (%s)\n", off_to_the_cfg_start, value, device->device_name));
+          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_WRITE32 : 0x%04x <= 0x%08x (%s)\n", off_to_the_cfg_start, value, device->device_name));
         }
     }
+}
+
+uint16_t device_pci_read_16(uint32_t off_to_the_cfg_start, int fd){
+    uint16_t data;
+    IDE_TEST_DEVICES_INFO *device = NULL;
+
+    TEEIO_ASSERT (fd > 0);
+
+    lseek(fd,off_to_the_cfg_start,SEEK_SET);
+    read(fd, &data, 2);
+
+    if(g_pci_log) {
+        device = get_device_info_by_fd(fd);
+        if(device) {
+          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_READ16  : 0x%04x => 0x%04x (%s)\n", off_to_the_cfg_start, data, device->device_name));
+        }
+    }
+
+    return data;
+}
+
+void device_pci_write_16(uint32_t off_to_the_cfg_start, uint16_t value, int fd){
+    IDE_TEST_DEVICES_INFO *device = NULL;
+
+    TEEIO_ASSERT (fd > 0);
+
+    lseek(fd,off_to_the_cfg_start,SEEK_SET);
+    write(fd, &value, 2);
+
+    if(g_pci_log) {
+        device = get_device_info_by_fd(fd);
+        if(device) {
+          TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "PCI_WRITE16 : 0x%04x <= 0x%04x (%s)\n", off_to_the_cfg_start, value, device->device_name));
+        }
+    }
+}
+
+void mmio_write_reg64(
+    void *const reg_ptr,
+    const uint64_t reg_val)
+{
+    *(volatile uint64_t *)reg_ptr = reg_val;
+}
+
+uint64_t mmio_read_reg64(void *reg_ptr)
+{
+    uint64_t data = 0;
+    data = *(volatile uint64_t *)reg_ptr;
+    return data;
 }
 
 void mmio_write_reg32(

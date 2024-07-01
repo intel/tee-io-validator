@@ -38,7 +38,7 @@ bool pcie_ide_test_ksetstop_4_setup(void *test_context)
 
   // by default slot_ids are not allocated for key_refresh.
   // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->stream_cap.num_rx_key_slots, true)) {
+  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->priv_data.pcie.stream_cap.num_rx_key_slots, true)) {
     return false;
   }
 
@@ -87,12 +87,12 @@ bool pcie_ide_test_ksetstop_4_run(void *test_context)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->ide_id, false);
+  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->priv_data.pcie.ide_id, false);
 
   // disable host ide stream
   enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
-                         ide_type, upper_port->ide_id,
+                         ide_type, upper_port->priv_data.pcie.ide_id,
                          upper_port->mapped_kcbar_addr,
                          group_context->rp_stream_index, false);
 

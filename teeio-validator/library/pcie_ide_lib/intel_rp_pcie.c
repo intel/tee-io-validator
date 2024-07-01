@@ -223,7 +223,7 @@ bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr)
 
 
 // Parse the KEYP table and map the kcbar address
-bool parse_keyp_table(ide_common_test_port_context_t *port_context)
+bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol)
 {
   const char *keyp_table = "/sys/firmware/acpi/tables/KEYP";
   const char KEYP_SIGNATURE[] = {'K', 'E', 'Y', 'P'};
@@ -278,7 +278,7 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context)
   {
     kcu = (INTEL_KEYP_KEY_CONFIGURATION_UNIT *)(buffer + offset);
     TEEIO_ASSERT(offset + kcu->Length <= size);
-    if (kcu->ProtocolType != 1)
+    if (kcu->ProtocolType != keyp_protocol)
     {
       offset += kcu->Length;
       continue;

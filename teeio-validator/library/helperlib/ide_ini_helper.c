@@ -22,6 +22,7 @@ extern const char *IDE_PORT_TYPE_NAMES[];
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 extern const char *IDE_TEST_CONNECT_TYPE_NAMES[];
 extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
+extern const char *IDE_HW_TYPE_NAMES[];
 
 bool is_valid_topology_connection(uint8_t *connection)
 {
@@ -76,6 +77,34 @@ int get_port_id_from_name(IDE_TEST_PORTS_CONFIG *ports, uint8_t* port)
   }
 
   return INVALID_PORT_ID;
+}
+
+// IDE_HW_TYPE_NAMES
+bool is_valid_ide_hw_type(uint8_t *type)
+{
+  if(type == NULL) {
+    return false;
+  }
+  for(int i = 0; i < IDE_HW_TYPE_NUM; i++) {
+    if(strcmp((const char*)type, IDE_HW_TYPE_NAMES[i]) == 0) {
+      return true;
+    }
+  }
+  return false;
+}
+
+IDE_HW_TYPE get_ide_hw_type_from_name(const char* name)
+{
+  if(name == NULL) {
+    return IDE_HW_TYPE_NUM;
+  }
+
+  for(int i = 0; i < IDE_HW_TYPE_NUM; i++) {
+    if(strcmp(name, IDE_HW_TYPE_NAMES[i]) == 0) {
+      return i;
+    }
+  }
+  return IDE_HW_TYPE_NUM;
 }
 
 // IDE_TEST_TOPOLOGY_TYPE_NAMES

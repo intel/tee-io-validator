@@ -40,7 +40,7 @@
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
-ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index);
+ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, IDE_HW_TYPE ide_type);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -59,6 +59,12 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
     "selective_ide",
     "link_ide",
     "selective_and_link_ide"};
+
+const char *IDE_HW_TYPE_NAMES[] = {
+    "pcie",
+    "cxl.io",
+    "cxl.mem"
+};
 
 #define IS_HYPHEN(a) ((a) == '-')
 #define IS_NULL(a) ((a) == '\0')
@@ -2226,6 +2232,21 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
   }
   topology->type = get_topology_type_from_name(entry_value);
 
+  sprintf(entry_name, "ide");
+  if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+  {
+    if (!is_valid_ide_hw_type(entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid ide type. %s\n", section_name, entry_value));
+      return false;
+    }
+    topology->ide_type = get_ide_hw_type_from_name((const char*)entry_value);
+  }
+  else
+  {
+    topology->ide_type = IDE_HW_TYPE_PCIE;
+  }
+
   // connection
   sprintf(entry_name, "connection");
   if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
@@ -2584,7 +2605,7 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
   }
 
   int index = 0;
-  ide_test_case_name_t* tcn = get_test_case_from_string(test_case, &index);
+  ide_test_case_name_t* tcn = get_test_case_from_string(test_case, &index, IDE_HW_TYPE_PCIE);
   if(tcn == NULL) {
     return false;
   }

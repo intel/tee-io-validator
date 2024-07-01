@@ -36,6 +36,6 @@ ide_common_test_switch_internal_conn_context_t *alloc_switch_internal_conn_conte
 bool scan_open_devices_in_top(IDE_TEST_CONFIG *test_config, int top_id, DEVCIES_CONTEXT *devices_context);
 bool read_ide_cap_ctrl_register(IDE_PORT* port, uint32_t *ide_cap, uint32_t *ide_ctrl);
 bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char *ide_test_ini);
-ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int *index);
+// ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int *index, IDE_HW_TYPE ide_type);
 
 #endif
