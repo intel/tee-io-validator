@@ -65,24 +65,10 @@ const char *IDE_TEST_CATEGORY_NAMES[] = {
     "cxl.mem"
 };
 
-const char* PCIE_IDE_TEST_CASE_NAMES[] = {
-  "Query",
-  "KeyProg",
-  "KSetGo",
-  "KSetStop",
-  "SpdmSession",
-  "TestFull",
-  NULL
-};
-
-const char* CXL_IDE_TEST_CASE_NAMES[] = {
-  "Query",
-  "KeyProg",
-  "KSetGo",
-  "KSetStop",
-  "GetKey",
-  "TestFull",
-  NULL
+typedef ide_test_case_name_t*(*get_test_case_names_func)(int *cnt);
+get_test_case_names_func m_get_test_case_names_funcs[IDE_TEST_CATEGORY_NUM] = {
+  pcie_ide_test_lib_get_test_case_names,
+  cxl_ide_test_lib_get_test_case_names
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -1850,7 +1836,7 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
 
   IDE_TEST_CASES *tc = &ts->test_cases;
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     tc->cases[i].cases_cnt = test_suite.test_cases.cases[i].cases_cnt;
     for(int j = 0; j < MAX_CASE_ID; j++) {
       tc->cases[i].cases_id[j] = test_suite.test_cases.cases[i].cases_id[j];
@@ -2636,14 +2622,9 @@ ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int*
   ide_test_case_name_t* test_case_names = NULL;
   int test_case_names_cnt = 0;
 
-  if(test_category == IDE_TEST_CATEGORY_PCIE) {
-    test_case_names = pcie_ide_test_lib_get_test_case_names(&test_case_names_cnt);
-  } else if(test_category == IDE_TEST_CATEGORY_CXL_MEMCACHE) {
-    test_case_names = cxl_ide_test_lib_get_test_case_names(&test_case_names_cnt);
-  } else {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported.\n", IDE_TEST_CATEGORY_NAMES[(int)test_category]));
-    return NULL;
-  }
+  get_test_case_names_func func = m_get_test_case_names_funcs[test_category];
+  TEEIO_ASSERT(func);
+  test_case_names = func(&test_case_names_cnt);
 
   char buf1[MAX_LINE_LENGTH] = {0};
   char buf2[MAX_LINE_LENGTH] = {0};
@@ -2732,7 +2713,7 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
     suite->enabled = 0;
     suite->configuration_id = 0;
     suite->id = 0;
-    for(int j = 0; j < IDE_COMMON_TEST_CASE_NUM; j++) {
+    for(int j = 0; j < MAX_TEST_CASE_NUM; j++) {
       suite->test_cases.cases[j].cases_cnt = 0;
     }
     suite->type = 0;

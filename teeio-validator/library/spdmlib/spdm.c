@@ -216,7 +216,7 @@ libspdm_return_t spdm_send_receive_get_measurement(void *spdm_context,
         if (received_number_of_block == number_of_blocks) {
             break;
         }
-        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "index - 0x%x\n", index));
+        TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "index - 0x%x\n", index));
 
         /* 2. query measurement one by one
          * get signature in last message only.*/

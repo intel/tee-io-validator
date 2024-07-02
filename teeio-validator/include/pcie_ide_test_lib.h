@@ -15,6 +15,13 @@ bool pcie_ide_test_lib_register_funcs(
   teeio_test_config_funcs_t* config_funcs,
   teeio_test_group_funcs_t* group_funcs);
 
-ide_test_case_name_t* pcie_ide_test_lib_get_test_case_names(int* cnt);
+ide_test_case_name_t*
+pcie_ide_test_lib_get_test_case_names(
+  int* cnt);
+
+uint32_t
+pcie_ide_test_lib_get_config_bitmask(
+  int* config_type_num,
+  IDE_TEST_TOPOLOGY_TYPE top_type);
 
 #endif

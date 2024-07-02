@@ -12,16 +12,36 @@
 #include "cxl_ide_test_lib.h"
 #include "pcie_ide_test_lib.h"
 
+extern const char *IDE_TEST_CATEGORY_NAMES[];
+extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
 
+typedef uint32_t(*get_config_bitmask_func) (int* config_type_num, IDE_TEST_TOPOLOGY_TYPE top_type);
+get_config_bitmask_func m_get_config_bitmask_funcs[IDE_TEST_CATEGORY_NUM] = {
+  pcie_ide_test_lib_get_config_bitmask,
+  cxl_ide_test_lib_get_config_bitmask
+};
 
 teeio_test_case_funcs_t m_teeio_test_case_funcs = {0};
 teeio_test_config_funcs_t m_teeio_test_config_funcs = {0};
 teeio_test_group_funcs_t m_teeio_test_group_funcs = {0};
 
-extern const char *IDE_TEST_CATEGORY_NAMES[];
-extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
-extern const char* PCIE_IDE_TEST_CASE_NAMES[];
-extern const char* CXL_IDE_TEST_CASE_NAMES[];
+const char* PCIE_IDE_TEST_CASE_NAMES[IDE_COMMON_TEST_CASE_NUM] = {
+  "Query",
+  "KeyProg",
+  "KSetGo",
+  "KSetStop",
+  "SpdmSession",
+  "TestFull"
+};
+
+const char* CXL_IDE_TEST_CASE_NAMES[CXL_MEM_IDE_TEST_CASE_NUM] = {
+  "Query",
+  "KeyProg",
+  "KSetGo",
+  "KSetStop",
+  "GetKey",
+  "TestFull"
+};
 
 bool test_factory_init()
 {
@@ -140,4 +160,24 @@ test_factory_get_test_case_funcs (
 bool not_supported_ide_test_config_common_func(void *test_context)
 {
   return false;
+}
+
+uint32_t test_factory_get_config_bitmask(
+  int* config_type_num,
+  IDE_TEST_TOPOLOGY_TYPE top_type,
+  IDE_TEST_CATEGORY test_category)
+{
+  uint32_t bitmask = 0;
+
+  TEEIO_ASSERT(config_type_num);
+  *config_type_num = 0;
+
+  TEEIO_ASSERT(test_category < IDE_TEST_CATEGORY_NUM);
+
+  get_config_bitmask_func func = m_get_config_bitmask_funcs[test_category];
+  TEEIO_ASSERT(func);
+
+  bitmask = func(config_type_num, top_type);
+
+  return bitmask;
 }

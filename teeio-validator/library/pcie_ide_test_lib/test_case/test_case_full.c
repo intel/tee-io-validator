@@ -64,21 +64,30 @@ bool pcie_ide_test_full_1_run(void *test_context)
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
 
+  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   // dump registers
   TEEIO_PRINT(("\n"));
   TEEIO_PRINT(("Print host registers.\n"));
   dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                     group_context->rp_stream_index,
-                    group_context->upper_port.cfg_space_fd,
-                    group_context->upper_port.priv_data.pcie.ide_id,
-                    group_context->upper_port.ecap_offset,
+                    upper_port->cfg_space_fd,
+                    upper_port_pcie_data->ide_id,
+                    upper_port->ecap_offset,
                     ide_type);
 
   TEEIO_PRINT(("\n"));
   TEEIO_PRINT(("Print device registers.\n"));
-  dump_dev_registers(group_context->lower_port.cfg_space_fd,
-                    group_context->lower_port.priv_data.pcie.ide_id,
-                    group_context->lower_port.ecap_offset,
+  dump_dev_registers(lower_port->cfg_space_fd,
+                    lower_port_pcie_data->ide_id,
+                    lower_port->ecap_offset,
                     ide_type);
 
   TEEIO_PRINT(("ide_stream is setup. Press any key to continue.\n"));
@@ -168,6 +177,12 @@ bool test_full_teardown_common(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
 
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
 
   // disable dev ide
@@ -181,12 +196,12 @@ bool test_full_teardown_common(void *test_context)
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
 
-  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port->priv_data.pcie.ide_id, false);
+  enable_ide_stream_in_ecap(lower_port->cfg_space_fd, lower_port->ecap_offset, ide_type, lower_port_pcie_data->ide_id, false);
 
   // disable host ide stream
   enable_rootport_ide_stream(upper_port->cfg_space_fd,
                          upper_port->ecap_offset,
-                         ide_type, upper_port->priv_data.pcie.ide_id,
+                         ide_type, upper_port_pcie_data->ide_id,
                          upper_port->mapped_kcbar_addr,
                          group_context->rp_stream_index, false);
 

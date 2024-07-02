@@ -22,10 +22,25 @@ ide_test_case_name_t m_pcie_ide_test_case_names[IDE_COMMON_TEST_CASE_NUM] = {
   {"Test",        PCIE_CLASS_CASE_NAMES,  IDE_COMMON_TEST_CASE_TEST         }
 };
 
+uint32_t m_pcie_ide_top_config_bitmasks[] = {
+  (uint32_t)SELECTIVE_IDE_CONFIGURATION_BITMASK,
+  (uint32_t)LINK_IDE_CONFIGURATION_BITMASK,
+  (uint32_t)SELECTIVE_LINK_IDE_CONFIGURATION_BITMASK
+};
+
 ide_test_case_name_t* pcie_ide_test_lib_get_test_case_names(int* cnt)
 {
   *cnt = IDE_COMMON_TEST_CASE_NUM;
   return m_pcie_ide_test_case_names;
+}
+
+uint32_t pcie_ide_test_lib_get_config_bitmask(int* config_type_num, IDE_TEST_TOPOLOGY_TYPE top_type)
+{
+  TEEIO_ASSERT(config_type_num);
+  TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+
+  *config_type_num = IDE_TEST_CONFIGURATION_TYPE_NUM;
+  return m_pcie_ide_top_config_bitmasks[top_type];
 }
 
 /**

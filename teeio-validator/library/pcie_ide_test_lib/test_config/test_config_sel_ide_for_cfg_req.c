@@ -41,16 +41,22 @@ static bool test_config_set_sel_ide_for_cfg_req(void* test_context, bool enable)
 
   // enable cfg_sel_ide bit in upper port and lower port
   ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  PCIE_PRIV_DATA* pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   set_sel_ide_for_cfg_req_in_ecap(port_context->cfg_space_fd,
                           ide_type,
-                          port_context->priv_data.pcie.ide_id,
+                          pcie_data->ide_id,
                           port_context->ecap_offset,
                           enable);
 
   port_context = &group_context->lower_port;
+  pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   set_sel_ide_for_cfg_req_in_ecap(port_context->cfg_space_fd,
                           ide_type,
-                          port_context->priv_data.pcie.ide_id,
+                          pcie_data->ide_id,
                           port_context->ecap_offset,
                           enable);
 
@@ -74,8 +80,18 @@ static bool test_config_check_sel_ide_for_cfg_req_support(void* test_context)
     return false;    
   }
 
-  PCIE_IDE_CAP *upper_cap = &group_context->upper_port.priv_data.pcie.ide_cap;
-  PCIE_IDE_CAP *lower_cap = &group_context->lower_port.priv_data.pcie.ide_cap;
+  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_IDE_CAP *upper_cap = &upper_port_pcie_data->ide_cap;
+  PCIE_IDE_CAP *lower_cap = &lower_port_pcie_data->ide_cap;
+
   bool supported = upper_cap->sel_ide_cfg_req_supported && lower_cap->sel_ide_cfg_req_supported;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s is %s.\n", m_config_name, supported ? "supported" : "NOT supported"));
   return supported;
@@ -109,15 +125,21 @@ bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context)
   TEEIO_ASSERT(ide_type == TEST_IDE_TYPE_SEL_IDE);
 
   ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  PCIE_PRIV_DATA* pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   uint32_t data1 =read_ide_stream_ctrl_in_ecap(port_context->cfg_space_fd,
                           ide_type,
-                          port_context->priv_data.pcie.ide_id,
+                          pcie_data->ide_id,
                           port_context->ecap_offset);
 
   port_context = &group_context->lower_port;
+  pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   uint32_t data2 = read_ide_stream_ctrl_in_ecap(port_context->cfg_space_fd,
                           ide_type,
-                          port_context->priv_data.pcie.ide_id,
+                          pcie_data->ide_id,
                           port_context->ecap_offset);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Read ide_stream_ctrl : rootport = 0x%08x, dev = 0x%08x\n", data1, data2));

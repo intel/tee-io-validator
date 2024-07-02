@@ -25,7 +25,8 @@ SET(src_lside
 SET(lside_LIBRARY
     debuglib
     helperlib
-    pcie_ide_lib)
+    pcie_ide_lib
+    )
 
 SET(src_setide
     setide.c

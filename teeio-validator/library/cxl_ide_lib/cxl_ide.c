@@ -74,6 +74,11 @@ bool cxl_init_root_port(ide_common_test_group_context_t *group_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_root_port start.\n"));
 
+  CXL_PRIV_DATA* cxl_data = (CXL_PRIV_DATA *)malloc(sizeof(CXL_PRIV_DATA));
+  memset(cxl_data, 0, sizeof(CXL_PRIV_DATA));
+  cxl_data->signature = CXL_IDE_PRIV_DATA_SIGNATURE;
+  port_context->priv_data = cxl_data;
+
   if(!cxl_open_root_port(port_context)) {
     return false;
   }
@@ -216,7 +221,8 @@ bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
   sprintf(str, "cxl.host : %s", port->bdf);
   set_deivce_info(fd, str);
 
-  CXL_PRIV_DATA *cxl_data = &port_context->priv_data.cxl;
+  CXL_PRIV_DATA *cxl_data = (CXL_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
 
   int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
   if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
@@ -456,11 +462,8 @@ bool cxl_close_root_port(ide_common_test_group_context_t *group_context)
   cxl_reset_ecap_registers(port_context);
   cxl_reset_kcbar_registers(port_context);
 
-  CXL_PRIV_DATA* cxl_data = &port_context->priv_data.cxl;
-  cxl_data->ecap.cap.raw = 0;
-  cxl_data->ecap.cap2.raw = 0;
-  cxl_data->ecap.cap3.raw = 0;
-  cxl_data->kcbar.link_enc_global_config.raw = 0;
+  CXL_PRIV_DATA* cxl_data = (CXL_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
 
   cxl_unmap_memcache_reg_block(cxl_data->memcache.mapped_fd, cxl_data->memcache.mapped_memcache_reg_block);
 
@@ -476,6 +479,11 @@ bool cxl_close_root_port(ide_common_test_group_context_t *group_context)
   }
   group_context->upper_port.cfg_space_fd = 0;
   
+  if(port_context->priv_data) {
+    free(port_context->priv_data);
+    port_context->priv_data = NULL;
+  }
+
   return true;
 }
 
@@ -495,6 +503,11 @@ bool cxl_init_dev_port(ide_common_test_group_context_t *group_context)
 
   ide_common_test_port_context_t *port_context = &group_context->lower_port;
   TEEIO_ASSERT(port_context != NULL);
+
+  CXL_PRIV_DATA* cxl_data = (CXL_PRIV_DATA *)malloc(sizeof(CXL_PRIV_DATA));
+  memset(cxl_data, 0, sizeof(CXL_PRIV_DATA));
+  cxl_data->signature = CXL_IDE_PRIV_DATA_SIGNATURE;
+  port_context->priv_data = cxl_data;
 
   if(!cxl_open_dev_port(port_context)) {
     return false;
@@ -576,7 +589,8 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context)
   set_deivce_info(fd, str);
 
   int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
-  CXL_PRIV_DATA* cxl_data = &port_context->priv_data.cxl;
+  CXL_PRIV_DATA* cxl_data = (CXL_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
   if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
     goto OpenDevFail;
@@ -629,12 +643,8 @@ bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_T
 
   cxl_reset_ecap_registers(port_context);
 
-  CXL_PRIV_DATA* cxl_data = &port_context->priv_data.cxl;
-  cxl_data->ecap.cap.raw = 0;
-  cxl_data->ecap.cap2.raw = 0;
-  cxl_data->ecap.cap3.raw = 0;
-  cxl_data->kcbar.link_enc_global_config.raw = 0;
-
+  CXL_PRIV_DATA* cxl_data = (CXL_PRIV_DATA *)port_context->priv_data;
+  TEEIO_ASSERT(cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
   cxl_unmap_memcache_reg_block(cxl_data->memcache.mapped_fd, cxl_data->memcache.mapped_memcache_reg_block);
 
   if(port_context->cfg_space_fd > 0) {
@@ -642,6 +652,11 @@ bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_T
     unset_device_info(port_context->cfg_space_fd);
   }
   port_context->cfg_space_fd = 0;
+
+  if(port_context->priv_data) {
+    free(port_context->priv_data);
+    port_context->priv_data = NULL;
+  }
 
   m_dev_fp = 0;
   return true;

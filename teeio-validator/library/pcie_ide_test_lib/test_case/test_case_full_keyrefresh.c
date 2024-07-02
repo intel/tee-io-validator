@@ -55,9 +55,13 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
 
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+
   // by default slot_ids are not allocated for key_refresh.
   // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->priv_data.pcie.stream_cap.num_rx_key_slots, true)) {
+  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port_pcie_data->stream_cap.num_rx_key_slots, true)) {
     return false;
   }
 
@@ -88,6 +92,12 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
 
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
   if (group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
   {
@@ -108,14 +118,14 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
                       group_context->rp_stream_index,
                       group_context->upper_port.cfg_space_fd,
-                      group_context->upper_port.priv_data.pcie.ide_id,
+                      upper_port_pcie_data->ide_id,
                       group_context->upper_port.ecap_offset,
                       ide_type);
 
     TEEIO_PRINT(("\n"));
     TEEIO_PRINT(("Print device registers.\n"));
     dump_dev_registers(group_context->lower_port.cfg_space_fd,
-                      group_context->lower_port.priv_data.pcie.ide_id,
+                      lower_port_pcie_data->ide_id,
                       group_context->lower_port.ecap_offset,
                       ide_type);
 

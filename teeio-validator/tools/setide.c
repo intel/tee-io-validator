@@ -158,7 +158,10 @@ bool clear_ecap(ide_common_test_port_context_t *port_context)
     PCIE_SEL_IDE_ADDR_ASSOC_2 addr_assoc_2 = {.raw = 0};
     PCIE_SEL_IDE_ADDR_ASSOC_3 addr_assoc_3 = {.raw = 0};
 
-    int num_lnk_ide = port_context->ide_cap.lnk_ide_supported == 1 ? port_context->ide_cap.num_lnk_ide + 1 : 0;
+    PCIE_PRIV_DATA *pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+    TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+    int num_lnk_ide = pcie_data->ide_cap.lnk_ide_supported == 1 ? pcie_data->ide_cap.num_lnk_ide + 1 : 0;
     for (i = 0; i < num_lnk_ide; i++)
     {
         TEEIO_PRINT(( "  Clear ide_id %d (LinkIDE)      in IDE Ecap ... ... ", i));
@@ -179,7 +182,7 @@ bool clear_ecap(ide_common_test_port_context_t *port_context)
         }
     }
 
-    int num_sel_ide = port_context->ide_cap.sel_ide_supported == 1 ? port_context->ide_cap.num_sel_ide + 1 : 0;
+    int num_sel_ide = pcie_data->ide_cap.sel_ide_supported == 1 ? pcie_data->ide_cap.num_sel_ide + 1 : 0;
 #ifdef NUM_SEL_IDE_ISSUE
     num_sel_ide = num_sel_ide > 4 ? num_sel_ide - 1 : num_sel_ide;
 #endif
@@ -210,9 +213,11 @@ bool clear_ecap(ide_common_test_port_context_t *port_context)
 bool clear_kcbar(ide_common_test_port_context_t *port_context)
 {
     int i = 0;
+    PCIE_PRIV_DATA *pcie_data = (PCIE_PRIV_DATA *)port_context->priv_data;
+    TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
 
     // clear kcbar registers
-    for (i = 0; i < port_context->stream_cap.num_stream_supported + 1; i++)
+    for (i = 0; i < pcie_data->stream_cap.num_stream_supported + 1; i++)
     {
         TEEIO_PRINT(( "  Clear stream_%c in Intel Key Configuration Unit Register Block ... ... ", i + 'a'));
         if (!initialize_kcbar_registers(

@@ -35,8 +35,11 @@ bool cxl_ide_test_config_default_support(void *test_context)
   ide_common_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
-  CXL_PRIV_DATA* rp_cxl_data = &group_context->upper_port.priv_data.cxl;
-  CXL_PRIV_DATA* ep_cxl_data = &group_context->lower_port.priv_data.cxl;
+  CXL_PRIV_DATA* rp_cxl_data = (CXL_PRIV_DATA *)group_context->upper_port.priv_data;
+  TEEIO_ASSERT(rp_cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
+
+  CXL_PRIV_DATA* ep_cxl_data = (CXL_PRIV_DATA *)group_context->lower_port.priv_data;
+  TEEIO_ASSERT(ep_cxl_data->signature == CXL_IDE_PRIV_DATA_SIGNATURE);
 
   // TODO
   bool supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1 && ep_cxl_data->memcache.ide_cap.cxl_ide_capable == 1

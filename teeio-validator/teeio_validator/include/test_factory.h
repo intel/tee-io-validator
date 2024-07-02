@@ -32,4 +32,9 @@ test_factory_get_test_case_funcs (
   int case_id
 );
 
+uint32_t test_factory_get_config_bitmask(
+  int* config_type_num,
+  IDE_TEST_TOPOLOGY_TYPE top_type,
+  IDE_TEST_CATEGORY test_category);
+
 #endif

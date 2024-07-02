@@ -62,12 +62,6 @@ const char* m_test_config_result_str[] = {
   "na", "pass", "fail"
 };
 
-uint32_t m_top_config_bitmasks[] = {
-  (uint32_t)SELECTIVE_IDE_CONFIGURATION_BITMASK,
-  (uint32_t)LINK_IDE_CONFIGURATION_BITMASK,
-  (uint32_t)SELECTIVE_LINK_IDE_CONFIGURATION_BITMASK
-};
-
 ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFIG *test_config)
 {
   ide_run_test_suite_t *rts = (ide_run_test_suite_t *)malloc(sizeof(ide_run_test_suite_t));
@@ -143,14 +137,19 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_conf
   context->top_type = top->type;
   run_test_config->test_context = context;
 
+  IDE_TEST_CATEGORY test_category = context->suite_context->test_category;
+
   // config_item
-  uint32_t config_bitmask = m_top_config_bitmasks[configuration->type];
+  int config_type_num = 0;
+  uint32_t config_bitmask = test_factory_get_config_bitmask(&config_type_num, top->type, test_category);
+  TEEIO_ASSERT(config_bitmask != 0);
+
   uint32_t config_bits = configuration->bit_map & config_bitmask;
   char name_buf[MAX_NAME_LENGTH] = {0};
   int offset = 0;
-  for(int i = 0; i < IDE_TEST_CONFIGURATION_TYPE_NUM; i++) {
+  for(int i = 0; i < config_type_num; i++) {
     if(config_bits & BIT_MASK(i)) {
-      alloc_run_test_config_item(run_test_config, i, top->type, context->suite_context->test_category);
+      alloc_run_test_config_item(run_test_config, i, top->type, test_category);
       TEEIO_ASSERT(offset + strlen(m_ide_test_configuration_name[i]) + 1 < MAX_NAME_LENGTH);
       sprintf(name_buf + offset, "%s+", m_ide_test_configuration_name[i]);
       offset = strlen(name_buf);
@@ -289,7 +288,7 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 */
 bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_CASE test_case, uint32_t case_id, IDE_TEST_CATEGORY test_category)
 {
-  TEEIO_ASSERT(test_case < IDE_COMMON_TEST_CASE_NUM);
+  TEEIO_ASSERT(test_case < MAX_TEST_CASE_NUM);
   TEEIO_ASSERT(case_id <= MAX_CASE_ID);
 
   ide_run_test_case_t *run_test_case = (ide_run_test_case_t *)malloc(sizeof(ide_run_test_case_t));
@@ -342,7 +341,7 @@ bool alloc_run_test_cases(
   ide_common_test_suite_context_t* suite_context = run_test_suite->test_context;
   TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     IDE_TEST_CASE *tc = suite->test_cases.cases + i;
     if(tc->cases_cnt == 0) {
       continue;

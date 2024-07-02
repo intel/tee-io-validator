@@ -219,3 +219,17 @@ bool is_doe_error_asserted()
 void libspdm_sleep(uint64_t microseconds)
 {
 }
+
+ide_test_case_name_t*
+pcie_ide_test_lib_get_test_case_names(
+  int* cnt)
+{
+    return NULL;
+}
+
+ide_test_case_name_t*
+cxl_ide_test_lib_get_test_case_names(
+  int* cnt)
+{
+    return NULL;
+}

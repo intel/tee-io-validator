@@ -28,6 +28,21 @@ ide_test_case_name_t* cxl_ide_test_lib_get_test_case_names(int* cnt)
   return m_cxl_mem_ide_test_case_names;
 }
 
+uint32_t m_cxl_ide_top_config_bitmasks[] = {
+  (uint32_t)0,
+  (uint32_t)CXL_LINK_IDE_CONFIGURATION_BITMASK
+};
+
+uint32_t cxl_ide_test_lib_get_config_bitmask(int* config_type_num, IDE_TEST_TOPOLOGY_TYPE top_type)
+{
+  TEEIO_ASSERT(config_type_num);
+  TEEIO_ASSERT(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE);
+
+  *config_type_num = CXL_IDE_CONFIGURATION_TYPE_NUM;
+  return m_cxl_ide_top_config_bitmasks[top_type];
+}
+
+
 static bool _register_test_case_func(
   teeio_test_case_funcs_t* case_funcs,
   int test_case, int case_id,
