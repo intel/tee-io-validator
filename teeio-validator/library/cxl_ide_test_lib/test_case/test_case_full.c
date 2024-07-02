@@ -19,7 +19,7 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "cxl_ide_lib.h"
-#include "cxl_ide_test_lib.h"
+#include "cxl_ide_test_common.h"
 
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,

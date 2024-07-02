@@ -26,6 +26,7 @@ SET(src_cxl_ide_test_lib
   test_config/test_config_default.c
   ## test groups
   test_group/test_group.c
+  cxl_ide_common.c
 )
 
 SET(cxl_ide_test_lib_LIBRARY

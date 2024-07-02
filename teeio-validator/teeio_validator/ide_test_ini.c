@@ -36,11 +36,11 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
+#include "cxl_ide_test_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
-
-ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, IDE_HW_TYPE ide_type);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -60,10 +60,29 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
     "link_ide",
     "selective_and_link_ide"};
 
-const char *IDE_HW_TYPE_NAMES[] = {
+const char *IDE_TEST_CATEGORY_NAMES[] = {
     "pcie",
-    "cxl.io",
     "cxl.mem"
+};
+
+const char* PCIE_IDE_TEST_CASE_NAMES[] = {
+  "Query",
+  "KeyProg",
+  "KSetGo",
+  "KSetStop",
+  "SpdmSession",
+  "TestFull",
+  NULL
+};
+
+const char* CXL_IDE_TEST_CASE_NAMES[] = {
+  "Query",
+  "KeyProg",
+  "KSetGo",
+  "KSetStop",
+  "GetKey",
+  "TestFull",
+  NULL
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -1688,6 +1707,21 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   }
   test_suite.type = get_topology_type_from_name(entry_value);
 
+  sprintf(entry_name, "category");
+  if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+  {
+    if (!is_valid_ide_test_category(entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid test_category. %s\n", section_name, entry_value));
+      return false;
+    }
+    test_suite.test_category = get_ide_test_category_from_name((const char*)entry_value);
+  }
+  else
+  {
+    test_suite.test_category = IDE_TEST_CATEGORY_PCIE;
+  }
+
   // topology
   sprintf(entry_name, "topology");
   if (!GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
@@ -1812,6 +1846,7 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   ts->type = test_suite.type;
   ts->topology_id = test_suite.topology_id;
   ts->configuration_id = test_suite.configuration_id;
+  ts->test_category = test_suite.test_category;
 
   IDE_TEST_CASES *tc = &ts->test_cases;
 
@@ -2232,20 +2267,20 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
   }
   topology->type = get_topology_type_from_name(entry_value);
 
-  sprintf(entry_name, "ide");
-  if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
-  {
-    if (!is_valid_ide_hw_type(entry_value))
-    {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid ide type. %s\n", section_name, entry_value));
-      return false;
-    }
-    topology->ide_type = get_ide_hw_type_from_name((const char*)entry_value);
-  }
-  else
-  {
-    topology->ide_type = IDE_HW_TYPE_PCIE;
-  }
+  // sprintf(entry_name, "category");
+  // if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+  // {
+  //   if (!is_valid_ide_test_category(entry_value))
+  //   {
+  //     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid test_category. %s\n", section_name, entry_value));
+  //     return false;
+  //   }
+  //   topology->test_category = get_ide_test_category_from_name((const char*)entry_value);
+  // }
+  // else
+  // {
+  //   topology->test_category = IDE_TEST_CATEGORY_PCIE;
+  // }
 
   // connection
   sprintf(entry_name, "connection");
@@ -2568,6 +2603,7 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  id        = %d\n", suite->id));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  enabled   = %d\n", suite->enabled));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  type      = %s\n", IDE_TEST_TOPOLOGY_TYPE_NAMES[suite->type]));
+    TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  category  = %s\n", IDE_TEST_CATEGORY_NAMES[suite->test_category]));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  top_id    = %d\n", suite->topology_id));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  configuration_id  = [%d]\n", suite->configuration_id));
 
@@ -2589,12 +2625,91 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
 
 }
 
+ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, IDE_TEST_CATEGORY test_category)
+{
+  if(test_case_name == NULL) {
+    return NULL;
+  }
+
+  TEEIO_ASSERT(test_category < IDE_TEST_CATEGORY_NUM);
+
+  ide_test_case_name_t* test_case_names = NULL;
+  int test_case_names_cnt = 0;
+
+  if(test_category == IDE_TEST_CATEGORY_PCIE) {
+    test_case_names = pcie_ide_test_lib_get_test_case_names(&test_case_names_cnt);
+  } else if(test_category == IDE_TEST_CATEGORY_CXL_MEMCACHE) {
+    test_case_names = cxl_ide_test_lib_get_test_case_names(&test_case_names_cnt);
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported.\n", IDE_TEST_CATEGORY_NAMES[(int)test_category]));
+    return NULL;
+  }
+
+  char buf1[MAX_LINE_LENGTH] = {0};
+  char buf2[MAX_LINE_LENGTH] = {0};
+  strncpy(buf1, test_case_name, MAX_LINE_LENGTH);
+
+  int pos = find_char_in_str(buf1, '.');
+  if(pos == -1) {
+    return NULL;
+  }
+
+  buf1[pos] = '\0';
+  char* ptr1 = buf1 + pos + 1;
+
+  int i = 0;
+  for(; i < test_case_names_cnt; i++) {
+    if(strcmp(buf1, test_case_names[i].class) == 0) {
+      break;
+    }
+  }
+  if(i == test_case_names_cnt) {
+    return NULL;
+  }
+
+  bool hit = false;
+  strncpy(buf2, test_case_names[i].names, MAX_LINE_LENGTH);
+  char *ptr2 = buf2;
+  int j = 0;
+
+  pos = find_char_in_str(ptr2, ',');
+
+  do {
+    if(pos != -1) {
+      ptr2[pos] = '\0';
+    }
+    if(strcmp(ptr1, ptr2) == 0) {
+      hit = true;
+      break;
+    }
+
+    if(pos == -1) {
+      break;
+    }
+
+    ptr2 += (pos + 1);
+    pos = find_char_in_str(ptr2, ',');
+    j++;
+  } while(true);
+
+  if(index != NULL) {
+    *index = j;
+  }
+
+  return hit ? test_case_names + i : NULL;
+}
+
+bool is_valid_test_case(const char* test_case_name, IDE_TEST_CATEGORY test_category)
+{
+  return get_test_case_from_string(test_case_name, NULL, test_category) != NULL;
+}
+
 // This function will create several TestSuite with below configurations:
 //    type=top->type        ; This is test suite for selective_ide
 //    topology=@top_id      ; use topology_1. Note: the type shall be matched.
 //    configuration=@config ; test configuration_1. Note: the type shall be matched.
 //    Full=1                ; setup a ide_stream and wait for input from tester
-bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case)
+bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case, IDE_TEST_CATEGORY test_category)
 {
   IDE_TEST_CONFIGURATION *config = get_configuration_by_id(test_config, config_id);
   IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
@@ -2605,7 +2720,7 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
   }
 
   int index = 0;
-  ide_test_case_name_t* tcn = get_test_case_from_string(test_case, &index, IDE_HW_TYPE_PCIE);
+  ide_test_case_name_t* tcn = get_test_case_from_string(test_case, &index, test_category);
   if(tcn == NULL) {
     return false;
   }
@@ -2631,6 +2746,7 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
   suite->id = 1;
   suite->topology_id = top_id;
   suite->type = top->type;
+  suite->test_category = test_category;
 
   suite->test_cases.cases[tcn->class_id].cases_cnt = 1;
   suite->test_cases.cases[tcn->class_id].cases_id[0] = index + 1;

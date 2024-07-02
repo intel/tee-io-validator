@@ -20,7 +20,7 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "cxl_ide_lib.h"
-#include "cxl_ide_test_lib.h"
+#include "cxl_ide_test_common.h"
 
 void cxl_dump_key_iv(cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer)
 {

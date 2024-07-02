@@ -489,9 +489,7 @@ bool cxl_init_dev_port(ide_common_test_group_context_t *group_context)
 
   IDE_TEST_TOPOLOGY *top = group_context->top;
   TEEIO_ASSERT(top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
-  TEEIO_ASSERT(top->ide_type == IDE_HW_TYPE_CXL_MEM);
-
-  // IDE_TEST_TOPOLOGY_TYPE top_type = top->type;
+  TEEIO_ASSERT(group_context->suite_context->test_category == IDE_TEST_CATEGORY_CXL_MEMCACHE);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_dev_port start.\n"));
 

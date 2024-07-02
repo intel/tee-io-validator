@@ -7,7 +7,6 @@
 #ifndef __TEEIO_VAILDATOR_INTERNAL_H__
 #define __TEEIO_VAILDATOR_INTERNAL_H__
 
-// ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, IDE_HW_TYPE ide_type);
-bool is_valid_test_case(const char* test_case_name, IDE_HW_TYPE ide_type);
+bool is_valid_test_case(const char* test_case_name, IDE_TEST_CATEGORY test_category);
 
 #endif

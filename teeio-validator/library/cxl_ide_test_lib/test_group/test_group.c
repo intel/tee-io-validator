@@ -29,7 +29,7 @@ bool cxl_scan_devices(void *test_context)
 
   IDE_TEST_TOPOLOGY *top = context->top;
 
-  TEEIO_ASSERT(top->ide_type == IDE_HW_TYPE_CXL_MEM);
+  TEEIO_ASSERT(context->suite_context->test_category == IDE_TEST_CATEGORY_CXL_MEMCACHE);
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
   ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn1, context->top->bus);

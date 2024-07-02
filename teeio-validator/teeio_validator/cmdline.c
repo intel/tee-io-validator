@@ -26,6 +26,7 @@ extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
 extern char g_bdf[];
 extern char g_rp_bdf[];
 extern TEST_IDE_TYPE g_test_ide_type;
+extern IDE_TEST_CATEGORY g_test_category;
 extern uint8_t g_stream_id;
 extern bool g_pci_log;
 extern bool g_skip_tdisp;
@@ -38,7 +39,7 @@ extern bool g_libspdm_log;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
-bool is_valid_test_case(const char* test_case_name, IDE_HW_TYPE ide_type);
+bool is_valid_test_case(const char* test_case_name, IDE_TEST_CATEGORY test_category);
 
 void print_usage()
 {
@@ -69,7 +70,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   char buf[MAX_LINE_LENGTH] = {0};
   char test_case_name[MAX_CASE_NAME_LENGTH] = {0};
   int pos = 0;
-  IDE_HW_TYPE ide_type = IDE_HW_TYPE_PCIE;
+  IDE_TEST_CATEGORY test_category = IDE_TEST_CATEGORY_PCIE;
 
   TEEIO_ASSERT(argc > 0);
   TEEIO_ASSERT(argv != NULL);
@@ -137,8 +138,8 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
             break;
         
         case 'i':
-            ide_type = get_ide_hw_type_from_name(optarg);
-            if(ide_type == IDE_HW_TYPE_NUM) {
+            test_category = get_ide_test_category_from_name(optarg);
+            if(test_category == IDE_TEST_CATEGORY_NUM) {
               TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -i parameter. %s\n", optarg));
               return false;
             }
@@ -155,10 +156,11 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
 
   if(strlen(test_case_name) > 0) {
     // test_case is designated in command line
-    if(!is_valid_test_case(test_case_name, ide_type)) {
+    if(!is_valid_test_case(test_case_name, test_category)) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -f parameter. %s\n", test_case_name));
       return false;
     }
+    g_test_category = test_category;
     sprintf(g_test_case, "%s", test_case_name);
     g_run_test_suite = false;
   }

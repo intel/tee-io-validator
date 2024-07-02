@@ -80,6 +80,12 @@
 #define TEST_SUITE_SECTION "TestSuite_%d"
 
 typedef enum {
+  IDE_TEST_CATEGORY_PCIE = 0,
+  IDE_TEST_CATEGORY_CXL_MEMCACHE,
+  IDE_TEST_CATEGORY_NUM
+} IDE_TEST_CATEGORY;
+
+typedef enum {
     TEST_IDE_TYPE_SEL_IDE = 0,
     TEST_IDE_TYPE_LNK_IDE = 1,
     TEST_IDE_TYPE_NA
@@ -112,13 +118,6 @@ typedef enum {
   IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE = 2,
   IDE_TEST_TOPOLOGY_TYPE_NUM
 } IDE_TEST_TOPOLOGY_TYPE;
-
-typedef enum {
-  IDE_HW_TYPE_PCIE = 0,
-  IDE_HW_TYPE_CXL_IO,
-  IDE_HW_TYPE_CXL_MEM,
-  IDE_HW_TYPE_NUM
-} IDE_HW_TYPE;
 
 typedef enum {
   IDE_COMMON_TEST_CASE_QUERY = 0,
@@ -192,7 +191,7 @@ typedef struct
 typedef struct {
   int id;
   bool enabled;
-  IDE_HW_TYPE ide_type;
+  // IDE_TEST_CATEGORY test_category;
   IDE_TEST_TOPOLOGY_TYPE type;
   IDE_TEST_CONNECT_TYPE connection;
   int root_port;
@@ -237,6 +236,7 @@ typedef struct {
   IDE_TEST_TOPOLOGY_TYPE type;
   int topology_id;
   int configuration_id;
+  IDE_TEST_CATEGORY test_category;
   IDE_TEST_CASES test_cases;
 } IDE_TEST_SUITE;
 
@@ -406,6 +406,7 @@ typedef struct {
   uint32_t signature;
   IDE_TEST_CONFIG *test_config;
   int test_suite_id;
+  IDE_TEST_CATEGORY test_category;
 } ide_common_test_suite_context_t;
 
 typedef struct {
@@ -505,10 +506,6 @@ typedef struct {
   ide_common_test_config_check_func_t check;
 } ide_test_config_funcs_t;
 
-// typedef struct {
-//   ide_test_config_funcs_t func_list[IDE_TEST_CONFIGURATION_TYPE_NUM];
-// } ide_top_config_map_t;
-
 // test case setup function
 typedef bool(*ide_common_test_case_setup_func_t) (void *test_context);
 // test case teardown function
@@ -542,7 +539,6 @@ typedef struct {
   char *class;
   char *names;
   int class_id;
-  IDE_HW_TYPE ide_type;
 } ide_test_case_name_t;
 
 typedef bool(*ide_common_test_group_setup_func_t) (void *test_context);
@@ -572,6 +568,48 @@ struct _ide_run_test_suite {
 
   ide_run_test_group_t *test_group;
   ide_run_test_config_t *test_config;
+};
+
+typedef struct _teeio_test_config_funcs_t teeio_test_config_funcs_t;
+struct _teeio_test_config_funcs_t {
+  teeio_test_config_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+  IDE_TEST_CONFIGURATION_TYPE config_type;
+
+  ide_test_config_funcs_t funcs;
+};
+
+typedef struct _teeio_test_group_funcs_t teeio_test_group_funcs_t;
+struct _teeio_test_group_funcs_t {
+  teeio_test_group_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+
+  ide_test_group_funcs_t funcs;
+};
+
+typedef struct _teeio_test_case_funcs_t teeio_test_case_funcs_t;
+struct _teeio_test_case_funcs_t {
+  teeio_test_case_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+
+  int test_case;
+  int case_id;
+
+  ide_test_case_funcs_t funcs;
 };
 
 #endif
