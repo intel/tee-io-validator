@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include "ide_test.h"
 #include "command.h"
+#include "test_factory.h"
 
 char g_bdf[] = {'2','a',':','0','0','.','0','\0'};
 char g_rp_bdf[] = {'2','9',':','0','2','.','0','\0'};
@@ -18,6 +19,7 @@ uint8_t g_stream_id = 0;
 bool g_pci_log = false;
 bool g_ide_key_refresh = false;
 TEST_IDE_TYPE g_test_ide_type = TEST_IDE_TYPE_SEL_IDE;
+IDE_TEST_CATEGORY g_test_category = IDE_TEST_CATEGORY_PCIE;
 IDE_TEST_CONFIG ide_test_config = {0};
 int g_top_id = 0;
 int g_config_id = 0;
@@ -42,7 +44,7 @@ bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char* ide_test_ini)
 bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage, uint8_t* debug_level);
 void print_usage();
 bool run(IDE_TEST_CONFIG *test_config);
-bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case);
+bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case, IDE_TEST_CATEGORY test_category);
 
 int main(int argc, char *argv[])
 {
@@ -57,6 +59,8 @@ int main(int argc, char *argv[])
     }
 
     TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
+
+    test_factory_init();
 
     // parse command line optioins
     if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage, &debug_level)) {
@@ -94,7 +98,7 @@ int main(int argc, char *argv[])
 
     // if g_top_ids is valid, then we go into xxx mode
     if(g_top_id != 0 && g_config_id != 0) {
-        if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case)) {
+        if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case, g_test_category)) {
             goto MainDone;
         }
     }
@@ -119,6 +123,7 @@ int main(int argc, char *argv[])
     }
 
 MainDone:
+    test_factory_close();
     log_file_close();
 
     return ret;
