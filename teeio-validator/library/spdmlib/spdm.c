@@ -54,6 +54,8 @@ void *spdm_client_init(void)
     uint32_t data32;
     size_t scratch_buffer_size;
 
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_client_init start.\n"));
+
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "context_size - 0x%x\n", (uint32_t)libspdm_get_context_size()));
 
     m_spdm_context = (void *)malloc(libspdm_get_context_size());
@@ -143,13 +145,18 @@ void *spdm_client_init(void)
     libspdm_set_data(spdm_context, LIBSPDM_DATA_OTHER_PARAMS_SUPPORT, &parameter,
                      &data8, sizeof(data8));
 
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_init_connection start.\n"));
     status = libspdm_init_connection(spdm_context, false);
     if (LIBSPDM_STATUS_IS_ERROR(status)) {
-        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_init_connection - 0x%x\n", (uint32_t)status));
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_init_connection failed with status = 0x%x\n", (uint32_t)status));
         free(m_spdm_context);
         m_spdm_context = NULL;
         return NULL;
+    } else {
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_init_connection done.\n"));
     }
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_client_init done.\n"));
 
     return m_spdm_context;
 }
@@ -209,7 +216,7 @@ libspdm_return_t spdm_send_receive_get_measurement(void *spdm_context,
         if (received_number_of_block == number_of_blocks) {
             break;
         }
-        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "index - 0x%x\n", index));
+        TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "index - 0x%x\n", index));
 
         /* 2. query measurement one by one
          * get signature in last message only.*/
@@ -262,6 +269,8 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id)
     libspdm_data_parameter_t parameter;
     char cert_chain_name[] = "device_cert_chain_0.bin";
     char measurement_name[] = "device_measurement.bin";
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_connect start.\n"));
 
     /* get cert_chain 0 */
     slot_id = 0;
@@ -336,6 +345,8 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id)
                                    cert_chain.cert_chain,
                                    cert_chain.cert_chain_size);
     }
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_connect done.\n"));
 
     return true;
 }
