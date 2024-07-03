@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include "pcie.h"
+#include "pcie_ide_test.h"
 #include "intel_keyp.h"
 
 #define NOT_IMPLEMENTED(msg) \
@@ -46,15 +47,11 @@
 #define INVALID_RP_STREAM_INDEX 0xFF
 #define INVALID_SCAN_BUS 0xFF
 
-// Follow doc/IdeKmTestCase
-#define MAX_QUERY_CASE_ID 2
-#define MAX_KEYPROG_CASE_ID 6
-#define MAX_KSETGO_CASE_ID 4
-#define MAX_KSETSTOP_CASE_ID 4
-#define MAX_SPDMSESSION_CASE_ID 2
-#define MAX_FULL_CASE_ID 1
 #define MAX_CASE_ID \
-  (MAX(MAX_QUERY_CASE_ID, MAX(MAX_KEYPROG_CASE_ID, MAX(MAX_KSETGO_CASE_ID, MAX(MAX_KSETSTOP_CASE_ID, MAX(MAX_SPDMSESSION_CASE_ID, MAX_FULL_CASE_ID))))))
+  MAX_PCIE_CASE_ID
+
+#define MAX_TEST_CASE_NUM \
+  IDE_COMMON_TEST_CASE_NUM
 
 #define INVALID_PORT_ID 0
 
@@ -65,6 +62,12 @@
 #define TOPOLOGY_SECTION "Topology_%d"
 #define CONFIGURATION_SECTION "Configuration_%d"
 #define TEST_SUITE_SECTION "TestSuite_%d"
+
+typedef enum {
+  IDE_TEST_CATEGORY_PCIE = 0,
+  IDE_TEST_CATEGORY_CXL_MEMCACHE,
+  IDE_TEST_CATEGORY_NUM
+} IDE_TEST_CATEGORY;
 
 typedef enum {
     TEST_IDE_TYPE_SEL_IDE = 0,
@@ -81,12 +84,6 @@ typedef enum
 } IDE_PORT_TYPE;
 
 typedef enum {
-    IDE_TEST_IDE_TYPE_SEL_IDE = 0,
-    IDE_TEST_IDE_TYPE_LNK_IDE = 1,
-    IDE_TEST_IDE_TYPE_NUM
-} IDE_TEST_IDE_TYPE;
-
-typedef enum {
   IDE_TEST_CONNECT_DIRECT = 0,
   IDE_TEST_CONNECT_SWITCH = 1,
   IDE_TEST_CONNECT_P2P = 2,
@@ -99,16 +96,6 @@ typedef enum {
   IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE = 2,
   IDE_TEST_TOPOLOGY_TYPE_NUM
 } IDE_TEST_TOPOLOGY_TYPE;
-
-typedef enum {
-  IDE_COMMON_TEST_CASE_QUERY = 0,
-  IDE_COMMON_TEST_CASE_KEYPROG,
-  IDE_COMMON_TEST_CASE_KSETGO,
-  IDE_COMMON_TEST_CASE_KSETSTOP,
-  IDE_COMMON_TEST_CASE_SPDMSESSION,
-  IDE_COMMON_TEST_CASE_TEST,
-  IDE_COMMON_TEST_CASE_NUM
-} IDE_COMMON_TEST_CASE;
 
 typedef struct
 {
@@ -197,7 +184,7 @@ typedef struct {
 } IDE_TEST_CASE;
 
 typedef struct {
-  IDE_TEST_CASE cases[IDE_COMMON_TEST_CASE_NUM];
+  IDE_TEST_CASE cases[MAX_TEST_CASE_NUM];
 } IDE_TEST_CASES;
 
 typedef struct {
@@ -206,6 +193,7 @@ typedef struct {
   IDE_TEST_TOPOLOGY_TYPE type;
   int topology_id;
   int configuration_id;
+  IDE_TEST_CATEGORY test_category;
   IDE_TEST_CASES test_cases;
 } IDE_TEST_SUITE;
 
@@ -233,42 +221,8 @@ typedef struct {
 #define GROUP_CONTEXT_SIGNATURE SIGNATURE_32('G', 'R', 'O', 'P')
 #define CASE_CONTEXT_SIGNATURE SIGNATURE_32('C', 'A', 'S', 'E')
 #define CONFIG_CONTEXT_SIGNATURE SIGNATURE_32('C', 'N', 'F', 'G')
-
-typedef enum {
-  IDE_TEST_CONFIGURATION_TYPE_DEFAULT = 0,
-  IDE_TEST_CONFIGURATION_TYPE_SWITCH,
-  IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC,
-  IDE_TEST_CONFIGURATION_TYPE_PCRC,
-  IDE_TEST_CONFIGURATION_TYPE_AGGGEG,
-  IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG,
-  IDE_TEST_CONFIGURATION_TYPE_TEE_LIMITED_STREAM,
-  IDE_TEST_CONFIGURATION_TYPE_NUM
-} IDE_TEST_CONFIGURATION_TYPE;
-
-#define BIT_MASK(n) ((uint32_t)(1<<n))
-
-#define SELECTIVE_IDE_CONFIGURATION_BITMASK \
-  ((BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_DEFAULT)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_SWITCH)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PCRC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_AGGGEG)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_TEE_LIMITED_STREAM)))
-
-#define LINK_IDE_CONFIGURATION_BITMASK \
-  ((BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_DEFAULT)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_SWITCH)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PCRC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_AGGGEG)))
-
-#define SELECTIVE_LINK_IDE_CONFIGURATION_BITMASK \
-  ((BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_DEFAULT)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_PCRC)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG)) | \
-  (BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_AGGGEG)))
+#define CXL_IDE_PRIV_DATA_SIGNATURE SIGNATURE_32('C', 'X', 'L', 'P')
+#define PCIE_IDE_PRIV_DATA_SIGNATURE SIGNATURE_32('P', 'C', 'I', 'P')
 
 typedef enum {
   IDE_COMMON_TEST_ACTION_RUN = 0,
@@ -294,19 +248,13 @@ typedef struct {
   int cfg_space_fd;
   uint32_t ecap_offset;
   uint32_t doe_offset;
-  PCIE_IDE_CAP ide_cap;
 
   // kcbar related data
   uint8_t *mapped_kcbar_addr;
   int kcbar_fd;
-  INTEL_KEYP_PCIE_STREAM_CAP stream_cap;
 
-  // ide_id
-  uint8_t ide_id;
-
-  // rid/addr assoc_reg_block
-  PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
-  PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+  // private data, for example for PCIE IDE or CXL IDE.    
+  void *priv_data;
 } ide_common_test_port_context_t;
 
 typedef struct _ide_common_test_switch_internal_conn_context_t ide_common_test_switch_internal_conn_context_t;
@@ -321,6 +269,7 @@ typedef struct {
   uint32_t signature;
   IDE_TEST_CONFIG *test_config;
   int test_suite_id;
+  IDE_TEST_CATEGORY test_category;
 } ide_common_test_suite_context_t;
 
 typedef struct {
@@ -420,10 +369,6 @@ typedef struct {
   ide_common_test_config_check_func_t check;
 } ide_test_config_funcs_t;
 
-// typedef struct {
-//   ide_test_config_funcs_t func_list[IDE_TEST_CONFIGURATION_TYPE_NUM];
-// } ide_top_config_map_t;
-
 // test case setup function
 typedef bool(*ide_common_test_case_setup_func_t) (void *test_context);
 // test case teardown function
@@ -486,6 +431,48 @@ struct _ide_run_test_suite {
 
   ide_run_test_group_t *test_group;
   ide_run_test_config_t *test_config;
+};
+
+typedef struct _teeio_test_config_funcs_t teeio_test_config_funcs_t;
+struct _teeio_test_config_funcs_t {
+  teeio_test_config_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+  IDE_TEST_CONFIGURATION_TYPE config_type;
+
+  ide_test_config_funcs_t funcs;
+};
+
+typedef struct _teeio_test_group_funcs_t teeio_test_group_funcs_t;
+struct _teeio_test_group_funcs_t {
+  teeio_test_group_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+
+  ide_test_group_funcs_t funcs;
+};
+
+typedef struct _teeio_test_case_funcs_t teeio_test_case_funcs_t;
+struct _teeio_test_case_funcs_t {
+  teeio_test_case_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  IDE_TEST_CATEGORY test_category;
+
+  int test_case;
+  int case_id;
+
+  ide_test_case_funcs_t funcs;
 };
 
 #endif
