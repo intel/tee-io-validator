@@ -13,6 +13,9 @@
 #include "ide_test.h"
 #include "teeio_debug.h"
 
+// Define the macro to get the offset of a field in a struct
+#define OFFSET_OF(type, field) ((size_t) &(((type *)0)->field))
+
 void libspdm_sleep(uint64_t microseconds);
 
 // PCIE & MMIO helper APIs
@@ -30,6 +33,10 @@ uint8_t calculate_checksum(uint8_t *table, size_t length);
 // ide_test.ini helper APIs
 bool is_valid_topology_type(uint8_t *type);
 IDE_TEST_TOPOLOGY_TYPE get_topology_type_from_name(uint8_t* name);
+
+bool is_valid_ide_test_category(uint8_t *test_category);
+IDE_TEST_CATEGORY get_ide_test_category_from_name(const char* name);
+
 bool is_valid_topology_connection(uint8_t *connection);
 IDE_TEST_CONNECT_TYPE get_connection_from_name(uint8_t* name);
 bool is_valid_port(IDE_TEST_PORTS_CONFIG *ports, uint8_t* port);
