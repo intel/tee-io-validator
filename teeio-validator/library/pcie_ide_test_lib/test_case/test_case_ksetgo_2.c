@@ -37,9 +37,13 @@ bool pcie_ide_test_ksetgo_2_setup(void *test_context)
   TEEIO_ASSERT(group_context->spdm_context);
   TEEIO_ASSERT(group_context->session_id);
 
+  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
   return test_ksetgo_setup_common(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
     group_context->upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
-    group_context->upper_port.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
+    upper_port_pcie_data->ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
 }
 
 bool pcie_ide_test_ksetgo_2_run(void *test_context)
@@ -59,6 +63,15 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
   void *doe_context = group_context->doe_context;
   void *spdm_context = group_context->spdm_context;
   uint32_t session_id = group_context->session_id;
+
+  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|PR\n"));
   status = test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
@@ -122,12 +135,12 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, group_context->lower_port.ide_id, true);
+  enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, lower_port_pcie_data->ide_id, true);
 
   // enable host ide stream
   enable_rootport_ide_stream(group_context->upper_port.cfg_space_fd,
                          group_context->upper_port.ecap_offset,
-                         ide_type, group_context->upper_port.ide_id,
+                         ide_type, upper_port_pcie_data->ide_id,
                          group_context->upper_port.mapped_kcbar_addr,
                          group_context->rp_stream_index, true);
 

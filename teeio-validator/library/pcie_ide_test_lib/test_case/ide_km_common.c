@@ -71,6 +71,8 @@ bool ide_km_key_prog(
     TEEIO_ASSERT(direction < PCIE_IDE_STREAM_DIRECTION_NUM);
     TEEIO_ASSERT(substream < PCIE_IDE_SUB_STREAM_NUM);
 
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide_key_prog %s|%s|%s\n", k_set_names[ks], direction_names[direction], substream_names[substream]));
+
     result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
     if(!result) {
       return false;
@@ -196,6 +198,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   uint32_t ide_reg_block_count;
 
   // first query
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide_km_query.\n"));
   ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
   status = pci_ide_km_query(doe_context,
                             spdm_context,
@@ -303,7 +306,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   }
 
   // Now KSetGo
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|PR\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|RX|PR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index);
   if (LIBSPDM_STATUS_IS_ERROR(status))
@@ -312,23 +315,23 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
     return false;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|NPR\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|RX|NPR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index);
 
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|RX|NPR failed with 0x%x\n", k_set_names[ks], status));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pcie_ide KSetGo %s|RX|NPR failed with 0x%x\n", k_set_names[ks], status));
     return false;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|CPL\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|RX|CPL\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index);
 
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|RX|CPL failed with 0x%x\n", k_set_names[ks], status));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pcie_ide KSetGo %s|RX|CPL failed with 0x%x\n", k_set_names[ks], status));
     return false;
   }
 
@@ -336,32 +339,32 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
   set_rp_ide_key_set_select(kcbar, rp_stream_index, ks);
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|PR\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|TX|PR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index);
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|PR failed with 0x%x\n", k_set_names[ks], status));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pcie_ide KSetGo %s|TX|PR failed with 0x%x\n", k_set_names[ks], status));
     return false;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|NPR\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|TX|NPR\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index);
 
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|NPR failed with 0x%x\n", k_set_names[ks], status));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pcie_ide KSetGo %s|TX|NPR failed with 0x%x\n", k_set_names[ks], status));
     return false;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|CPL\n", k_set_names[ks]));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie_ide KSetGo %s|TX|CPL\n", k_set_names[ks]));
   status = ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index);
 
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|CPL failed with 0x%x\n", k_set_names[ks], status));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pcie_ide KSetGo %s|TX|CPL failed with 0x%x\n", k_set_names[ks], status));
     return false;
   }
 
@@ -375,12 +378,19 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(lower_port_cfg_space_fd, lower_port_ecap_offset, ide_type, lower_port->ide_id, true);
+
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  enable_ide_stream_in_ecap(lower_port_cfg_space_fd, lower_port_ecap_offset, ide_type, lower_port_pcie_data->ide_id, true);
 
   // enable host ide stream
   enable_rootport_ide_stream(upper_port_cfg_space_fd,
                          upper_port_ecap_offset,
-                         ide_type, upper_port->ide_id,
+                         ide_type, upper_port_pcie_data->ide_id,
                          kcbar_addr,
                          rp_stream_index, true);
 
@@ -388,7 +398,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
+  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port_pcie_data->ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   if (stream_status.state != IDE_STREAM_STATUS_SECURE)
   {
@@ -415,12 +425,18 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
         NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
     }
 
+    PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+    TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+    PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+    TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
     // step1: ensure host_ide and dev_ide is enabled
-    if(!is_ide_enabled(upper_port->cfg_space_fd, ide_type, upper_port->ide_id, upper_port->ecap_offset)) {
+    if(!is_ide_enabled(upper_port->cfg_space_fd, ide_type, upper_port_pcie_data->ide_id, upper_port->ecap_offset)) {
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "upper_port ide is not enabled.\n"));
         return false;
     }
-    if(!is_ide_enabled(lower_port->cfg_space_fd, ide_type, lower_port->ide_id, lower_port->ecap_offset)) {
+    if(!is_ide_enabled(lower_port->cfg_space_fd, ide_type, lower_port_pcie_data->ide_id, lower_port->ecap_offset)) {
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "lower_port ide is not enabled.\n"));
         return false;
     }

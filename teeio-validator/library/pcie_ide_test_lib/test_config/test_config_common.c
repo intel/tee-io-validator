@@ -35,7 +35,7 @@ typedef enum
 } IDE_STREAM_STATUS_TYPE;
 
 // check if the ide_stream is secure or insecure
-bool test_config_check_common(void *test_context, const char* assertion_msg)
+bool pcie_ide_test_config_check_common(void *test_context)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
@@ -43,6 +43,8 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
   ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)config_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+
+  const char* assertion_msg = "Check Common Assertion";
 
   ide_common_test_port_context_t *port = &group_context->upper_port;
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
@@ -55,7 +57,10 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
     NOT_IMPLEMENTED("selective_and_link_ide topology");
   }
 
-  uint32_t data = read_stream_status_in_rp_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, port->ide_id);
+  PCIE_PRIV_DATA* pcie_data = (PCIE_PRIV_DATA *)port->priv_data;
+  TEEIO_ASSERT(pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  uint32_t data = read_stream_status_in_rp_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, pcie_data->ide_id);
   PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
   uint8_t state = stream_status.state;
   IDE_STREAM_STATUS_TYPE status = IDE_STREAM_STATUS_TYPE_UNKNOWN;
@@ -146,7 +151,7 @@ static bool test_config_reset_ide_registers(ide_common_test_group_context_t *gro
   return true;
 }
 
-bool test_config_enable_common(void *test_context)
+bool pcie_ide_test_config_enable_common(void *test_context)
 {
   bool res = true;
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
@@ -232,7 +237,7 @@ CheckFailed:
     return supported;
 }
 
-bool test_config_support_common(void *test_context)
+bool pcie_ide_test_config_support_common(void *test_context)
 {
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
@@ -240,8 +245,17 @@ bool test_config_support_common(void *test_context)
   ide_common_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
-  PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
-  PCIE_IDE_CAP *dev_cap = &group_context->lower_port.ide_cap;
+  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+
+  PCIE_PRIV_DATA* lower_port_pcie_data = (PCIE_PRIV_DATA *)lower_port->priv_data;
+  TEEIO_ASSERT(lower_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_PRIV_DATA* upper_port_pcie_data = (PCIE_PRIV_DATA *)upper_port->priv_data;
+  TEEIO_ASSERT(upper_port_pcie_data->signature = PCIE_IDE_PRIV_DATA_SIGNATURE);
+
+  PCIE_IDE_CAP *host_cap = &upper_port_pcie_data->ide_cap;
+  PCIE_IDE_CAP *dev_cap = &lower_port_pcie_data->ide_cap;
 
   bool supported = false;
   if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE) {
