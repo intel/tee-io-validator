@@ -22,6 +22,7 @@ extern const char *IDE_PORT_TYPE_NAMES[];
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 extern const char *IDE_TEST_CONNECT_TYPE_NAMES[];
 extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
+extern const char *IDE_TEST_CATEGORY_NAMES[];
 
 bool is_valid_topology_connection(uint8_t *connection)
 {
