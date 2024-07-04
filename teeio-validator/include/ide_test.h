@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include "pcie.h"
+#include "cxl.h"
 #include "intel_keyp.h"
 
 #define NOT_IMPLEMENTED(msg) \
@@ -53,8 +54,84 @@
 #define MAX_KSETSTOP_CASE_ID 4
 #define MAX_SPDMSESSION_CASE_ID 2
 #define MAX_FULL_CASE_ID 1
-#define MAX_CASE_ID \
+#define MAX_PCIE_CASE_ID \
   (MAX(MAX_QUERY_CASE_ID, MAX(MAX_KEYPROG_CASE_ID, MAX(MAX_KSETGO_CASE_ID, MAX(MAX_KSETSTOP_CASE_ID, MAX(MAX_SPDMSESSION_CASE_ID, MAX_FULL_CASE_ID))))))
+
+#define MAX_CXL_QUERY_CASE_ID 2
+#define MAX_CXL_KEYPROG_CASE_ID 9
+#define MAX_CXL_KSETGO_CASE_ID 1
+#define MAX_CXL_KSETSTOP_CASE_ID 1
+#define MAX_CXL_GETKEY_CASE_ID 1
+#define MAX_CXL_FULL_CASE_ID 2
+#define MAX_CXL_CASE_ID \
+  (MAX(MAX_CXL_QUERY_CASE_ID, MAX(MAX_CXL_KEYPROG_CASE_ID, MAX(MAX_CXL_KSETGO_CASE_ID, MAX(MAX_CXL_KSETSTOP_CASE_ID, MAX(MAX_CXL_GETKEY_CASE_ID, MAX_CXL_FULL_CASE_ID))))))
+
+#define MAX_IDE_TEST_DVSEC_COUNT  16
+
+typedef enum {
+  CXL_MEM_IDE_TEST_CASE_QUERY = 0,
+  CXL_MEM_IDE_TEST_CASE_KEYPROG,
+  CXL_MEM_IDE_TEST_CASE_KSETGO,
+  CXL_MEM_IDE_TEST_CASE_KSETSTOP,
+  CXL_MEM_IDE_TEST_CASE_GETKEY,
+  CXL_MEM_IDE_TEST_CASE_TEST,
+  CXL_MEM_IDE_TEST_CASE_NUM
+} CXL_MEM_IDE_TEST_CASE;
+
+typedef enum {
+  CXL_IDE_CONFIGURATION_TYPE_DEFAULT = 0,
+  CXL_IDE_CONFIGURATION_TYPE_PCRC,
+  CXL_IDE_CONFIGURATION_TYPE_IDE_STOP,
+  CXL_IDE_CONFIGURATION_TYPE_NUM
+} CXL_IDE_CONFIGURATION_TYPE;
+
+#define CXL_BIT_MASK(n) ((uint32_t)(1<<n))
+#define CXL_LINK_IDE_CONFIGURATION_BITMASK \
+  ((CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_DEFAULT)) | \
+  (CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_PCRC)) | \
+  (CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_IDE_STOP)))
+
+#define MAX_CASE_ID \
+  MAX(MAX_PCIE_CASE_ID, MAX_CXL_CASE_ID)
+
+#define MAX_TEST_CASE_NUM \
+  (MAX(IDE_COMMON_TEST_CASE_NUM, CXL_MEM_IDE_TEST_CASE_NUM))
+
+typedef struct {
+  uint32_t offset;          // offset in configuration space
+  CXL_DVSEC_ID dvsec_id;    // DVSEC ID. 0xff is invalid DVSEC
+} IDE_TEST_CXL_PCIE_DVSEC;
+
+typedef struct {
+  // DVSECs in Configuration Space
+  IDE_TEST_CXL_PCIE_DVSEC dvsecs[MAX_IDE_TEST_DVSEC_COUNT];
+  int dvsec_cnt;
+
+  CXL_DEV_CAPABILITY cap;
+  CXL_DEV_CAPABILITY2 cap2;
+  CXL_DEV_CAPABILITY3 cap3;
+} CXL_PRIV_DATA_ECAP;
+
+typedef struct {
+  // KCBar data
+  INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG link_enc_global_config;
+} CXL_PRIV_DATA_KCBAR;
+
+typedef struct {
+  int mapped_fd;
+  uint8_t* mapped_memcache_reg_block;
+
+  CXL_CAPABILITY_XXX_HEADER cap_headers[CXL_CAPABILITY_ID_NUM];
+  int cap_headers_cnt;
+
+  CXL_IDE_CAPABILITY ide_cap;
+} CXL_PRIV_DATA_MEMCACHE_REG_DATA;
+
+typedef struct {
+  CXL_PRIV_DATA_ECAP ecap;
+  CXL_PRIV_DATA_KCBAR kcbar;
+  CXL_PRIV_DATA_MEMCACHE_REG_DATA memcache;
+} CXL_PRIV_DATA;
 
 #define INVALID_PORT_ID 0
 
@@ -65,6 +142,12 @@
 #define TOPOLOGY_SECTION "Topology_%d"
 #define CONFIGURATION_SECTION "Configuration_%d"
 #define TEST_SUITE_SECTION "TestSuite_%d"
+
+typedef enum {
+  IDE_TEST_CATEGORY_PCIE = 0,
+  IDE_TEST_CATEGORY_CXL_MEMCACHE,
+  IDE_TEST_CATEGORY_NUM
+} IDE_TEST_CATEGORY;
 
 typedef enum {
     TEST_IDE_TYPE_SEL_IDE = 0,
@@ -197,7 +280,7 @@ typedef struct {
 } IDE_TEST_CASE;
 
 typedef struct {
-  IDE_TEST_CASE cases[IDE_COMMON_TEST_CASE_NUM];
+  IDE_TEST_CASE cases[MAX_TEST_CASE_NUM];
 } IDE_TEST_CASES;
 
 typedef struct {
@@ -206,6 +289,7 @@ typedef struct {
   IDE_TEST_TOPOLOGY_TYPE type;
   int topology_id;
   int configuration_id;
+  IDE_TEST_CATEGORY test_category;
   IDE_TEST_CASES test_cases;
 } IDE_TEST_SUITE;
 
@@ -307,6 +391,9 @@ typedef struct {
   // rid/addr assoc_reg_block
   PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+
+  // cxl related data
+  CXL_PRIV_DATA cxl_data;
 } ide_common_test_port_context_t;
 
 typedef struct _ide_common_test_switch_internal_conn_context_t ide_common_test_switch_internal_conn_context_t;
@@ -321,6 +408,7 @@ typedef struct {
   uint32_t signature;
   IDE_TEST_CONFIG *test_config;
   int test_suite_id;
+  IDE_TEST_CATEGORY test_category;
 } ide_common_test_suite_context_t;
 
 typedef struct {
@@ -419,10 +507,6 @@ typedef struct {
   ide_common_test_config_support_func_t support;
   ide_common_test_config_check_func_t check;
 } ide_test_config_funcs_t;
-
-// typedef struct {
-//   ide_test_config_funcs_t func_list[IDE_TEST_CONFIGURATION_TYPE_NUM];
-// } ide_top_config_map_t;
 
 // test case setup function
 typedef bool(*ide_common_test_case_setup_func_t) (void *test_context);
