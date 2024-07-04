@@ -11,10 +11,8 @@
 #include "helperlib.h"
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
-
-bool test_config_enable_common(void *test_context);
-bool test_config_check_common(void *test_context, const char* assertion_msg);
-bool test_config_support_common(void *test_context);
+#include "cxl_ide_test_lib.h"
+#include "test_factory.h"
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
 {
@@ -64,231 +62,6 @@ const char* m_test_config_result_str[] = {
   "na", "pass", "fail"
 };
 
-uint32_t m_top_config_bitmasks[] = {
-  (uint32_t)SELECTIVE_IDE_CONFIGURATION_BITMASK,
-  (uint32_t)LINK_IDE_CONFIGURATION_BITMASK,
-  (uint32_t)SELECTIVE_LINK_IDE_CONFIGURATION_BITMASK
-};
-
-ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONFIGURATION_TYPE_NUM] = {
-  { // selective_ide
-    { // Default Config
-      pcie_ide_test_config_default_enable_common,
-      pcie_ide_test_config_default_disable_common,
-      pcie_ide_test_config_default_support_common,
-      pcie_ide_test_config_default_check_common
-    },
-    {NULL, NULL, NULL, NULL}, // switch
-    {NULL, NULL, NULL, NULL}, // partial header encryption
-    { // pcrc
-      pcie_ide_test_config_pcrc_enable_sel,
-      pcie_ide_test_config_pcrc_disable_sel,
-      pcie_ide_test_config_pcrc_support_sel,
-      pcie_ide_test_config_pcrc_check_sel
-    },
-    {NULL, NULL, NULL, NULL}, // aggregation
-    { // selective_ide for configuration request
-      pcie_ide_test_config_enable_sel_ide_for_cfg_req,
-      pcie_ide_test_config_disable_sel_ide_for_cfg_req,
-      pcie_ide_test_config_support_sel_ide_for_cfg_req,
-      pcie_ide_test_config_check_sel_ide_for_cfg_req
-    },
-    {NULL, NULL, NULL, NULL}  // tee_limited_stream
-  },
-  { // link_ide
-    {
-      // Default Config
-      pcie_ide_test_config_default_enable_common,
-      pcie_ide_test_config_default_disable_common,
-      pcie_ide_test_config_default_support_common,
-      pcie_ide_test_config_default_check_common
-    },
-
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-
-    {
-      // pcrc
-      pcie_ide_test_config_pcrc_enable_link,
-      pcie_ide_test_config_pcrc_disable_link,
-      pcie_ide_test_config_pcrc_support_link,
-      pcie_ide_test_config_pcrc_check_link
-    },
-
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
-  },
-  { // selective_and_link_ide
-    {
-      // Default Config
-      pcie_ide_test_config_default_enable_sel_link,
-      pcie_ide_test_config_default_disable_sel_link,
-      pcie_ide_test_config_default_support_sel_link,
-      pcie_ide_test_config_default_check_sel_link
-    },
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {
-      // pcrc
-      pcie_ide_test_config_pcrc_enable_sel_link,
-      pcie_ide_test_config_pcrc_disable_sel_link,
-      pcie_ide_test_config_pcrc_support_sel_link,
-      pcie_ide_test_config_pcrc_check_sel_link
-    },
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
-  }
-};
-
-ide_test_group_funcs_t m_group_funcs[] = {
-  { // selective_ide
-      pcie_ide_test_group_setup_sel,
-      pcie_ide_test_group_teardown_sel
-  },
-  { // link_ide
-      pcie_ide_test_group_setup_link,
-      pcie_ide_test_group_teardown_link
-  },
-  { // selective_link_ide
-      pcie_ide_test_group_setup_sel_link,
-      pcie_ide_test_group_teardown_sel_link
-  }
-};
-
-#define TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh"
-
-ide_test_case_name_t m_test_case_names[IDE_COMMON_TEST_CASE_NUM] = {
-  {"Query",       "1,2",                  IDE_COMMON_TEST_CASE_QUERY},
-  {"KeyProg",     "1,2,3,4,5,6",          IDE_COMMON_TEST_CASE_KEYPROG},
-  {"KSetGo",      "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETGO},
-  {"KSetStop",    "1,2,3,4",              IDE_COMMON_TEST_CASE_KSETSTOP},
-  {"SpdmSession", "1,2",                  IDE_COMMON_TEST_CASE_SPDMSESSION},
-  {"Test",        TEST_CLASS_CASE_NAMES,  IDE_COMMON_TEST_CASE_TEST}
-};
-
-ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] = {
-  // Query
-  {
-    { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
-    { pcie_ide_test_query_2_setup, pcie_ide_test_query_2_run, pcie_ide_test_query_2_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-  },
-  // KeyProg
-  {
-    {pcie_ide_test_keyprog_1_setup, pcie_ide_test_keyprog_1_run, pcie_ide_test_keyprog_1_teardown, false},
-    {pcie_ide_test_keyprog_2_setup, pcie_ide_test_keyprog_2_run, pcie_ide_test_keyprog_2_teardown, false},
-    {pcie_ide_test_keyprog_3_setup, pcie_ide_test_keyprog_3_run, pcie_ide_test_keyprog_3_teardown, false},
-    {pcie_ide_test_keyprog_4_setup, pcie_ide_test_keyprog_4_run, pcie_ide_test_keyprog_4_teardown, false},
-    {pcie_ide_test_keyprog_5_setup, pcie_ide_test_keyprog_5_run, pcie_ide_test_keyprog_5_teardown, false},
-    {pcie_ide_test_keyprog_6_setup, pcie_ide_test_keyprog_6_run, pcie_ide_test_keyprog_6_teardown, false}
-  },
-  // KSetGo
-  {
-    { pcie_ide_test_ksetgo_1_setup, pcie_ide_test_ksetgo_1_run, pcie_ide_test_ksetgo_1_teardown, true },
-    { pcie_ide_test_ksetgo_2_setup, pcie_ide_test_ksetgo_2_run, pcie_ide_test_ksetgo_2_teardown, true },
-    { pcie_ide_test_ksetgo_3_setup, pcie_ide_test_ksetgo_3_run, pcie_ide_test_ksetgo_3_teardown, true },
-    { pcie_ide_test_ksetgo_4_setup, pcie_ide_test_ksetgo_4_run, pcie_ide_test_ksetgo_4_teardown, true },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KSetStop
-  {
-    { pcie_ide_test_ksetstop_1_setup, pcie_ide_test_ksetstop_1_run, pcie_ide_test_ksetstop_1_teardown, false },
-    { pcie_ide_test_ksetstop_2_setup, pcie_ide_test_ksetstop_2_run, pcie_ide_test_ksetstop_2_teardown, false },
-    { pcie_ide_test_ksetstop_3_setup, pcie_ide_test_ksetstop_3_run, pcie_ide_test_ksetstop_3_teardown, false },
-    { pcie_ide_test_ksetstop_4_setup, pcie_ide_test_ksetstop_4_run, pcie_ide_test_ksetstop_4_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // SpdmSession
-  {
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  },
-  // Test Full
-  {
-    { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
-    { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false },  // KeyRefresh
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  }
-};
-
-ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index)
-{
-  if(test_case_name == NULL) {
-    return NULL;
-  }
-  char buf1[MAX_LINE_LENGTH] = {0};
-  char buf2[MAX_LINE_LENGTH] = {0};
-  strncpy(buf1, test_case_name, MAX_LINE_LENGTH);
-
-  int pos = find_char_in_str(buf1, '.');
-  if(pos == -1) {
-    return NULL;
-  }
-
-  buf1[pos] = '\0';
-  char* ptr1 = buf1 + pos + 1;
-
-  int i = 0;
-  for(; i < IDE_COMMON_TEST_CASE_NUM; i++) {
-    if(strcmp(buf1, m_test_case_names[i].class) == 0) {
-      break;
-    }
-  }
-  if(i == IDE_COMMON_TEST_CASE_NUM) {
-    return NULL;
-  }
-
-  bool hit = false;
-  strncpy(buf2, m_test_case_names[i].names, MAX_LINE_LENGTH);
-  char *ptr2 = buf2;
-  int j = 0;
-
-  pos = find_char_in_str(ptr2, ',');
-
-  do {
-    if(pos != -1) {
-      ptr2[pos] = '\0';
-    }
-    if(strcmp(ptr1, ptr2) == 0) {
-      hit = true;
-      break;
-    }
-
-    if(pos == -1) {
-      break;
-    }
-
-    ptr2 += (pos + 1);
-    pos = find_char_in_str(ptr2, ',');
-    j++;
-  } while(true);
-
-  if(index != NULL) {
-    *index = j;
-  }
-
-  return hit ? m_test_case_names + i : NULL;
-}
-
-bool is_valid_test_case(const char* test_case_name)
-{
-  return get_test_case_from_string(test_case_name, NULL) != NULL;
-}
-
 ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFIG *test_config)
 {
   ide_run_test_suite_t *rts = (ide_run_test_suite_t *)malloc(sizeof(ide_run_test_suite_t));
@@ -303,18 +76,19 @@ ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFI
   context->signature = SUITE_CONTEXT_SIGNATURE;
   context->test_suite_id = suite->id;
   context->test_config = test_config;
+  context->test_category = suite->test_category;
 
   rts->test_context = context;
 
   return rts;
 }
 
-bool alloc_run_test_config_item(ide_run_test_config_t *rtc, int config_type, IDE_TEST_TOPOLOGY_TYPE top_type)
+bool alloc_run_test_config_item(ide_run_test_config_t *rtc, int config_type, IDE_TEST_TOPOLOGY_TYPE top_type, IDE_TEST_CATEGORY test_category)
 {
   TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
   TEEIO_ASSERT(config_type < IDE_TEST_CONFIGURATION_TYPE_NUM);
 
-  ide_test_config_funcs_t *config_func = &m_config_funcs[top_type][config_type];
+  ide_test_config_funcs_t *config_func = test_factory_get_test_config_funcs(test_category, top_type, config_type);
 
   ide_run_test_config_item_t *config_item = (ide_run_test_config_item_t*)malloc(sizeof(ide_run_test_config_item_t));
   TEEIO_ASSERT(config_item != NULL);
@@ -363,14 +137,19 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_conf
   context->top_type = top->type;
   run_test_config->test_context = context;
 
+  IDE_TEST_CATEGORY test_category = context->suite_context->test_category;
+
   // config_item
-  uint32_t config_bitmask = m_top_config_bitmasks[configuration->type];
+  int config_type_num = 0;
+  uint32_t config_bitmask = test_factory_get_config_bitmask(&config_type_num, top->type, test_category);
+  TEEIO_ASSERT(config_bitmask != 0);
+
   uint32_t config_bits = configuration->bit_map & config_bitmask;
   char name_buf[MAX_NAME_LENGTH] = {0};
   int offset = 0;
-  for(int i = 0; i < IDE_TEST_CONFIGURATION_TYPE_NUM; i++) {
+  for(int i = 0; i < config_type_num; i++) {
     if(config_bits & BIT_MASK(i)) {
-      alloc_run_test_config_item(run_test_config, i, top->type);
+      alloc_run_test_config_item(run_test_config, i, top->type, test_category);
       TEEIO_ASSERT(offset + strlen(m_ide_test_configuration_name[i]) + 1 < MAX_NAME_LENGTH);
       sprintf(name_buf + offset, "%s+", m_ide_test_configuration_name[i]);
       offset = strlen(name_buf);
@@ -444,6 +223,9 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
   TEEIO_ASSERT(run_test_group);
   memset(run_test_group, 0, sizeof(ide_run_test_group_t));
 
+  ide_common_test_suite_context_t* suite_context = (ide_common_test_suite_context_t *)rts->test_context;
+  TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+
   IDE_TEST_TOPOLOGY *top = get_topology_by_id(test_config, top_id);
   TEEIO_ASSERT(top != NULL);
   TEEIO_ASSERT(top->type < IDE_TEST_TOPOLOGY_TYPE_NUM);
@@ -457,7 +239,7 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 
   sprintf(run_test_group->name, "%s", m_ide_test_topology_name[top->type]);
 
-  ide_test_group_funcs_t *group_funcs = &m_group_funcs[top->type];
+  ide_test_group_funcs_t *group_funcs = test_factory_get_test_group_funcs(suite_context->test_category, top->type);
   run_test_group->setup_func = group_funcs->setup;
   run_test_group->teardown_func = group_funcs->teardown;
 
@@ -503,9 +285,9 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 /**
  * allocate run_test_case. After that it is insert into @run_test_group
 */
-bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_CASE test_case, uint32_t case_id)
+bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_CASE test_case, uint32_t case_id, IDE_TEST_CATEGORY test_category)
 {
-  TEEIO_ASSERT(test_case < IDE_COMMON_TEST_CASE_NUM);
+  TEEIO_ASSERT(test_case < MAX_TEST_CASE_NUM);
   TEEIO_ASSERT(case_id <= MAX_CASE_ID);
 
   ide_run_test_case_t *run_test_case = (ide_run_test_case_t *)malloc(sizeof(ide_run_test_case_t));
@@ -514,9 +296,8 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
 
   strncpy(run_test_case->class, m_ide_test_case_name[(int)test_case], MAX_NAME_LENGTH);
   sprintf(run_test_case->name, "%s.%d", m_ide_test_case_name[(int)test_case], case_id);
-  // run_test_case->action = IDE_COMMON_TEST_ACTION_RUN;
 
-  ide_test_case_funcs_t* case_funcs = &m_test_case_funcs[test_case][case_id - 1];
+  ide_test_case_funcs_t* case_funcs = test_factory_get_test_case_funcs(test_category, test_case, case_id);
   run_test_case->run_func = case_funcs->run;
   run_test_case->setup_func = case_funcs->setup;
   run_test_case->teardown_func = case_funcs->teardown;
@@ -554,8 +335,10 @@ bool alloc_run_test_cases(
     IDE_TEST_TOPOLOGY *top)
 {
   ide_run_test_group_t *run_test_group = NULL;
+  ide_common_test_suite_context_t* suite_context = run_test_suite->test_context;
+  TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     IDE_TEST_CASE *tc = suite->test_cases.cases + i;
     if(tc->cases_cnt == 0) {
       continue;
@@ -566,7 +349,7 @@ bool alloc_run_test_cases(
 
     for (int j = 0; j < tc->cases_cnt; j++)
     {
-      alloc_run_test_case(run_test_group, i, tc->cases_id[j]);
+      alloc_run_test_case(run_test_group, i, tc->cases_id[j], suite_context->test_category);
     }
   }
 
@@ -698,18 +481,28 @@ ide_run_test_case_result_t *alloc_run_test_case_result(ide_run_test_group_result
   return case_result;
 }
 
-static bool do_run_test_config_support(ide_run_test_config_t *run_test_config)
+static bool do_run_test_config_support(ide_run_test_config_t *run_test_config, IDE_TEST_TOPOLOGY_TYPE top_type, IDE_TEST_CATEGORY test_category)
 {
   bool ret = false;
 
-  if(!test_config_support_common(run_test_config->test_context)) {
+  ide_test_config_funcs_t* config_funcs = test_factory_get_test_config_funcs(test_category, top_type, IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
+  if(config_funcs == NULL) {
+    return false;
+  }
+
+  if(!config_funcs->support(run_test_config->test_context)) {
     return false;
   }
 
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
     TEEIO_ASSERT(config_item->support_func);
-    ret = config_item->support_func(run_test_config->test_context);
+
+    if(config_item->type == IDE_TEST_CONFIGURATION_TYPE_DEFAULT) {
+      ret = true;
+    } else {
+      ret = config_item->support_func(run_test_config->test_context);
+    }
 
     config_item = config_item->next;
   } while(ret && config_item);
@@ -717,18 +510,27 @@ static bool do_run_test_config_support(ide_run_test_config_t *run_test_config)
   return ret;
 }
 
-static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config)
+static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config, IDE_TEST_TOPOLOGY_TYPE top_type, IDE_TEST_CATEGORY test_category)
 {
   bool ret = false;
 
-  if(!test_config_enable_common(run_test_config->test_context)) {
+  ide_test_config_funcs_t *config_funcs = test_factory_get_test_config_funcs(test_category, top_type, IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
+  if(config_funcs == NULL) {
+    return false;
+  }
+
+  if(!config_funcs->enable(run_test_config->test_context)) {
     return false;
   }
 
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
     TEEIO_ASSERT(config_item->support_func);
-    ret = config_item->enable_func(run_test_config->test_context);
+    if(config_item->type == IDE_TEST_CONFIGURATION_TYPE_DEFAULT) {
+      ret = true;
+    } else {
+      ret = config_item->enable_func(run_test_config->test_context);
+    }
 
     config_item = config_item->next;
   } while(ret && config_item);
@@ -736,18 +538,27 @@ static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config)
   return ret;
 }
 
-static bool do_run_test_config_check(ide_run_test_config_t *run_test_config)
+static bool do_run_test_config_check(ide_run_test_config_t *run_test_config, IDE_TEST_TOPOLOGY_TYPE top_type, IDE_TEST_CATEGORY test_category)
 {
   bool ret = false;
 
-  if(!test_config_check_common(run_test_config->test_context, "Check Common Assertion")) {
+  ide_test_config_funcs_t* config_funcs = test_factory_get_test_config_funcs(test_category, top_type, IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
+  if(config_funcs == NULL) {
+    return NULL;
+  }
+
+  if(!config_funcs->check(run_test_config->test_context)) {
     return false;
   }
 
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
     TEEIO_ASSERT(config_item->support_func);
-    ret = config_item->check_func(run_test_config->test_context);
+    if(config_item->type == IDE_TEST_CONFIGURATION_TYPE_DEFAULT) {
+      ret = true;
+    } else {
+      ret = config_item->check_func(run_test_config->test_context);
+    }
 
     config_item = config_item->next;
   } while(ret && config_item);
@@ -758,7 +569,7 @@ static bool do_run_test_config_check(ide_run_test_config_t *run_test_config)
 /**
  * run_test_group
 */
-bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config_t *run_test_config, ide_run_test_group_result_t* group_result)
+bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config_t *run_test_config, ide_run_test_group_result_t* group_result, IDE_TEST_CATEGORY test_category)
 {
   bool ret = true;
   bool run_test_group_failed = false;
@@ -769,6 +580,8 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
   config_context->group_context = group_context;
+
+  IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
 
   if(run_test_group->test_case == NULL) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "test_case is not set in test_group.\n"));
@@ -797,7 +610,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   } else {
     // check if the test_config is supported.
     // if not supported, this test_group is done.
-    if(!do_run_test_config_support(run_test_config)) {
+    if(!do_run_test_config_support(run_test_config, top_type, test_category)) {
       config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
       TEEIO_PRINT(("       %s is not supported. Skip the TestConfig.\n", run_test_config->name));
       run_test_config_failed = true;
@@ -816,7 +629,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     }
 
     // call test_config's enable function
-    ret = do_run_test_config_enable(run_test_config);
+    ret = do_run_test_config_enable(run_test_config, top_type, test_category);
     TEEIO_ASSERT(ret);
 
     // run the test_case
@@ -824,7 +637,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
 
     if(test_case->complete_ide_stream) {
       // check config
-      ret = do_run_test_config_check(run_test_config);
+      ret = do_run_test_config_check(run_test_config, top_type, test_category);
       case_result->config_result = config_context->test_result;
       TEEIO_ASSERT(ret);
     }
@@ -879,6 +692,9 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
     ide_run_test_config_t *run_test_config = run_test_suite->test_config;
     run_test_config->group_result = NULL;
 
+    ide_common_test_suite_context_t* suite_context = run_test_suite->test_context;
+    TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+
     TEEIO_PRINT((" Run %s\n", run_test_suite->name));
 
     while(run_test_config != NULL) {
@@ -889,7 +705,7 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
         ide_run_test_group_result_t* group_result = alloc_run_test_group_result(run_test_group, run_test_config);
         TEEIO_ASSERT(group_result);
 
-        do_run_test_group(run_test_group, run_test_config, group_result);
+        do_run_test_group(run_test_group, run_test_config, group_result, suite_context->test_category);
 
         run_test_group = run_test_group->next;
       }
