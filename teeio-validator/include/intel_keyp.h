@@ -13,6 +13,12 @@
 
 // Below defitions are based on Root Complex IDE Programming Guide
 
+// Table 2-2. Protocol Type
+typedef enum {
+  INTEL_KEYP_PROTOCOL_TYPE_PCIE_CXLIO = 1,
+  INTEL_KEYP_PROTOCOL_TYPE_CXL_MEMCACHE = 2
+} INTEL_KEYP_PROTOCOL_TYPE;
+
 // Table 2-1. Key Programming Table Reporting Structure
 typedef struct {
   uint8_t   signature[4];
