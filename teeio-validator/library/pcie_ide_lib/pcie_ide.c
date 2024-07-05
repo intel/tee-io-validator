@@ -242,7 +242,7 @@ bool open_root_port(ide_common_test_port_context_t *port_context)
   port_context->ecap_offset = ecap_offset;
 
   // parse KEYP table and map the kcbar to user space
-  if (!parse_keyp_table(port_context))
+  if (!parse_keyp_table(port_context, INTEL_KEYP_PROTOCOL_TYPE_PCIE_CXLIO))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "parse_keyp_table failed.\n"));
     goto InitRootPortFail;
