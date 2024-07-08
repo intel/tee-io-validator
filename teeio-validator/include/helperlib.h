@@ -42,6 +42,9 @@ uint8_t calculate_checksum(uint8_t *table, size_t length);
 bool is_valid_topology_type(uint8_t *type);
 IDE_TEST_TOPOLOGY_TYPE get_topology_type_from_name(uint8_t* name);
 
+bool is_valid_test_category(uint8_t *test_category);
+TEEIO_TEST_CATEGORY get_test_category_from_name(const char* name);
+
 bool is_valid_topology_connection(uint8_t *connection);
 IDE_TEST_CONNECT_TYPE get_connection_from_name(uint8_t* name);
 bool is_valid_port(IDE_TEST_PORTS_CONFIG *ports, uint8_t* port);
