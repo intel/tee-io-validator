@@ -67,6 +67,12 @@
 #define TEST_SUITE_SECTION "TestSuite_%d"
 
 typedef enum {
+  TEEIO_TEST_CATEGORY_PCIE_IDE = 0,
+  TEEIO_TEST_CATEGORY_CXL_IDE,
+  TEEIO_TEST_CATEGORY_MAX
+} TEEIO_TEST_CATEGORY;
+
+typedef enum {
     TEST_IDE_TYPE_SEL_IDE = 0,
     TEST_IDE_TYPE_LNK_IDE = 1,
     TEST_IDE_TYPE_NA
@@ -206,6 +212,7 @@ typedef struct {
   IDE_TEST_TOPOLOGY_TYPE type;
   int topology_id;
   int configuration_id;
+  TEEIO_TEST_CATEGORY test_category;
   IDE_TEST_CASES test_cases;
 } IDE_TEST_SUITE;
 
@@ -321,6 +328,7 @@ typedef struct {
   uint32_t signature;
   IDE_TEST_CONFIG *test_config;
   int test_suite_id;
+  TEEIO_TEST_CATEGORY test_category;
 } ide_common_test_suite_context_t;
 
 typedef struct {
