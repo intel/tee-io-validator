@@ -25,6 +25,7 @@ extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
 extern char g_bdf[];
 extern char g_rp_bdf[];
 extern TEST_IDE_TYPE g_test_ide_type;
+extern TEEIO_TEST_CATEGORY g_test_category;
 extern uint8_t g_stream_id;
 extern bool g_pci_log;
 extern bool g_skip_tdisp;
@@ -37,7 +38,7 @@ extern bool g_libspdm_log;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
-bool is_valid_test_case(const char* test_case_name);
+bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category);
 
 void print_usage()
 {
@@ -54,6 +55,7 @@ void print_usage()
   TEEIO_PRINT(("  -s <test_case>      : Test case to be tested. For example Test.IdeStream\n"));
   TEEIO_PRINT(("  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
   TEEIO_PRINT(("  -b <scan_bus>       : Bus number in hex format. For example 0x1a\n"));
+  TEEIO_PRINT(("  -i <test_category>  : test category. For example pcie-ide, cxl-ide\n"));
   TEEIO_PRINT(("  -h                  : Display this usage\n"));
 }
 
@@ -65,7 +67,9 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   int opt, v;
   uint8_t data8;
   char buf[MAX_LINE_LENGTH] = {0};
+  char test_case_name[MAX_CASE_NAME_LENGTH] = {0};
   int pos = 0;
+  TEEIO_TEST_CATEGORY test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
 
   TEEIO_ASSERT(argc > 0);
   TEEIO_ASSERT(argv != NULL);
@@ -85,7 +89,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   }
   TEEIO_PRINT(("%s\n", buf));
 
-  while ((opt = getopt(argc, argv, "f:t:c:s:l:b:h")) != -1) {
+  while ((opt = getopt(argc, argv, "f:t:c:s:l:i:b:h")) != -1) {
       switch (opt) {
           case 'f':
               if(!validate_file_name(optarg)) {
@@ -96,12 +100,8 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
               break;
 
           case 's':
-              if(!is_valid_test_case(optarg)) {
-                TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -f parameter. %s\n", optarg));
-                return false;
-              }
-              sprintf(g_test_case, "%s", optarg);
-              g_run_test_suite = false;
+              strncpy(test_case_name, optarg, MAX_CASE_NAME_LENGTH);
+              // we will check the test_case_name later because it depends on ide_type which is designated by -i
               break;
 
           case 't':
@@ -136,6 +136,14 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
             *debug_level = get_ide_log_level_from_string(optarg);
             break;
 
+        case 'i':
+            test_category = get_test_category_from_name(optarg);
+            if(test_category == TEEIO_TEST_CATEGORY_MAX) {
+              TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -i parameter. %s\n", optarg));
+              return false;
+            }
+            break;
+
           case 'h':
               *print_usage = true;
               break;
@@ -143,6 +151,17 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
           default:
               return false;
       }  
+  }
+
+  if(strlen(test_case_name) > 0) {
+    // test_case is designated in command line
+    if(!is_valid_test_case(test_case_name, test_category)) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -f parameter. %s\n", test_case_name));
+      return false;
+    }
+    g_test_category = test_category;
+    sprintf(g_test_case, "%s", test_case_name);
+    g_run_test_suite = false;
   }
 
   return true;
