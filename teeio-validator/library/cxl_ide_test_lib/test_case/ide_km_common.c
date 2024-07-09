@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "assert.h"
 #include "hal/base.h"
@@ -261,9 +262,13 @@ SkipQuery:
   }
   LIBSPDM_DEBUG((LIBSPDM_DEBUG_INFO, "key_set_go TX\n"));
 
+  // Set LinkEncEnable bit
+  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
 
-  TEEIO_ASSERT(false);
+  printf("cxl_setup_ide_stream is done. Press any key to continue.\n");
+  getchar();
   return true;
 }

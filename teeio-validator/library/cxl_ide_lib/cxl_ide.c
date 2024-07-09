@@ -714,6 +714,20 @@ void cxl_cfg_rp_start_trigger(
   mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw); 
 }
 
+void cxl_cfg_rp_linkenc_enable(
+    INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    bool enable
+    )
+{
+  INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG global_cfg = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_global_config)};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "global_cfg = 0x%08x\n", global_cfg.raw));
+
+  global_cfg.link_enc_enable = enable ? 1 : 0;
+
+  mmio_write_reg32(&kcbar_ptr->link_enc_global_config, global_cfg.raw); 
+}
+
+
 bool cxl_populate_dev_caps_in_ecap(int fd, CXL_PRIV_DATA_ECAP* ecap)
 {
   TEEIO_ASSERT(ecap != NULL);
