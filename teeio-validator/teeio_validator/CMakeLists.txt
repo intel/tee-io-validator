@@ -32,6 +32,7 @@ SET(teeio_validator_LIBRARY
     helperlib
     spdmlib
     pcie_ide_test_lib
+    cxl_ide_test_lib
     )
 
 ADD_EXECUTABLE(teeio_validator ${src_teeio_validator})
