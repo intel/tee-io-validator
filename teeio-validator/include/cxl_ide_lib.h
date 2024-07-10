@@ -60,6 +60,7 @@ void cxl_cfg_rp_link_enc_key_iv(
 
 void cxl_cfg_rp_txrx_key_valid(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    CXL_IDE_STREAM_DIRECTION direction,
     bool valid
     );
 
@@ -71,6 +72,11 @@ void cxl_cfg_rp_start_trigger(
 void cxl_cfg_rp_linkenc_enable(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     bool enable
+    );
+
+void cxl_cfg_rp_mode(
+    INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    INTEL_CXL_IDE_MODE mode
     );
 
 void cxl_dump_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);

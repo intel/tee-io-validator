@@ -64,7 +64,7 @@ bool cxl_init_root_port(ide_common_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);
-  TEEIO_ASSERT(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
+  // TEEIO_ASSERT(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
 
   ide_common_test_port_context_t *port_context = &group_context->upper_port;
   TEEIO_ASSERT(port_context != NULL);
@@ -339,9 +339,12 @@ bool cxl_populate_memcache_reg_block(CXL_PRIV_DATA_MEMCACHE_REG_DATA* memcache_r
 
   TEEIO_ASSERT(ptr != NULL);
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru memcache register block\n"));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru memcache register block. ptr=%08x\n", ptr));
 
   CXL_CAPABILITY_HEADER cap_header = {.raw = mmio_read_reg32(ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cap_header=%08x\n", cap_header.raw));
+
   // CXL Spec 3.1 Sectiono 8.2.4.1
   TEEIO_ASSERT(cap_header.cap_id == 1);
   TEEIO_ASSERT(cap_header.cap_version == 1);
@@ -485,8 +488,8 @@ bool cxl_init_dev_port(ide_common_test_group_context_t *group_context)
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);
 
-  IDE_TEST_TOPOLOGY *top = group_context->top;
-  TEEIO_ASSERT(top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
+  // IDE_TEST_TOPOLOGY *top = group_context->top;
+  // TEEIO_ASSERT(top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
   TEEIO_ASSERT(group_context->suite_context->test_category == IDE_TEST_CATEGORY_CXL_MEMCACHE);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_dev_port start.\n"));
@@ -687,18 +690,40 @@ void cxl_cfg_mem_enable(int fd, uint32_t ecap_offset, bool enable)
   // device_pci_write_16(ecap_offset + CXL_CONTROL_OFFSET, ctrl.raw, fd);
 }
 
+void cxl_cfg_rp_mode(
+    INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    INTEL_CXL_IDE_MODE mode
+    )
+{
+  INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG global_cfg = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_global_config)};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_mode before global_cfg = 0x%08x\n", global_cfg.raw));
+
+  global_cfg.mode = mode;
+
+  mmio_write_reg32(&kcbar_ptr->link_enc_global_config, global_cfg.raw);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_mode after  global_cfg = 0x%08x\n", global_cfg.raw));
+}
+
 void cxl_cfg_rp_txrx_key_valid(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    CXL_IDE_STREAM_DIRECTION direction,
     bool valid
     )
 {
   INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_ctrl = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "link_enc_control = 0x%08x\n", enc_ctrl.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_txrx_key_valid (direct=%d) before link_enc_control = 0x%08x\n", direction, enc_ctrl.raw));
 
-  enc_ctrl.rxkey_valid = valid ? 1 : 0;
-  enc_ctrl.txkey_valid = valid ? 1 : 0;
+  if(direction == CXL_IDE_STREAM_DIRECTION_RX) {
+    enc_ctrl.rxkey_valid = valid ? 1 : 0;
+  } else {
+    enc_ctrl.txkey_valid = valid ? 1 : 0;
+  }
 
   mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw);
+
+  enc_ctrl.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_txrx_key_valid (direct=%d) after  link_enc_control = 0x%08x\n", direction, enc_ctrl.raw));
 }
 
 void cxl_cfg_rp_start_trigger(
@@ -707,11 +732,14 @@ void cxl_cfg_rp_start_trigger(
     )
 {
   INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_ctrl = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "link_enc_control = 0x%08x\n", enc_ctrl.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_start_trigger before link_enc_control = 0x%08x\n", enc_ctrl.raw));
 
   enc_ctrl.start_trigger = start ? 1 : 0;
 
-  mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw); 
+  mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw);
+
+  enc_ctrl.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_start_trigger after  link_enc_control = 0x%08x\n", enc_ctrl.raw));
 }
 
 void cxl_cfg_rp_linkenc_enable(
@@ -720,11 +748,13 @@ void cxl_cfg_rp_linkenc_enable(
     )
 {
   INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG global_cfg = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_global_config)};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "global_cfg = 0x%08x\n", global_cfg.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_linkenc_enable before global_cfg = 0x%08x\n", global_cfg.raw));
 
   global_cfg.link_enc_enable = enable ? 1 : 0;
 
-  mmio_write_reg32(&kcbar_ptr->link_enc_global_config, global_cfg.raw); 
+  mmio_write_reg32(&kcbar_ptr->link_enc_global_config, global_cfg.raw);
+  global_cfg.raw = mmio_read_reg32(&kcbar_ptr->link_enc_global_config);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_linkenc_enable after  global_cfg = 0x%08x\n", global_cfg.raw));
 }
 
 

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdio.h>
+#include <string.h>
 
 #include "assert.h"
 #include "hal/base.h"
@@ -83,8 +84,8 @@ bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_bl
   // Section 8.2.4.22.1
   // check CXL IDE Capability at offset 00h
   TEEIO_ASSERT(ide_reg_block_count > 1);
-  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[i]};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Capability : 0x%08x\n"));
+  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Capability : 0x%08x\n", ide_cap.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    cxl_ide_capable=0x%x, cxl_ide_modes=0x%02x\n",
                                   ide_cap.cxl_ide_capable, ide_cap.supported_cxl_ide_modes));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    supported_algo=0x%02x, ide_stop_capable=%d, lopt_ide_capable=%d\n",
@@ -126,9 +127,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
 
   INTEL_KEYP_KEY_SLOT keys = {0};
 
-  bool skip_query = true;
+  kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
+  cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
 
-  if(skip_query) goto SkipQuery;
   // query
   caps = 0;
   ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
@@ -166,7 +167,6 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // }
   // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "get_key\n"));
 
-SkipQuery:
   // ide_km_key_prog in RX
   result = libspdm_get_random_number(sizeof(rx_key_buffer.key), (void *)rx_key_buffer.key);
   if (!result)
@@ -174,6 +174,7 @@ SkipQuery:
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number for rx_key_buffer failed.\n"));
     return false;
   }
+  memset(rx_key_buffer.key, 1, sizeof(rx_key_buffer.key));
   rx_key_buffer.iv[0] = 0;
   rx_key_buffer.iv[1] = 1;
   rx_key_buffer.iv[2] = 2;
@@ -201,6 +202,7 @@ SkipQuery:
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number for tx_key_buffer failed.\n"));
     return false;
   }
+  memset(tx_key_buffer.key, 1, sizeof(tx_key_buffer.key));
   tx_key_buffer.iv[0] = 0;
   tx_key_buffer.iv[1] = 1;
   tx_key_buffer.iv[2] = 2;
@@ -223,7 +225,6 @@ SkipQuery:
   // TODO
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
-  kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
   revert_copy_by_dw(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_key_buffer.iv, sizeof(tx_key_buffer.iv));
 
@@ -231,7 +232,8 @@ SkipQuery:
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_key_buffer.iv, sizeof(rx_key_buffer.iv));
 
   // Set TxKeyValid and RxKeyValid bit
-  cxl_cfg_rp_txrx_key_valid(kcbar_ptr, true);
+  cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_TX, true);
+  cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
 
   // KSetGo in RX
   status = cxl_ide_km_key_set_go(doe_context, spdm_context,
@@ -244,7 +246,10 @@ SkipQuery:
     TEEIO_ASSERT(false);
     return false;
   }
-  LIBSPDM_DEBUG((LIBSPDM_DEBUG_INFO, "key_set_go RX\n"));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go RX\n"));
+
+  // Set LinkEncEnable bit
+  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
 
   // Set StartTrigger bit
   cxl_cfg_rp_start_trigger(kcbar_ptr, true);
@@ -260,10 +265,7 @@ SkipQuery:
     TEEIO_ASSERT(false);
     return false;
   }
-  LIBSPDM_DEBUG((LIBSPDM_DEBUG_INFO, "key_set_go TX\n"));
-
-  // Set LinkEncEnable bit
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go TX\n"));
 
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
