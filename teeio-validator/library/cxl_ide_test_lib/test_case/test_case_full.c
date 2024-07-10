@@ -108,14 +108,21 @@ bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
   ide_common_test_port_context_t *upper_port = &group_context->upper_port;
   ide_common_test_port_context_t *lower_port = &group_context->lower_port;
 
-  // TODO
-  // disable mem_enable bit in CXL_DEV_CONTROL
+  // send KSetStop if supported.
+  if(lower_port->cxl_data.memcache.ide_cap.ide_stop_capable) {
+    ret = cxl_stop_ide_stream(group_context->doe_context, group_context->spdm_context,
+                              &group_context->session_id, upper_port->mapped_kcbar_addr,
+                              group_context->stream_id, 0,
+                              upper_port, lower_port);
+    if(!ret) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_stop_ide_stream failed.\n"));
+      return false;
+    }
+  }
 
-  // send KSetStop
-  ret = cxl_stop_ide_stream(group_context->doe_context, group_context->spdm_context,
-                            &group_context->session_id, upper_port->mapped_kcbar_addr,
-                            group_context->stream_id, 0,
-                            upper_port, lower_port);
+  // clear LinkEncEnable on the RootPort side
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
+  cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
 
-  return ret;
+  return true;
 }

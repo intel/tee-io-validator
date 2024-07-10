@@ -503,4 +503,8 @@ typedef enum {
 #define CXL_ARG_MUX_REG_BLOCK_SIZE  0x1000
 #define CXL_RSVR_BLOCK_SIZE 0x1C00
 
+// Section 8.2.4.22.1
+#define CXL_IDE_MODE_SKID_MASK  0x2 // Bit[1]
+#define CXL_IDE_MODE_CONTAINMENT_MASK 0x4 // Bit[2]
+
 #endif

@@ -127,9 +127,6 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
 
   INTEL_KEYP_KEY_SLOT keys = {0};
 
-  kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
-
   // query
   caps = 0;
   ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
@@ -155,6 +152,19 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   if(!cxl_check_device_ide_reg_block(ide_reg_block, ide_reg_block_count)) {
     return false;
   }
+
+  // check CXL IDE Capability at offset 00h
+  TEEIO_ASSERT(ide_reg_block_count > 1);
+  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
+  lower_port->cxl_data.memcache.ide_cap.raw = ide_cap.raw;
+
+  kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
+  // At current stage, we only set SKID mode
+  if(ide_cap.supported_cxl_ide_modes & CXL_IDE_MODE_SKID_MASK) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SKID mode is not supported in device side. ide_cap.raw=0x%08x\n", ide_cap.raw));
+    TEEIO_ASSERT(false);
+  }
+  cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
 
   // get_key
   // status = cxl_ide_km_get_key(doe_context, spdm_context,
