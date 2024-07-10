@@ -75,7 +75,7 @@ EntryName=EntryValue
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
-|category|string|pcie-ide|O|Test category. Available values are: **pcie-ide**|
+|category|string|pcie-ide|O|Test category. Available values are: **pcie-ide, cxl-ide**|
 |topology|number||M|Topology_x|
 |configuration|number||M|Configuration_x|
 |query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Query.md](../doc/ide_test/IdeKmTestCase/1.Query.md)|
