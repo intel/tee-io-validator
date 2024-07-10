@@ -11,6 +11,7 @@
 #include "helperlib.h"
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
+#include "cxl_ide_test_lib.h"
 #include "test_factory.h"
 
 extern const char *TEEIO_TEST_CATEGORY_NAMES[];
@@ -288,7 +289,7 @@ ide_run_test_group_t *alloc_run_test_group(ide_run_test_suite_t *rts, IDE_TEST_C
 */
 bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_CASE test_case, uint32_t case_id, TEEIO_TEST_CATEGORY test_category)
 {
-  TEEIO_ASSERT(test_case < IDE_COMMON_TEST_CASE_NUM);
+  TEEIO_ASSERT(test_case < MAX_TEST_CASE_NUM);
   TEEIO_ASSERT(case_id <= MAX_CASE_ID);
 
   ide_run_test_case_t *run_test_case = (ide_run_test_case_t *)malloc(sizeof(ide_run_test_case_t));
@@ -340,7 +341,7 @@ bool alloc_run_test_cases(
   ide_common_test_suite_context_t* suite_context = run_test_suite->test_context;
   TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     IDE_TEST_CASE *tc = suite->test_cases.cases + i;
     if(tc->cases_cnt == 0) {
       continue;

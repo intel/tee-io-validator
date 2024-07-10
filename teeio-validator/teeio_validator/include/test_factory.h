@@ -9,6 +9,7 @@
 
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
+#include "cxl_ide_test_lib.h"
 
 bool test_factory_init();
 bool test_factory_close();

@@ -36,6 +36,7 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
+#include "cxl_ide_test_lib.h"
 #include "pcie_ide_test_lib.h"
 
 extern uint8_t g_scan_bus;
@@ -69,7 +70,7 @@ const char *TEEIO_TEST_CATEGORY_NAMES[] = {
 typedef ide_test_case_name_t*(*get_test_case_names_func)(int *cnt);
 get_test_case_names_func m_get_test_case_names_funcs[TEEIO_TEST_CATEGORY_MAX] = {
   pcie_ide_test_lib_get_test_case_names,
-  NULL  // cxl.ide not supported
+  cxl_ide_test_lib_get_test_case_names
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -1837,7 +1838,7 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
 
   IDE_TEST_CASES *tc = &ts->test_cases;
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     tc->cases[i].cases_cnt = test_suite.test_cases.cases[i].cases_cnt;
     for(int j = 0; j < MAX_CASE_ID; j++) {
       tc->cases[i].cases_id[j] = test_suite.test_cases.cases[i].cases_id[j];
@@ -2699,7 +2700,7 @@ bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, i
     suite->enabled = 0;
     suite->configuration_id = 0;
     suite->id = 0;
-    for(int j = 0; j < IDE_COMMON_TEST_CASE_NUM; j++) {
+    for(int j = 0; j < MAX_TEST_CASE_NUM; j++) {
       suite->test_cases.cases[j].cases_cnt = 0;
     }
     suite->type = 0;

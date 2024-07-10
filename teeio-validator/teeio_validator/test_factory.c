@@ -9,6 +9,7 @@
 #include "ide_test.h"
 #include "helperlib.h"
 #include "test_factory.h"
+#include "cxl_ide_test_lib.h"
 #include "pcie_ide_test_lib.h"
 
 extern const char *TEEIO_TEST_CATEGORY_NAMES[];
@@ -17,7 +18,7 @@ extern const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[];
 typedef uint32_t(*get_config_bitmask_func) (int* config_type_num, IDE_TEST_TOPOLOGY_TYPE top_type);
 get_config_bitmask_func m_get_config_bitmask_funcs[TEEIO_TEST_CATEGORY_MAX] = {
   pcie_ide_test_lib_get_config_bitmask,
-  NULL  // cxl.memcache not supported
+  cxl_ide_test_lib_get_config_bitmask
 };
 
 teeio_test_case_funcs_t m_teeio_test_case_funcs = {0};
@@ -33,9 +34,19 @@ const char* PCIE_IDE_TEST_CASE_NAMES[IDE_COMMON_TEST_CASE_NUM] = {
   "TestFull"
 };
 
+const char* CXL_IDE_TEST_CASE_NAMES[CXL_MEM_IDE_TEST_CASE_NUM] = {
+  "Query",
+  "KeyProg",
+  "KSetGo",
+  "KSetStop",
+  "GetKey",
+  "TestFull"
+};
+
 bool test_factory_init()
 {
   pcie_ide_test_lib_register_funcs(&m_teeio_test_case_funcs, &m_teeio_test_config_funcs, &m_teeio_test_group_funcs);
+  cxl_ide_test_lib_register_funcs(&m_teeio_test_case_funcs, &m_teeio_test_config_funcs, &m_teeio_test_group_funcs);
 
   return true;
 }
@@ -130,7 +141,10 @@ test_factory_get_test_case_funcs (
   }
 
   const char* case_name = NULL;
-  if(test_category == TEEIO_TEST_CATEGORY_PCIE_IDE) {
+  if(test_category == TEEIO_TEST_CATEGORY_CXL_IDE) {
+    TEEIO_ASSERT(test_case < CXL_MEM_IDE_TEST_CASE_NUM);
+    case_name = CXL_IDE_TEST_CASE_NAMES[test_case];
+  } else if(test_category == TEEIO_TEST_CATEGORY_PCIE_IDE) {
     TEEIO_ASSERT(test_case < IDE_COMMON_TEST_CASE_NUM);
     case_name = PCIE_IDE_TEST_CASE_NAMES[test_case];
   } else {
