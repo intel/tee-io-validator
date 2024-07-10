@@ -56,6 +56,29 @@ const char* m_cxl_capability_names[] = {
   "CXL Extended Metadata Capability"
 };
 
+bool cxl_reset_ecap_registers(ide_common_test_port_context_t *port_context)
+{
+  return true;
+}
+
+bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context)
+{
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
+  INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_ctrl = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_reset_kcbar_registers before link_enc_ctrl=0x%08x\n", enc_ctrl.raw));
+
+  enc_ctrl.rxkey_valid = 0;
+  enc_ctrl.txkey_valid = 0;
+  enc_ctrl.start_trigger = 0;
+  mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw);
+
+  enc_ctrl.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_reset_kcbar_registers after  link_enc_ctrl=0x%08x\n", enc_ctrl.raw));
+
+  return true;
+}
+
 /**
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
@@ -77,6 +100,8 @@ bool cxl_init_root_port(ide_common_test_group_context_t *group_context)
   if(!cxl_open_root_port(port_context)) {
     return false;
   }
+
+  cxl_reset_kcbar_registers(port_context);
 
   return true;
 }
@@ -260,16 +285,6 @@ InitRootPortFail:
   close(fd);
   unset_device_info(fd);
   return false;
-}
-
-bool cxl_reset_ecap_registers(ide_common_test_port_context_t *port_context)
-{
-  return true;
-}
-
-bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context)
-{
-  return true;
 }
 
 uint8_t* cxl_map_bar_addr(int cfg_space_fd, uint32_t bar, uint64_t offset_in_bar, int* mapped_fd)
