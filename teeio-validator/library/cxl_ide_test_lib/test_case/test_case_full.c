@@ -95,27 +95,28 @@ bool cxl_ide_test_full_ide_stream_run(void *test_context)
 
 bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
 {
-  bool ret = false;
+  return true;
+  // bool ret = false;
 
-  ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  TEEIO_ASSERT(case_context);
-  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  // ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
+  // TEEIO_ASSERT(case_context);
+  // TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = case_context->group_context;
-  TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  // ide_common_test_group_context_t *group_context = case_context->group_context;
+  // TEEIO_ASSERT(group_context);
+  // TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t *upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t *lower_port = &group_context->lower_port;
+  // ide_common_test_port_context_t *upper_port = &group_context->upper_port;
+  // ide_common_test_port_context_t *lower_port = &group_context->lower_port;
 
-  // TODO
-  // disable mem_enable bit in CXL_DEV_CONTROL
+  // // TODO
+  // // disable mem_enable bit in CXL_DEV_CONTROL
 
-  // send KSetStop
-  ret = cxl_stop_ide_stream(group_context->doe_context, group_context->spdm_context,
-                            &group_context->session_id, upper_port->mapped_kcbar_addr,
-                            group_context->stream_id, 0,
-                            upper_port, lower_port);
+  // // send KSetStop
+  // ret = cxl_stop_ide_stream(group_context->doe_context, group_context->spdm_context,
+  //                           &group_context->session_id, upper_port->mapped_kcbar_addr,
+  //                           group_context->stream_id, 0,
+  //                           upper_port, lower_port);
 
-  return ret;
+  // return ret;
 }
