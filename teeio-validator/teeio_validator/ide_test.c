@@ -12,10 +12,6 @@
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
 
-bool test_config_enable_common(void *test_context);
-bool test_config_check_common(void *test_context, const char* assertion_msg);
-bool test_config_support_common(void *test_context);
-
 extern const char *TEEIO_TEST_CATEGORY_NAMES[];
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
@@ -718,10 +714,6 @@ static bool do_run_test_config_support(ide_run_test_config_t *run_test_config, I
 {
   bool ret = false;
 
-  if(!test_config_support_common(run_test_config->test_context)) {
-    return false;
-  }
-
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
     TEEIO_ASSERT(config_item->support_func);
@@ -737,13 +729,9 @@ static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config, ID
 {
   bool ret = false;
 
-  if(!test_config_enable_common(run_test_config->test_context)) {
-    return false;
-  }
-
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
-    TEEIO_ASSERT(config_item->support_func);
+    TEEIO_ASSERT(config_item->enable_func);
     ret = config_item->enable_func(run_test_config->test_context);
 
     config_item = config_item->next;
@@ -756,13 +744,9 @@ static bool do_run_test_config_check(ide_run_test_config_t *run_test_config, IDE
 {
   bool ret = false;
 
-  if(!test_config_check_common(run_test_config->test_context, "Check Common Assertion")) {
-    return false;
-  }
-
   ide_run_test_config_item_t* config_item = run_test_config->config_item;
   do {
-    TEEIO_ASSERT(config_item->support_func);
+    TEEIO_ASSERT(config_item->check_func);
     ret = config_item->check_func(run_test_config->test_context);
 
     config_item = config_item->next;
