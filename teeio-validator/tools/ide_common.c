@@ -226,3 +226,10 @@ pcie_ide_test_lib_get_test_case_names(
 {
     return NULL;
 }
+
+ide_test_case_name_t*
+cxl_ide_test_lib_get_test_case_names(
+  int* cnt)
+{
+    return NULL;
+}
