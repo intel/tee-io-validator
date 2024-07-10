@@ -36,6 +36,7 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
+#include "pcie_ide_test_lib.h"
 
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
@@ -63,6 +64,12 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
 const char *TEEIO_TEST_CATEGORY_NAMES[] = {
     "pcie-ide",
     "cxl-ide"
+};
+
+typedef ide_test_case_name_t*(*get_test_case_names_func)(int *cnt);
+get_test_case_names_func m_get_test_case_names_funcs[TEEIO_TEST_CATEGORY_MAX] = {
+  pcie_ide_test_lib_get_test_case_names,
+  NULL  // cxl.ide not supported
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -2588,6 +2595,80 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
   }
 
+}
+
+ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category)
+{
+  if(test_case_name == NULL) {
+    return NULL;
+  }
+
+  TEEIO_ASSERT(test_category < TEEIO_TEST_CATEGORY_MAX);
+
+  ide_test_case_name_t* test_case_names = NULL;
+  int test_case_names_cnt = 0;
+
+  get_test_case_names_func func = m_get_test_case_names_funcs[test_category];
+  TEEIO_ASSERT(func);
+  test_case_names = func(&test_case_names_cnt);
+
+  char buf1[MAX_LINE_LENGTH] = {0};
+  char buf2[MAX_LINE_LENGTH] = {0};
+  strncpy(buf1, test_case_name, MAX_LINE_LENGTH);
+
+  int pos = find_char_in_str(buf1, '.');
+  if(pos == -1) {
+    return NULL;
+  }
+
+  buf1[pos] = '\0';
+  char* ptr1 = buf1 + pos + 1;
+
+  int i = 0;
+  for(; i < test_case_names_cnt; i++) {
+    if(strcmp(buf1, test_case_names[i].class) == 0) {
+      break;
+    }
+  }
+  if(i == test_case_names_cnt) {
+    return NULL;
+  }
+
+  bool hit = false;
+  strncpy(buf2, test_case_names[i].names, MAX_LINE_LENGTH);
+  char *ptr2 = buf2;
+  int j = 0;
+
+  pos = find_char_in_str(ptr2, ',');
+
+  do {
+    if(pos != -1) {
+      ptr2[pos] = '\0';
+    }
+    if(strcmp(ptr1, ptr2) == 0) {
+      hit = true;
+      break;
+    }
+
+    if(pos == -1) {
+      break;
+    }
+
+    ptr2 += (pos + 1);
+    pos = find_char_in_str(ptr2, ',');
+    j++;
+  } while(true);
+
+  if(index != NULL) {
+    *index = j;
+  }
+
+  return hit ? test_case_names + i : NULL;
+}
+
+bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category)
+{
+  return get_test_case_from_string(test_case_name, NULL, test_category) != NULL;
 }
 
 // This function will create several TestSuite with below configurations:
