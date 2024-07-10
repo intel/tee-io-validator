@@ -202,11 +202,6 @@ ReadIdeCapCtrlFailed:
     return ret;
 }
 
-ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int *index, TEEIO_TEST_CATEGORY test_category)
-{
-    return NULL;
-}
-
 bool pcie_doe_init_request()
 {
     return true;
@@ -223,4 +218,11 @@ bool is_doe_error_asserted()
 
 void libspdm_sleep(uint64_t microseconds)
 {
+}
+
+ide_test_case_name_t*
+pcie_ide_test_lib_get_test_case_names(
+  int* cnt)
+{
+    return NULL;
 }

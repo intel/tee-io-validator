@@ -10,6 +10,7 @@
 #include <ctype.h>
 #include "ide_test.h"
 #include "command.h"
+#include "test_factory.h"
 
 char g_bdf[] = {'2','a',':','0','0','.','0','\0'};
 char g_rp_bdf[] = {'2','9',':','0','2','.','0','\0'};
@@ -58,6 +59,8 @@ int main(int argc, char *argv[])
     }
 
     TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
+
+    test_factory_init();
 
     // parse command line optioins
     if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage, &debug_level)) {
@@ -120,6 +123,7 @@ int main(int argc, char *argv[])
     }
 
 MainDone:
+    test_factory_close();
     log_file_close();
 
     return ret;

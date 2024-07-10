@@ -496,4 +496,46 @@ struct _ide_run_test_suite {
   ide_run_test_config_t *test_config;
 };
 
+typedef struct _teeio_test_config_funcs_t teeio_test_config_funcs_t;
+struct _teeio_test_config_funcs_t {
+  teeio_test_config_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  TEEIO_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+  IDE_TEST_CONFIGURATION_TYPE config_type;
+
+  ide_test_config_funcs_t funcs;
+};
+
+typedef struct _teeio_test_group_funcs_t teeio_test_group_funcs_t;
+struct _teeio_test_group_funcs_t {
+  teeio_test_group_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  TEEIO_TEST_CATEGORY test_category;
+  IDE_TEST_TOPOLOGY_TYPE top_type;
+
+  ide_test_group_funcs_t funcs;
+};
+
+typedef struct _teeio_test_case_funcs_t teeio_test_case_funcs_t;
+struct _teeio_test_case_funcs_t {
+  teeio_test_case_funcs_t* next;
+
+  bool head;
+  int cnt;
+
+  TEEIO_TEST_CATEGORY test_category;
+
+  int test_case;
+  int case_id;
+
+  ide_test_case_funcs_t funcs;
+};
+
 #endif
