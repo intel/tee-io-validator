@@ -1883,14 +1883,8 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   }
   config.type = get_topology_type_from_name(entry_value);
 
-  // default config
-  sprintf(entry_name, "default");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
-    }
-  }
+  // default config is always set
+  config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
 
   sprintf(entry_name, "switch");
   if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
