@@ -58,7 +58,7 @@ PCIe Base Specification Version [6.0.1](https://members.pcisig.com/wg/PCI-SIG/do
 
 PCIe [DOE 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14143) for PCIe 4.0, 5.0 (integrated in 6.0), [DOE 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/18483) for PCIe 5.0, 6.0 (integrated in 6.1).
 
-PCIe [CMA 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14236) for PCIe 4.0, 5.0 (integrated in 6.0), [CMA 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/20110) for PCIe 6.1 (integrated in 6.2).
+PCIe [CMA ECN](https://members.pcisig.com/wg/PCI-SIG/document/14236) for PCIe 4.0, 5.0 (integrated in 6.0), [CMA Revised ECN](https://members.pcisig.com/wg/PCI-SIG/document/20110) for PCIe 6.1 (integrated in 6.2).
 
 PCIe [IDE ECN](https://members.pcisig.com/wg/PCI-SIG/document/16599) for PCIe 5.0 (integrated in 6.0).
 
