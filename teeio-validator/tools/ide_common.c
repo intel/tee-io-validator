@@ -224,3 +224,8 @@ bool is_doe_error_asserted()
 void libspdm_sleep(uint64_t microseconds)
 {
 }
+
+int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category)
+{
+  return 0;
+}

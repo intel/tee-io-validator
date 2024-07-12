@@ -189,6 +189,7 @@ typedef struct {
   int id;
   bool enabled;
   IDE_TEST_TOPOLOGY_TYPE type;
+  TEEIO_TEST_CATEGORY test_category;
   uint32_t bit_map;
 } IDE_TEST_CONFIGURATION;
 
@@ -403,7 +404,8 @@ typedef struct _ide_run_test_config_item_t ide_run_test_config_item_t;
 struct _ide_run_test_config_item_t {
   ide_run_test_config_item_t *next;
 
-  IDE_TEST_CONFIGURATION_TYPE type;
+  TEEIO_TEST_CATEGORY test_category;
+  uint8_t type;
 
   ide_common_test_config_enable_func_t enable_func;
   ide_common_test_config_disable_func_t disable_func;
