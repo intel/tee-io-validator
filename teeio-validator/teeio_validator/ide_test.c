@@ -37,14 +37,15 @@ const char *m_ide_test_case_name[] = {
     "Test",
     NULL};
 
-const char *m_ide_test_configuration_name[] = {
-  "Default",
-  "Switch",
-  "PartialHeaderEncryption",
-  "PCRC",
-  "Aggregation",
-  "SelectiveIDEForConfiguration",
-  "TeeLimitedStream",
+// PCIE-IDE supported config items
+char* m_ide_test_configuration_name[] = {
+  "default",
+  "switch",
+  "partial_header_encryption",
+  "pcrc",
+  "aggregation",
+  "selective_ide_for_configuration",
+  "tee_limited_stream",
   NULL
 };
 
@@ -223,6 +224,18 @@ ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] =
   }
 };
 
+int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category)
+{
+  if(test_category == TEEIO_TEST_CATEGORY_CXL_IDE) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported yet.\n", TEEIO_TEST_CATEGORY_NAMES[TEEIO_TEST_CATEGORY_CXL_IDE]));
+    return 0;
+  }
+
+  *config_names = m_ide_test_configuration_name;
+  return IDE_TEST_CONFIGURATION_TYPE_NUM;
+}
+
+
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category)
 {
   if(test_case_name == NULL) {
@@ -330,6 +343,7 @@ bool alloc_run_test_config_item(ide_run_test_config_t *rtc, int config_type, IDE
   TEEIO_ASSERT(config_item != NULL);
   memset(config_item, 0, sizeof(ide_run_test_config_item_t));
   config_item->type = config_type;
+  config_item->test_category = test_category;
 
   // assign the functions
   config_item->check_func = config_func->check;

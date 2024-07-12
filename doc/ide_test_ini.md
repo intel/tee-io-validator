@@ -63,7 +63,8 @@ EntryName=EntryValue
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 |type|string||M|available values are **selective_ide, link_ide, selective_and_link_ide**|
-|default|0/1|0|O|if default is set, then below fields are ignored, otherwise below fields are needed.|
+|category|string|pcie-ide|O|Test category. Available values are: **pcie-ide**|
+|default|0/1|1|O||
 |switch|0/1|0|O||
 |partial_header_encryption|0/1|0|O||
 |pcrc|0/1|0|O||

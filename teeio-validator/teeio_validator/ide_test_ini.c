@@ -41,6 +41,7 @@ extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
+int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -1740,6 +1741,10 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] configuration_%d type doesnot match test_suite.type\n", section_name, data32));
     return false;
   }
+  if(config->test_category != test_suite.test_category) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] configuration_%d category doesnot match test_suite.category\n", section_name, data32));
+    return false;
+  }
   test_suite.configuration_id = data32;
 
   // query
@@ -1849,6 +1854,7 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   uint8_t *entry_value = NULL;
   uint32_t data32 = 0;
   IDE_TEST_CONFIGURATION config = {0};
+  int i = 0;
 
   if (index <= 0)
   {
@@ -1883,55 +1889,38 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   }
   config.type = get_topology_type_from_name(entry_value);
 
+  sprintf(entry_name, "category");
+  if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+  {
+    if (!is_valid_test_category(entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid test_category. %s\n", section_name, entry_value));
+      return false;
+    }
+    config.test_category = get_test_category_from_name((const char*)entry_value);
+  }
+  else
+  {
+    config.test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
+  }
+
+
   // default config is always set
   config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
 
-  sprintf(entry_name, "switch");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_SWITCH);
-    }
-  }
+  char** config_type_names = NULL;
+  int item_cnt = get_test_configuration_names(&config_type_names, config.test_category);
+  TEEIO_ASSERT(item_cnt > 0);
 
-  sprintf(entry_name, "partial_header_encryption");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_PARTIAL_HEADER_ENC);
+  while(config_type_names[i] && i < item_cnt) {
+    sprintf(entry_name, "%s", config_type_names[i]);
+    if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+    {
+      if(data32 == 1) {
+        config.bit_map |= (uint32_t)(1<<i);
+      }
     }
-  }
-
-  sprintf(entry_name, "pcrc");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_PCRC);
-    }
-  }
-
-  sprintf(entry_name, "aggregation");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_AGGGEG);
-    }
-  }
-
-  sprintf(entry_name, "selective_ide_for_configuration");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG);
-    }
-  }
-
-  sprintf(entry_name, "tee_limited_stream");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
-  {
-    if(data32 == 1) {
-      config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_TEE_LIMITED_STREAM);
-    }
+    i++;
   }
 
   // id
@@ -1950,6 +1939,7 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   cfg->enabled = config.enabled;
   cfg->type = config.type;
   cfg->bit_map = config.bit_map;
+  cfg->test_category = config.test_category;
 
   test_config->configurations.cnt += 1;
 
