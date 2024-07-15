@@ -1428,12 +1428,7 @@ bool GetUint32ArrayFromDataFile(
     uint32_t *DataArray,
     uint32_t DataArrayLength)
 {
-  int count = 0;
-  bool ret = false;
   uint8_t *value = NULL;
-  size_t value_len = 0;
-  unsigned long result = 0;
-  char *end_ptr = NULL;
 
   if (Context == NULL || SectionName == NULL || EntryName == NULL || DataArray == NULL || DataArrayLength == 0)
   {
@@ -1446,58 +1441,8 @@ bool GetUint32ArrayFromDataFile(
   }
 
   TEEIO_ASSERT(value != NULL);
-  value_len = strlen((const char *)value);
-  if (value_len == 0)
-  {
-    return false;
-  }
 
-  uint8_t *buffer = malloc(value_len + 1);
-  if (buffer == NULL)
-  {
-    TEEIO_ASSERT(false);
-    return false;
-  }
-
-  memcpy(buffer, value, value_len + 1);
-  char *token = strtok((char *)buffer, ",");
-
-  while (token != NULL)
-  {
-    if (!IsValidDecimalString((uint8_t *)token, strlen(token)))
-    {
-      ret = false;
-      break;
-    }
-
-    result = strtoul(token, &end_ptr, 10);
-    if (*end_ptr != '\0')
-    {
-      ret = false;
-      break;
-    }
-
-    if (result > UINT32_MAX)
-    {
-      ret = false;
-      break;
-    }
-
-    if (count == DataArrayLength)
-    {
-      ret = false;
-      break;
-    }
-
-    DataArray[count] = (uint32_t)result;
-    ret = true;
-    count++;
-    token = strtok(NULL, ",");
-  }
-
-  free(buffer);
-
-  return ret;
+  return get_uint32_array_from_string(DataArray, &DataArrayLength, (const char*) value);
 }
 
 /**
@@ -1519,12 +1464,7 @@ bool GetUint32ArrayLengthFromDataFile(
     uint8_t *EntryName,
     uint32_t *DataArrayLength)
 {
-  int count = 0;
-  bool ret = false;
   uint8_t *value = NULL;
-  size_t value_len = 0;
-  unsigned long result = 0;
-  char *end_ptr = NULL;
 
   if (Context == NULL || SectionName == NULL || EntryName == NULL || DataArrayLength == NULL)
   {
@@ -1537,56 +1477,8 @@ bool GetUint32ArrayLengthFromDataFile(
   }
 
   TEEIO_ASSERT(value != NULL);
-  value_len = strlen((const char *)value);
-  if (value_len == 0)
-  {
-    return false;
-  }
 
-  uint8_t *buffer = malloc(value_len + 1);
-  if (buffer == NULL)
-  {
-    TEEIO_ASSERT(false);
-    return false;
-  }
-
-  memcpy(buffer, value, value_len + 1);
-  char *token = strtok((char *)buffer, ",");
-
-  while (token != NULL)
-  {
-    if (!IsValidDecimalString((uint8_t *)token, strlen((const char *)token)))
-    {
-      ret = false;
-      break;
-    }
-
-    result = strtoul(token, &end_ptr, 10);
-    if (*end_ptr != '\0')
-    {
-      ret = false;
-      break;
-    }
-
-    if (result > UINT32_MAX)
-    {
-      ret = false;
-      break;
-    }
-
-    ret = true;
-    count++;
-    token = strtok(NULL, ",");
-  }
-
-  free(buffer);
-
-  if (ret)
-  {
-    *DataArrayLength = count;
-  }
-
-  return ret;
+  return get_uint32_array_from_string(NULL, DataArrayLength, (const char*)value);
 }
 
 /**
