@@ -235,6 +235,16 @@ int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_
   return IDE_TEST_CONFIGURATION_TYPE_NUM;
 }
 
+int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category)
+{
+  if(test_category == TEEIO_TEST_CATEGORY_CXL_IDE) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported yet.\n", TEEIO_TEST_CATEGORY_NAMES[TEEIO_TEST_CATEGORY_CXL_IDE]));
+    return 0;
+  }
+
+  *test_cases = m_test_case_names;
+  return IDE_COMMON_TEST_CASE_NUM;
+}
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category)
 {
