@@ -42,6 +42,7 @@ extern bool g_run_test_suite;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
 int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category);
+int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -1639,80 +1640,35 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   }
   test_suite.configuration_id = data32;
 
-  // query
-  cases_cnt = MAX_QUERY_CASE_ID;
-  memset(cases_id, 0, sizeof(cases_id));
-  sprintf(entry_name, "Query");
-  if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, MAX_QUERY_CASE_ID))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] query not found.\n", section_name));
-    cases_cnt = 0;
-  }
-  for (int i = 0; i < cases_cnt; i++)
-  {
-    test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_QUERY].cases_id[i] = cases_id[i];
-  }
-  test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_QUERY].cases_cnt = cases_cnt;
+  ide_test_case_name_t* test_cases = NULL;
+  int test_cases_cnt = get_test_case_names(&test_cases, test_suite.test_category);
 
-  // KeyProg
-  cases_cnt = MAX_KEYPROG_CASE_ID;
-  memset(cases_id, 0, sizeof(cases_id));
-  sprintf(entry_name, "KeyProg");
-  if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, MAX_KEYPROG_CASE_ID))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] KeyProg not found.\n", section_name));
+  TEEIO_ASSERT(test_cases_cnt);
+  for(int i = 0; i < test_cases_cnt; i++) {
     cases_cnt = 0;
-  }
-  for (int i = 0; i < cases_cnt; i++)
-  {
-    test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KEYPROG].cases_id[i] = cases_id[i];
-  }
-  test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KEYPROG].cases_cnt = cases_cnt;
+    if(!get_uint32_array_from_string(NULL, &cases_cnt, test_cases[i].names)) {
+      continue;
+    }
+    uint32_t* u32_array = (uint32_t *)malloc(cases_cnt * sizeof(uint32_t));
+    get_uint32_array_from_string(u32_array, &cases_cnt, test_cases[i].names);
+    uint32_t max_case_id = get_max_from_uint32_array(u32_array, cases_cnt);
 
-  // KSetGo
-  cases_cnt = MAX_KSETGO_CASE_ID;
-  memset(cases_id, 0, sizeof(cases_id));
-  sprintf(entry_name, "KSetGo");
-  if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, MAX_KSETGO_CASE_ID))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] KSetGo not found.\n", section_name));
-    cases_cnt = 0;
-  }
-  for (int i = 0; i < cases_cnt; i++)
-  {
-    test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KSETGO].cases_id[i] = cases_id[i];
-  }
-  test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KSETGO].cases_cnt = cases_cnt;
+    memset(cases_id, 0, sizeof(cases_id));
+    sprintf(entry_name, "%s", test_cases[i].class);
 
-  // KSetStop
-  cases_cnt = MAX_KSETSTOP_CASE_ID;
-  memset(cases_id, 0, sizeof(cases_id));
-  sprintf(entry_name, "KSetStop");
-  if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, MAX_KSETSTOP_CASE_ID))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] KSetStop not found.\n", section_name));
-    cases_cnt = 0;
-  }
-  for (int i = 0; i < cases_cnt; i++)
-  {
-    test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KSETSTOP].cases_id[i] = cases_id[i];
-  }
-  test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_KSETSTOP].cases_cnt = cases_cnt;
+    if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, max_case_id))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] [%s] not found.\n", section_name, entry_name));
+      cases_cnt = 0;
+    }
+    for (int j = 0; j < cases_cnt; j++)
+    {
+      test_suite.test_cases.cases[i].cases_id[j] = cases_id[j];
+    }
+    test_suite.test_cases.cases[i].cases_cnt = cases_cnt;
 
-  // SpdmSession
-  cases_cnt = MAX_SPDMSESSION_CASE_ID;
-  memset(cases_id, 0, sizeof(cases_id));
-  sprintf(entry_name, "SpdmSession");
-  if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, MAX_SPDMSESSION_CASE_ID))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] SpdmSession not found.\n", section_name));
-    cases_cnt = 0;
+    free(u32_array);
   }
-  for (int i = 0; i < cases_cnt; i++)
-  {
-    test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_SPDMSESSION].cases_id[i] = cases_id[i];
-  }
-  test_suite.test_cases.cases[IDE_COMMON_TEST_CASE_SPDMSESSION].cases_cnt = cases_cnt;
 
   // id
   test_suite.id = index;

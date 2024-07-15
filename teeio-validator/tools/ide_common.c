@@ -229,3 +229,8 @@ int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_
 {
   return 0;
 }
+
+int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category)
+{
+    return 0;
+}
