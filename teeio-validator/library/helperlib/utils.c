@@ -406,3 +406,87 @@ void pcap_file_close()
 {
   close_pcap_packet_file();
 }
+
+// get the max value from uint32_t array
+uint32_t get_max_from_uint32_array(uint32_t* array, uint32_t size)
+{
+  TEEIO_ASSERT(size > 0);
+
+  uint32_t max = array[0];
+  for(int i = 1; i < size; i++) {
+    if(array[i] > max) {
+      max = array[i];
+    }
+  }
+
+  return max;
+}
+
+// get uint32_t array from string. "1,2,3,4,5,6" is an example.
+bool get_uint32_array_from_string(uint32_t* array, uint32_t* array_size, const char* string)
+{
+  int count = 0;
+  bool ret = false;
+  size_t string_len = 0;
+  unsigned long result = 0;
+  char *end_ptr = NULL;
+
+  TEEIO_ASSERT(string != NULL || array_size != NULL);
+
+  string_len = strlen((const char *)string);
+  if (string_len == 0)
+  {
+    return false;
+  }
+
+  uint8_t *buffer = malloc(string_len + 1);
+  if (buffer == NULL)
+  {
+    return false;
+  }
+
+  memcpy(buffer, string, string_len + 1);
+  char *token = strtok((char *)buffer, ",");
+
+  while (token != NULL)
+  {
+    if (!IsValidDecimalString((uint8_t *)token, strlen(token)))
+    {
+      ret = false;
+      break;
+    }
+
+    result = strtoul(token, &end_ptr, 10);
+    if (*end_ptr != '\0')
+    {
+      ret = false;
+      break;
+    }
+
+    if (result > UINT32_MAX)
+    {
+      ret = false;
+      break;
+    }
+
+    if(array) {
+      if (count == *array_size)
+      {
+        ret = false;
+        break;
+      }
+      array[count] = (uint32_t)result;
+    }
+    ret = true;
+    count++;
+    token = strtok(NULL, ",");
+  }
+
+  free(buffer);
+
+  if(ret) {
+    *array_size = count;
+  }
+
+  return ret;
+}

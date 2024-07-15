@@ -77,4 +77,9 @@ TEST_IDE_TYPE map_top_type_to_ide_type(IDE_TEST_TOPOLOGY_TYPE top_type);
 // file related helper APIs
 bool validate_file_name(const char *file_name);
 
+// get uint32_t array from string. "1,2,3,4,5,6" is an example.
+bool get_uint32_array_from_string(uint32_t* array, uint32_t* array_size, const char* string);
+// get the max value from uint32_t array
+uint32_t get_max_from_uint32_array(uint32_t* array, uint32_t size);
+
 #endif
