@@ -234,3 +234,8 @@ int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY t
 {
     return 0;
 }
+
+ide_test_case_name_t* pcie_ide_test_lib_get_test_case_names(int* cnt)
+{
+    return NULL;
+}
