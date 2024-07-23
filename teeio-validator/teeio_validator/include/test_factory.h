@@ -39,11 +39,11 @@ uint32_t test_factory_get_config_bitmask(
   IDE_TEST_TOPOLOGY_TYPE top_type,
   TEEIO_TEST_CATEGORY test_category);
 
-int get_test_case_names(
+int test_factory_get_test_case_names(
   ide_test_case_name_t** test_cases,
   TEEIO_TEST_CATEGORY test_category);
 
-int get_test_configuration_names(
+int test_factory_get_test_configuration_names(
   char*** config_names,
   TEEIO_TEST_CATEGORY test_category);
 

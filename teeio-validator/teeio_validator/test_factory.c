@@ -223,7 +223,7 @@ bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_cat
   return get_test_case_from_string(test_case_name, NULL, test_category) != NULL;
 }
 
-int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category)
+int test_factory_get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category)
 {
   int cnt = 0;
   if(test_category == TEEIO_TEST_CATEGORY_PCIE_IDE) {
@@ -235,7 +235,7 @@ int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY t
   return cnt;
 }
 
-int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category)
+int test_factory_get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category)
 {
   int cnt = 0;
   if(test_category == TEEIO_TEST_CATEGORY_PCIE_IDE) {

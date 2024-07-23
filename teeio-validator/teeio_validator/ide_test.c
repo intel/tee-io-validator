@@ -132,7 +132,7 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_conf
   TEEIO_ASSERT(config_bitmask != 0);
 
   char** config_type_names = NULL;
-  int item_cnt = get_test_configuration_names(&config_type_names, test_category);
+  int item_cnt = test_factory_get_test_configuration_names(&config_type_names, test_category);
   TEEIO_ASSERT(item_cnt > 0);
 
   uint32_t config_bits = configuration->bit_map & config_bitmask;
@@ -286,7 +286,7 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   memset(run_test_case, 0, sizeof(ide_run_test_case_t));
 
   ide_test_case_name_t* test_case_names = NULL;
-  int cnt = get_test_case_names(&test_case_names, test_category);
+  int cnt = test_factory_get_test_case_names(&test_case_names, test_category);
   TEEIO_ASSERT(cnt > test_case);
 
   strncpy(run_test_case->class, test_case_names[(int)test_case].class, MAX_NAME_LENGTH);

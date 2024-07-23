@@ -41,8 +41,8 @@ extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
-int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category);
-int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category);
+int test_factory_get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category);
+int test_factory_get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -1641,7 +1641,7 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   test_suite.configuration_id = data32;
 
   ide_test_case_name_t* test_cases = NULL;
-  int test_cases_cnt = get_test_case_names(&test_cases, test_suite.test_category);
+  int test_cases_cnt = test_factory_get_test_case_names(&test_cases, test_suite.test_category);
 
   TEEIO_ASSERT(test_cases_cnt);
   for(int i = 0; i < test_cases_cnt; i++) {
@@ -1757,7 +1757,7 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
 
   char** config_type_names = NULL;
-  int item_cnt = get_test_configuration_names(&config_type_names, config.test_category);
+  int item_cnt = test_factory_get_test_configuration_names(&config_type_names, config.test_category);
   TEEIO_ASSERT(item_cnt > 0);
 
   while(config_type_names[i] && i < item_cnt) {
