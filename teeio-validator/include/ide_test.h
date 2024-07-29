@@ -448,8 +448,8 @@ struct _ide_run_test_case {
   char name[MAX_NAME_LENGTH];
   // IDE_COMMON_TEST_ACTION action;
   void *test_context;
-  // indicates if the ide_stream is completed in the test case
-  bool complete_ide_stream;
+  // indicates if the config_check is required in the test case
+  bool config_check_required;
 
   ide_common_test_case_run_func_t run_func;
   ide_common_test_case_setup_func_t setup_func;
@@ -460,7 +460,7 @@ typedef struct {
   ide_common_test_case_setup_func_t setup;
   ide_common_test_case_run_func_t run;
   ide_common_test_case_teardown_func_t teardown;
-  bool complete_ide_stream;
+  bool config_check_required;
 } ide_test_case_funcs_t;
 
 typedef struct {

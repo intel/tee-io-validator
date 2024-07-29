@@ -556,7 +556,7 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   run_test_case->run_func = case_funcs->run;
   run_test_case->setup_func = case_funcs->setup;
   run_test_case->teardown_func = case_funcs->teardown;
-  run_test_case->complete_ide_stream = case_funcs->complete_ide_stream;
+  run_test_case->config_check_required = case_funcs->config_check_required;
 
   ide_common_test_case_context_t* context = (ide_common_test_case_context_t *)malloc(sizeof(ide_common_test_case_context_t));
   TEEIO_ASSERT(context);
@@ -848,7 +848,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     // run the test_case
     do_run_test_case(test_case, case_result);
 
-    if(test_case->complete_ide_stream) {
+    if(test_case->config_check_required) {
       // check config
       ret = do_run_test_config_check(run_test_config, top_type, test_category);
       case_result->config_result = config_context->test_result;
