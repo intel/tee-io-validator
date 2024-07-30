@@ -387,6 +387,8 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_conf
   TEEIO_ASSERT(run_test_config);
   memset(run_test_config, 0, sizeof(ide_run_test_config_t));
 
+  run_test_config->config_id = config_id;
+
   // assign test_config_context
   ide_common_test_config_context_t *context = (ide_common_test_config_context_t *)malloc(sizeof(ide_common_test_config_context_t));
   TEEIO_ASSERT(context);
@@ -675,10 +677,12 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_case_result_t
   {
     // set the test result
     case_context->result = IDE_COMMON_TEST_CASE_RESULT_SKIPPED;
+    case_result->case_result = IDE_COMMON_TEST_CASE_RESULT_SKIPPED;
     TEEIO_PRINT(("       %s skipped.\n", test_case->name));
     return true;
   }
 
+  TEEIO_ASSERT(test_case->setup_func);
   if(test_case->setup_func != NULL) {
     ret = test_case->setup_func(test_case->test_context);
     if(!ret) {
@@ -764,6 +768,21 @@ static bool do_run_test_config_enable(ide_run_test_config_t *run_test_config, ID
   return ret;
 }
 
+static bool do_run_test_config_disable(ide_run_test_config_t *run_test_config, IDE_TEST_TOPOLOGY_TYPE top_type, TEEIO_TEST_CATEGORY test_category)
+{
+  bool ret = false;
+
+  ide_run_test_config_item_t* config_item = run_test_config->config_item;
+  do {
+    TEEIO_ASSERT(config_item->disable_func);
+    ret = config_item->disable_func(run_test_config->test_context);
+
+    config_item = config_item->next;
+  } while(ret && config_item);
+
+  return ret;
+}
+
 static bool do_run_test_config_check(ide_run_test_config_t *run_test_config, IDE_TEST_TOPOLOGY_TYPE top_type, TEEIO_TEST_CATEGORY test_category)
 {
   bool ret = false;
@@ -804,27 +823,17 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   TEEIO_PRINT(("   Run TestGroup (%s %s %s)\n", run_test_group->name, run_test_config->name, run_test_group->test_case->class));
 
   // call run_test_group's setup function
-  if (run_test_group->setup_func != NULL)
-  {
-    ret = run_test_group->setup_func(group_context);
-    if(!ret) {
-      config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
-      TEEIO_PRINT(("       %s failed at test_group->setup(). Skip the TestConfig.\n", run_test_config->name));
-      run_test_group_failed = true;
-    }
-  }
-  else
-  {
+  TEEIO_ASSERT(run_test_group->setup_func);
+  ret = run_test_group->setup_func(group_context);
+  if(!ret) {
+    group_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
+    TEEIO_PRINT(("       %s failed at test_group->setup(). Skip the TestConfig.\n", run_test_config->name));
     run_test_group_failed = true;
-  }
-
-  if(run_test_group_failed) {
-    run_test_config_failed = true;
   } else {
     // check if the test_config is supported.
     // if not supported, this test_group is done.
     if(!do_run_test_config_support(run_test_config, top_type, test_category)) {
-      config_context->test_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
+      group_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
       TEEIO_PRINT(("       %s is not supported. Skip the TestConfig.\n", run_test_config->name));
       run_test_config_failed = true;
     }
@@ -837,13 +846,20 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     ide_run_test_case_result_t *case_result = alloc_run_test_case_result(group_result, test_case->name, test_case->class);
     if(run_test_group_failed || run_test_config_failed) {
       case_result->case_result = IDE_COMMON_TEST_CASE_RESULT_FAILED;
-      case_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
+      case_result->config_result = group_result->config_result;
       goto OneCaseDone;
     }
 
     // call test_config's enable function
     ret = do_run_test_config_enable(run_test_config, top_type, test_category);
-    TEEIO_ASSERT(ret);
+    if(!ret) {
+      case_result->case_result = IDE_COMMON_TEST_CASE_RESULT_FAILED;
+      case_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
+      run_test_config_failed = true;
+      goto OneCaseDone;
+    } else {
+      run_test_config_failed = false;
+    }
 
     // run the test_case
     do_run_test_case(test_case, case_result);
@@ -851,18 +867,26 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     if(test_case->config_check_required) {
       // check config
       ret = do_run_test_config_check(run_test_config, top_type, test_category);
-      case_result->config_result = config_context->test_result;
-      TEEIO_ASSERT(ret);
+      case_result->config_result = ret ? IDE_COMMON_TEST_CONFIG_RESULT_SUCCESS : IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
+    } else {
+      case_result->config_result = IDE_COMMON_TEST_CONFIG_RESULT_NA;
     }
 
 OneCaseDone:
+
+    // call run_test_config's disable function
+    if(!run_test_config_failed) {
+      ret = do_run_test_config_disable(run_test_config, top_type, test_category);
+    }
+
     // next case
     test_case = test_case->next;
   }
 
   // call run_test_group's teardown function
-  if (run_test_group->teardown_func != NULL && !run_test_group_failed)
+  if ( !run_test_group_failed)
   {
+    TEEIO_ASSERT(run_test_group->teardown_func);
     ret = run_test_group->teardown_func(group_context);
     TEEIO_ASSERT(ret);
   }
@@ -876,16 +900,16 @@ OneCaseDone:
   return true;
 }
 
-ide_run_test_group_result_t* alloc_run_test_group_result(ide_run_test_group_t *run_test_group, ide_run_test_config_t *run_test_config)
+ide_run_test_group_result_t* alloc_run_test_group_result(ide_run_test_group_t *run_test_group, ide_run_test_config_result_t* config_result)
 {
   ide_run_test_group_result_t* group_result = (ide_run_test_group_result_t *)malloc(sizeof(ide_run_test_group_result_t));
   TEEIO_ASSERT(group_result);
   memset(group_result, 0, sizeof(ide_run_test_group_result_t));
   strncpy(group_result->name, run_test_group->name, MAX_NAME_LENGTH);
 
-  ide_run_test_group_result_t* itr = run_test_config->group_result;
+  ide_run_test_group_result_t* itr = config_result->group_result;
   if(itr == NULL) {
-    run_test_config->group_result = group_result;
+    config_result->group_result = group_result;
   } else {
     while(itr->next) {
       itr = itr->next;
@@ -896,6 +920,40 @@ ide_run_test_group_result_t* alloc_run_test_group_result(ide_run_test_group_t *r
   return group_result;
 }
 
+bool append_config_result(ide_run_test_suite_t* run_test_suite, ide_run_test_config_result_t* config_result)
+{
+
+  ide_common_test_suite_context_t* suite_context = (ide_common_test_suite_context_t*)run_test_suite->test_context;
+  TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+
+  if(suite_context->result == NULL) {
+    suite_context->result = config_result;
+    return true;
+  }
+
+  ide_run_test_config_result_t* itr = suite_context->result;
+  while(itr->next) {
+    itr = itr->next;
+  }
+  itr->next = config_result;
+
+  return true;
+}
+
+ide_run_test_config_result_t* alloc_run_test_config_result(ide_run_test_suite_t* run_test_suite, ide_run_test_config_t* run_test_config)
+{
+  ide_run_test_config_result_t* config_result = (ide_run_test_config_result_t*)malloc(sizeof(ide_run_test_config_result_t));
+  TEEIO_ASSERT(config_result);
+  memset(config_result, 0, sizeof(ide_run_test_config_result_t));
+
+  config_result->config_id = run_test_config->config_id;
+  strncpy(config_result->name, run_test_config->name, MAX_NAME_LENGTH);
+
+  append_config_result(run_test_suite, config_result);
+
+  return config_result;
+}
+
 /**
  * run test suite
  */
@@ -903,7 +961,6 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
 {
     ide_run_test_group_t *run_test_group = run_test_suite->test_group;
     ide_run_test_config_t *run_test_config = run_test_suite->test_config;
-    run_test_config->group_result = NULL;
 
     ide_common_test_suite_context_t* suite_context = run_test_suite->test_context;
     TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
@@ -911,11 +968,12 @@ bool do_run_test_suite(ide_run_test_suite_t *run_test_suite)
     TEEIO_PRINT((" Run %s\n", run_test_suite->name));
 
     while(run_test_config != NULL) {
+      ide_run_test_config_result_t* config_result = alloc_run_test_config_result(run_test_suite, run_test_config);
 
       while (run_test_group != NULL)
       {
         // alloc group_result
-        ide_run_test_group_result_t* group_result = alloc_run_test_group_result(run_test_group, run_test_config);
+        ide_run_test_group_result_t* group_result = alloc_run_test_group_result(run_test_group, config_result);
         TEEIO_ASSERT(group_result);
 
         do_run_test_group(run_test_group, run_test_config, group_result, suite_context->test_category);
@@ -969,13 +1027,12 @@ bool test_suite_cases_statics(ide_run_test_suite_t *run_test_suite, int *passed,
 
   int p,f,s;
 
-  ide_run_test_config_t *run_test_config = run_test_suite->test_config;
-  while(run_test_config) {
+  ide_common_test_suite_context_t* suite_context = (ide_common_test_suite_context_t*)run_test_suite->test_context;
+  TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+  ide_run_test_config_result_t* run_test_config_result = suite_context->result;
+  while(run_test_config_result) {
 
-    ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
-    TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
-
-    ide_run_test_group_result_t * group_result = run_test_config->group_result;
+    ide_run_test_group_result_t * group_result = run_test_config_result->group_result;
 
     while(group_result) {
 
@@ -987,7 +1044,7 @@ bool test_suite_cases_statics(ide_run_test_suite_t *run_test_suite, int *passed,
       group_result = group_result->next;
     }
 
-    run_test_config = run_test_config->next;
+    run_test_config_result = run_test_config_result->next;
   }
 
   return true;
@@ -1005,15 +1062,15 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
     test_suite_cases_statics(test_suite, &passed, &failed, &skipped);
     TEEIO_PRINT((" %s - pass: %d, fail: %d, skip: %d\n", test_suite->name, passed, failed, skipped));
 
-    ide_run_test_config_t *run_test_config = test_suite->test_config;
-    while(run_test_config) {
+    ide_common_test_suite_context_t* suite_context = (ide_common_test_suite_context_t*)run_test_suite->test_context;
+    TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+    ide_run_test_config_result_t* run_test_config_result = suite_context->result;
 
-      ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
-      TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
+    while(run_test_config_result) {
 
-      TEEIO_PRINT(("   TestConfiguration (%s)\n", run_test_config->name));
+      TEEIO_PRINT(("   TestConfiguration (%s)\n", run_test_config_result->name));
 
-      ide_run_test_group_result_t * group_result = run_test_config->group_result;
+      ide_run_test_group_result_t * group_result = run_test_config_result->group_result;
       while(group_result) {
 
         ide_run_test_case_result_t *case_result = group_result->case_result;
@@ -1030,7 +1087,7 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
         TEEIO_PRINT(("\n"));
       }
 
-      run_test_config = run_test_config->next;
+      run_test_config_result = run_test_config_result->next;
       TEEIO_PRINT(("\n"));
     }
 
@@ -1138,7 +1195,6 @@ bool clean_test_configs(ide_run_test_config_t *config)
 
   ide_run_test_config_t *ptr_config = NULL;
   while(config){
-    clean_test_group_results(config->group_result);
     clean_test_config_items(config->config_item);
     if(config->test_context) {
       free(config->test_context);
@@ -1148,6 +1204,37 @@ bool clean_test_configs(ide_run_test_config_t *config)
     free(ptr_config);
   }
 
+  return true;
+}
+
+bool clean_suite_context(void *context)
+{
+  if(context == NULL) {
+    return true;
+  }
+
+  ide_common_test_suite_context_t* suite_context = (ide_common_test_suite_context_t*)context;
+  TEEIO_ASSERT(suite_context->signature == SUITE_CONTEXT_SIGNATURE);
+
+  ide_run_test_config_result_t* itr1 = suite_context->result;
+  ide_run_test_config_result_t* config_result = itr1;
+
+  while(config_result) {
+    ide_run_test_group_result_t* group_result = config_result->group_result;
+    ide_run_test_group_result_t* itr2 = NULL;
+
+    while(group_result) {
+      itr2 = group_result->next;
+      clean_test_group_results(group_result);
+      group_result = itr2;
+    }
+
+    itr1 = itr1->next;
+    free(config_result);
+    config_result = itr1;
+  }
+
+  free(context);
   return true;
 }
 
@@ -1164,9 +1251,7 @@ bool clean_tests_data(ide_run_test_suite_t* test_suite)
   while(suite) {
     clean_test_groups(suite->test_group);
     clean_test_configs(suite->test_config);
-    if(suite->test_context) {
-      free(suite->test_context);
-    }
+    clean_suite_context(suite->test_context);
     ptr_suite = suite;
     suite = suite->next;
     free(ptr_suite);
