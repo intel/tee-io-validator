@@ -28,15 +28,6 @@ void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_i
   }
 }
 
-const char *m_ide_test_case_name[] = {
-    "Query",
-    "KeyProg",
-    "KSetGo",
-    "KSetStop",
-    "SpdmSession",
-    "Test",
-    NULL};
-
 // PCIE-IDE supported config items
 char* m_ide_test_configuration_name[] = {
   "default",
@@ -550,8 +541,8 @@ bool alloc_run_test_case(ide_run_test_group_t *run_test_group, IDE_COMMON_TEST_C
   TEEIO_ASSERT(run_test_case != NULL);
   memset(run_test_case, 0, sizeof(ide_run_test_case_t));
 
-  strncpy(run_test_case->class, m_ide_test_case_name[(int)test_case], MAX_NAME_LENGTH);
-  sprintf(run_test_case->name, "%s.%d", m_ide_test_case_name[(int)test_case], case_id);
+  strncpy(run_test_case->class, m_test_case_names[(int)test_case].class, MAX_NAME_LENGTH);
+  sprintf(run_test_case->name, "%s.%d", m_test_case_names[(int)test_case].class, case_id);
   // run_test_case->action = IDE_COMMON_TEST_ACTION_RUN;
 
   ide_test_case_funcs_t* case_funcs = &m_test_case_funcs[test_case][case_id - 1];
