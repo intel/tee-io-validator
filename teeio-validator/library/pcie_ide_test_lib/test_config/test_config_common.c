@@ -78,9 +78,7 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
       IDE_STREAM_STATUS_NAME[status],
       state));
 
-  config_context->test_result = status == IDE_STREAM_STATUS_TYPE_SECURE ? IDE_COMMON_TEST_CONFIG_RESULT_SUCCESS : IDE_COMMON_TEST_CONFIG_RESULT_FAILED;
-
-  return true;
+  return status == IDE_STREAM_STATUS_TYPE_SECURE;
 }
 
 // set ft_supported
