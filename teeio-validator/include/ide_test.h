@@ -372,6 +372,7 @@ typedef struct {
   TEEIO_TEST_CATEGORY test_category;
 
   ide_run_test_config_result_t* result;
+
 } ide_common_test_suite_context_t;
 
 typedef struct {
@@ -453,9 +454,6 @@ typedef struct {
   ide_common_test_config_check_func_t check;
 } ide_test_config_funcs_t;
 
-// typedef struct {
-//   ide_test_config_funcs_t func_list[IDE_TEST_CONFIGURATION_TYPE_NUM];
-// } ide_top_config_map_t;
 
 // test case setup function
 typedef bool(*ide_common_test_case_setup_func_t) (void *test_context);
@@ -510,6 +508,22 @@ typedef struct {
   ide_common_test_group_setup_func_t setup;
   ide_common_test_group_teardown_func_t teardown;
 } ide_test_group_funcs_t;
+
+typedef const char*(*teeio_get_test_configuration_name_func_t) (int configuration_type);
+typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_tpye);
+typedef ide_test_config_funcs_t*(*teeio_get_test_configuration_funcs_func_t) (int top_type, int configuration_type);
+typedef ide_test_group_funcs_t*(*teeio_get_test_group_funcs_func_t) (int top_type);
+typedef ide_test_case_funcs_t*(*teeio_get_test_case_funcs_func_t) (int case_class, int case_id);
+typedef ide_test_case_name_t*(*teeio_get_test_case_name_func_t) (int case_class);
+
+typedef struct {
+  teeio_get_test_configuration_name_func_t get_configuration_name_func;
+  teeio_get_test_configuration_bitmask_func_t get_configuration_bitmask_func;
+  teeio_get_test_configuration_funcs_func_t get_configuration_funcs_func;
+  teeio_get_test_group_funcs_func_t get_group_funcs_func;
+  teeio_get_test_case_funcs_func_t get_case_funcs_func;
+  teeio_get_test_case_name_func_t get_case_name_func;
+} teeio_test_funcs_t;
 
 typedef struct _ide_run_test_suite ide_run_test_suite_t;
 struct _ide_run_test_suite {

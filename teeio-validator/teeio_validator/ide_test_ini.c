@@ -41,8 +41,8 @@ extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
-int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category);
-int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category);
+const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEGORY test_category);
+ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -1640,21 +1640,22 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   }
   test_suite.configuration_id = data32;
 
-  ide_test_case_name_t* test_cases = NULL;
-  int test_cases_cnt = get_test_case_names(&test_cases, test_suite.test_category);
-
-  TEEIO_ASSERT(test_cases_cnt);
-  for(int i = 0; i < test_cases_cnt; i++) {
+  ide_test_case_name_t* test_case;
+  for(int i = 0; ; i++) {
+    test_case = get_test_case_name(i, test_suite.test_category);
+    if(test_case->class == NULL) {
+      break;
+    }
     cases_cnt = 0;
-    if(!get_uint32_array_from_string(NULL, &cases_cnt, test_cases[i].names)) {
+    if(!get_uint32_array_from_string(NULL, &cases_cnt, test_case->names)) {
       continue;
     }
     uint32_t* u32_array = (uint32_t *)malloc(cases_cnt * sizeof(uint32_t));
-    get_uint32_array_from_string(u32_array, &cases_cnt, test_cases[i].names);
+    get_uint32_array_from_string(u32_array, &cases_cnt, test_case->names);
     uint32_t max_case_id = get_max_from_uint32_array(u32_array, cases_cnt);
 
     memset(cases_id, 0, sizeof(cases_id));
-    sprintf(entry_name, "%s", test_cases[i].class);
+    sprintf(entry_name, "%s", test_case->class);
 
     if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, max_case_id))
     {
@@ -1756,12 +1757,13 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   // default config is always set
   config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
 
-  char** config_type_names = NULL;
-  int item_cnt = get_test_configuration_names(&config_type_names, config.test_category);
-  TEEIO_ASSERT(item_cnt > 0);
-
-  while(config_type_names[i] && i < item_cnt) {
-    sprintf(entry_name, "%s", config_type_names[i]);
+  const char* configuration_name;
+  while(true) {
+    configuration_name = get_test_configuration_name(i, config.test_category);
+    if(configuration_name == NULL) {
+      break;
+    }
+    sprintf(entry_name, "%s", configuration_name);
     if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
     {
       if(data32 == 1) {

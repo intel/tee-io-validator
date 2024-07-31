@@ -36,6 +36,7 @@ bool log_file_init(const char* filepath);
 bool pcap_file_init(const char* filepath, uint32_t transport_layer);
 void log_file_close();
 void pcap_file_close();
+void teeio_init_test_funcs();
 
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 
@@ -58,6 +59,8 @@ int main(int argc, char *argv[])
     }
 
     TEEIO_PRINT(("%s version %s\n", TEEIO_VALIDATOR_NAME, TEEIO_VALIDATOR_VERSION));
+
+    teeio_init_test_funcs();
 
     // parse command line optioins
     if(!parse_cmdline_option(argc, argv, ide_test_ini_file, &ide_test_config, &to_print_usage, &debug_level)) {
