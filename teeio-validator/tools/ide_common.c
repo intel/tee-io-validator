@@ -225,12 +225,12 @@ void libspdm_sleep(uint64_t microseconds)
 {
 }
 
-int get_test_configuration_names(char*** config_names, TEEIO_TEST_CATEGORY test_category)
+const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEGORY test_category)
 {
-  return 0;
+  return NULL;
 }
 
-int get_test_case_names(ide_test_case_name_t** test_cases, TEEIO_TEST_CATEGORY test_category)
+ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category)
 {
-    return 0;
+    return NULL;
 }
