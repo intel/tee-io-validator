@@ -34,7 +34,7 @@ static bool test_config_set_sel_ide_for_cfg_req(void* test_context, bool enable)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);
@@ -65,7 +65,7 @@ static bool test_config_check_sel_ide_for_cfg_req_support(void* test_context)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);
@@ -102,7 +102,7 @@ bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);

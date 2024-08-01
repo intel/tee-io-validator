@@ -351,9 +351,9 @@ ide_run_test_group_t *alloc_run_test_group(TEEIO_TEST_CATEGORY test_category, id
   run_test_group->setup_func = group_funcs->setup;
   run_test_group->teardown_func = group_funcs->teardown;
 
-  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)malloc(sizeof(ide_common_test_group_context_t));
+  pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)malloc(sizeof(pcie_ide_test_group_context_t));
   TEEIO_ASSERT(context);
-  memset(context, 0, sizeof(ide_common_test_group_context_t));
+  memset(context, 0, sizeof(pcie_ide_test_group_context_t));
 
   context->signature = GROUP_CONTEXT_SIGNATURE;
   context->suite_context = rts->test_context;
@@ -527,7 +527,7 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_case_result_t
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_case->test_context;
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
+  pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   TEEIO_PRINT(("     Run %s\n", test_case->name));
@@ -665,7 +665,7 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   bool ret = true;
   bool run_test_group_failed = false;
   bool run_test_config_failed = false;
-  ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)run_test_group->test_context;
+  pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)run_test_group->test_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;

@@ -48,7 +48,7 @@ bool test_keyprog_setup_common(void *test_context)
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = case_context->group_context;
+  pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
   TEEIO_ASSERT(group_context->spdm_context);
@@ -176,7 +176,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)case_context->group_context;
+  pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 

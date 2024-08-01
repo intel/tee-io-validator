@@ -40,7 +40,7 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = (ide_common_test_group_context_t *)config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)config_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
@@ -114,7 +114,7 @@ SetFailed:
     return ret;
 }
 
-static bool test_config_reset_ide_registers(ide_common_test_group_context_t *group_context)
+static bool test_config_reset_ide_registers(pcie_ide_test_group_context_t *group_context)
 {
   bool res;
 
@@ -150,7 +150,7 @@ bool test_config_enable_common(void *test_context)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // if connection is via switch or P2P, then we shall set ft_supported in the switch's port
@@ -235,7 +235,7 @@ bool test_config_support_common(void *test_context)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
