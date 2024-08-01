@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "ide_test.h"
 #include "teeio_debug.h"
 #include "pcie_ide_common.h"
@@ -127,7 +128,7 @@ ide_test_case_name_t m_test_case_names[] = {
   {NULL,          NULL,                   IDE_COMMON_TEST_CASE_NUM}
 };
 
-ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_CASE_ID] = {
+ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_PCIE_CASE_ID] = {
   // Query
   {
     { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
@@ -213,7 +214,7 @@ static ide_test_group_funcs_t* get_test_group_funcs (int top_type)
 
 static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
 {
-  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM && case_id < MAX_CASE_ID);
+  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM && case_id < MAX_PCIE_CASE_ID);
   return &m_test_case_funcs[case_class][case_id];
 }
 
@@ -221,6 +222,16 @@ static ide_test_case_name_t* get_test_case_name (int case_class)
 {
   TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM + 1);
   return &m_test_case_names[case_class];
+}
+
+static void* alloc_pcie_ide_test_group_context(void)
+{
+  pcie_ide_test_group_context_t* context = (pcie_ide_test_group_context_t*)malloc(sizeof(pcie_ide_test_group_context_t));
+  TEEIO_ASSERT(context);
+  memset(context, 0, sizeof(pcie_ide_test_group_context_t));
+  context->signature = GROUP_CONTEXT_SIGNATURE;
+
+  return context;
 }
 
 bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
@@ -233,6 +244,7 @@ bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_funcs_func = get_test_configuration_funcs;
   funcs->get_configuration_name_func = get_test_configuration_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
+  funcs->alloc_test_group_context_func = alloc_pcie_ide_test_group_context;
 
   return true;
 }

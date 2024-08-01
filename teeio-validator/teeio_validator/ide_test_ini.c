@@ -36,6 +36,8 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
+#include "cxl_ide_test_lib.h"
+#include "pcie_ide_test_lib.h"
 
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;

@@ -11,6 +11,7 @@
 #include "helperlib.h"
 #include "ide_test.h"
 #include "pcie_ide_test_lib.h"
+#include "cxl_ide_test_lib.h"
 
 const char *m_ide_test_topology_name[] = {
   "SelectiveIDE",
@@ -37,6 +38,7 @@ teeio_test_funcs_t m_teeio_test_funcs[TEEIO_TEST_CATEGORY_MAX] = {
 void teeio_init_test_funcs()
 {
   pcie_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_PCIE_IDE]);
+  cxl_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_IDE]);
 }
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
@@ -342,7 +344,7 @@ ide_run_test_group_t *alloc_run_test_group(TEEIO_TEST_CATEGORY test_category, id
   sprintf(run_test_group->name, "%s", m_ide_test_topology_name[top->type]);
 
   teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
-  if(test_funcs->get_group_funcs_func == NULL) {
+  if(test_funcs->get_group_funcs_func == NULL || test_funcs->alloc_test_group_context_func == NULL) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported yet.\n", TEEIO_TEST_CATEGORY_NAMES[(int)test_category]));
     return NULL;
   }
@@ -351,11 +353,8 @@ ide_run_test_group_t *alloc_run_test_group(TEEIO_TEST_CATEGORY test_category, id
   run_test_group->setup_func = group_funcs->setup;
   run_test_group->teardown_func = group_funcs->teardown;
 
-  pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)malloc(sizeof(pcie_ide_test_group_context_t));
+  teeio_common_test_group_context_t *context = (teeio_common_test_group_context_t *)test_funcs->alloc_test_group_context_func();
   TEEIO_ASSERT(context);
-  memset(context, 0, sizeof(pcie_ide_test_group_context_t));
-
-  context->signature = GROUP_CONTEXT_SIGNATURE;
   context->suite_context = rts->test_context;
   context->top = top;
   context->upper_port.port = upper_port;
