@@ -234,6 +234,16 @@ static void* alloc_pcie_ide_test_group_context(void)
   return context;
 }
 
+static bool pcie_ide_check_configuration_bitmap(uint32_t* bitmap)
+{
+  // default config is always set
+  *bitmap |= BIT_MASK(IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pcie-ide configuration bitmap=0x%08x\n", *bitmap));
+
+  return true;
+}
+
 bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
 {
   TEEIO_ASSERT(funcs);
@@ -245,6 +255,7 @@ bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_name_func = get_test_configuration_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
   funcs->alloc_test_group_context_func = alloc_pcie_ide_test_group_context;
+  funcs->check_configuration_bitmap_func = pcie_ide_check_configuration_bitmap;
 
   return true;
 }
