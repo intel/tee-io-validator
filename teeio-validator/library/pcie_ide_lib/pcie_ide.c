@@ -167,7 +167,7 @@ bool get_doe_extended_cap_offset(int fd, uint32_t* doe_offsets, int* size)
   return cnt > 0;
 }
 
-bool close_root_port(ide_common_test_group_context_t *group_context)
+bool close_root_port(pcie_ide_test_group_context_t *group_context)
 {
   // clean Link/Selective IDE Stream Control Registers and KCBar corresponding registers
   ide_common_test_port_context_t* port_context = &group_context->upper_port;
@@ -506,7 +506,7 @@ bool populate_addr_assoc_reg_block(
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
  */
-bool init_root_port(ide_common_test_group_context_t *group_context)
+bool init_root_port(pcie_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);
@@ -688,7 +688,7 @@ OpenDevFail:
 /**
  * Initialize endpoint port
  */
-bool init_dev_port(ide_common_test_group_context_t *group_context)
+bool init_dev_port(pcie_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);

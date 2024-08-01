@@ -23,7 +23,7 @@
 bool scan_devices(void *test_context)
 {
   bool ret = false;
-  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
+  pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
   TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   IDE_TEST_TOPOLOGY *top = context->top;
@@ -61,7 +61,7 @@ static bool common_test_group_setup(void *test_context)
 {
   bool ret = false;
 
-  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
+  pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
   TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // first scan devices
@@ -104,7 +104,7 @@ static bool common_test_group_setup(void *test_context)
 
 static bool common_test_group_teardown(void *test_context)
 {
-  ide_common_test_group_context_t *context = (ide_common_test_group_context_t *)test_context;
+  pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
   TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // close spdm_session and free spdm_context

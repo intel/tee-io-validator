@@ -24,7 +24,7 @@ static bool test_config_set_pcrc_common(void *test_context, bool enable)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   // enable pcrc bit in
@@ -51,7 +51,7 @@ static bool test_config_check_pcrc_support_common(void *test_context)
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
-  ide_common_test_group_context_t *group_context = config_context->group_context;
+  pcie_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
 
   PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;

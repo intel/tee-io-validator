@@ -44,7 +44,7 @@ bool scan_devices_at_bus(
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
  */
-bool init_root_port(ide_common_test_group_context_t *group_context);
+bool init_root_port(pcie_ide_test_group_context_t *group_context);
 
 /*
  * Open rootcomplex port
@@ -54,12 +54,12 @@ bool open_root_port(ide_common_test_port_context_t *port_context);
 /*
  * Close rootcomplex port
  */
-bool close_root_port(ide_common_test_group_context_t *group_context);
+bool close_root_port(pcie_ide_test_group_context_t *group_context);
 
 /*
  * Initialize device port
  */
-bool init_dev_port(ide_common_test_group_context_t *group_context);
+bool init_dev_port(pcie_ide_test_group_context_t *group_context);
 
 /*
  * Open device port
