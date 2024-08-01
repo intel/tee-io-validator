@@ -66,6 +66,17 @@ const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEG
   return test_funcs->get_configuration_name_func(configuration_type);
 }
 
+bool teeio_check_configuration_bitmap(uint32_t* bitmap, TEEIO_TEST_CATEGORY test_category)
+{
+  teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
+  if(test_funcs->check_configuration_bitmap_func == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported yet.\n", TEEIO_TEST_CATEGORY_NAMES[(int)test_category]));
+    return false;
+  }
+
+  return test_funcs->check_configuration_bitmap_func(bitmap);
+}
+
 ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category)
 {
   teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
@@ -151,11 +162,6 @@ bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_cat
 
 ide_run_test_suite_t *alloc_run_test_suite(IDE_TEST_SUITE *suite, IDE_TEST_CONFIG *test_config)
 {
-  if(suite->test_category == TEEIO_TEST_CATEGORY_CXL_IDE) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported yet.\n", TEEIO_TEST_CATEGORY_NAMES[TEEIO_TEST_CATEGORY_CXL_IDE]));
-    return NULL;
-  }
-
   ide_run_test_suite_t *rts = (ide_run_test_suite_t *)malloc(sizeof(ide_run_test_suite_t));
   TEEIO_ASSERT(rts != NULL);
   memset(rts, 0, sizeof(ide_run_test_suite_t));
@@ -664,8 +670,9 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   bool ret = true;
   bool run_test_group_failed = false;
   bool run_test_config_failed = false;
-  pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)run_test_group->test_context;
+  teeio_common_test_group_context_t *group_context = (teeio_common_test_group_context_t *)run_test_group->test_context;
   TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  group_context->config_id = run_test_config->config_id;
 
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)run_test_config->test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);

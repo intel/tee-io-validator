@@ -27,7 +27,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t stream_id, uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo);
+                          bool skip_ksetgo, uint32_t config_bitmap);
 bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
                          uint32_t *session_id, uint8_t *kcbar_addr,
                          uint8_t stream_id,
@@ -51,10 +51,13 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context)
   ide_common_test_port_context_t *upper_port = &group_context->upper_port;
   ide_common_test_port_context_t *lower_port = &group_context->lower_port;
 
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->suite_context->test_config, group_context->config_id);
+  TEEIO_ASSERT(configuration);
+
   return cxl_setup_ide_stream(group_context->doe_context, group_context->spdm_context,
                               &group_context->session_id, upper_port->mapped_kcbar_addr,
                               group_context->stream_id, 0,
-                              upper_port, lower_port, false);
+                              upper_port, lower_port, false, configuration->bit_map);
 }
 
 bool cxl_ide_test_full_ide_stream_run(void *test_context)

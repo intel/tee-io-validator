@@ -89,7 +89,6 @@ bool cxl_init_root_port(cxl_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->top != NULL);
-  // TEEIO_ASSERT(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
 
   ide_common_test_port_context_t *port_context = &group_context->upper_port;
   TEEIO_ASSERT(port_context != NULL);

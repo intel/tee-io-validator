@@ -23,7 +23,9 @@ SET(src_cxl_ide_test_lib
   test_case/ide_km_common.c
   test_case/test_case_full.c
   ## test configs
+  test_config/test_config_containment.c
   test_config/test_config_default.c
+  test_config/test_config_skid.c
   ## test groups
   test_group/test_group.c
   cxl_ide_common.c
