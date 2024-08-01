@@ -69,37 +69,6 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
-// CXL Spec 3.1 Section 8.2.4.22
-// CXL IDE Capability Structure
-bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_block_count)
-{
-  int i;
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_reg_block:\n"));
-  for (i = 0; i < ide_reg_block_count; i++)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_reg_block %04x: 0x%08x\n", i, ide_reg_block[i]));
-  }
-
-  // Section 8.2.4.22.1
-  // check CXL IDE Capability at offset 00h
-  TEEIO_ASSERT(ide_reg_block_count > 1);
-  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Capability : 0x%08x\n", ide_cap.raw));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    cxl_ide_capable=0x%x, cxl_ide_modes=0x%02x\n",
-                                  ide_cap.cxl_ide_capable, ide_cap.supported_cxl_ide_modes));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    supported_algo=0x%02x, ide_stop_capable=%d, lopt_ide_capable=%d\n",
-                                  ide_cap.supported_algo, ide_cap.ide_stop_capable,
-                                  ide_cap.lopt_ide_capable));
-
-  if(ide_cap.cxl_ide_capable == 0) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "CXL IDE is not supported by device.\n"));
-    return false;
-  }
-
-  return true;
-}
-
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
@@ -107,75 +76,17 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo)
+                          bool skip_ksetgo, uint32_t config_bitmap)
 {
   bool result;
   uint8_t kp_ack_status;
   libspdm_return_t status;
-
-  uint8_t caps;
-  uint8_t bus_num;
-  uint8_t segment;
-  uint8_t dev_func_num;
-  uint8_t max_port_index;
-  uint32_t ide_reg_block[CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT] = {0};
-  uint32_t ide_reg_block_count;
   INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr;
-
   cxl_ide_km_aes_256_gcm_key_buffer_t rx_key_buffer;
   cxl_ide_km_aes_256_gcm_key_buffer_t tx_key_buffer;
-
   INTEL_KEYP_KEY_SLOT keys = {0};
 
-  // query
-  caps = 0;
-  ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
-  status = cxl_ide_km_query(doe_context,
-                            spdm_context,
-                            session_id,
-                            port_index,
-                            &dev_func_num,
-                            &bus_num,
-                            &segment,
-                            &max_port_index,
-                            &caps,
-                            ide_reg_block,
-                            &ide_reg_block_count);
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_query failed with status=0x%x\n", status));
-    return false;
-  }
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "max_port_index - 0x%02x\n", max_port_index));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "caps - 0x%02x\n", caps));
-
-  if(!cxl_check_device_ide_reg_block(ide_reg_block, ide_reg_block_count)) {
-    return false;
-  }
-
-  // check CXL IDE Capability at offset 00h
-  TEEIO_ASSERT(ide_reg_block_count > 1);
-  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  lower_port->cxl_data.memcache.ide_cap.raw = ide_cap.raw;
-
   kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  // // At current stage, we only set SKID mode
-  // if(ide_cap.supported_cxl_ide_modes & CXL_IDE_MODE_SKID_MASK) {
-  //   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SKID mode is not supported in device side. ide_cap.raw=0x%08x\n", ide_cap.raw));
-  //   TEEIO_ASSERT(false);
-  // }
-  cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
-
-  // get_key
-  // status = cxl_ide_km_get_key(doe_context, spdm_context,
-  //                             &session_id, stream_id,
-  //                             CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
-  //                             &key_buffer);
-  // if (LIBSPDM_STATUS_IS_ERROR(status)) {
-  //   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_get_key failed with status=0x%08x\n", status));
-  //   return false;
-  // }
-  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "get_key\n"));
 
   // ide_km_key_prog in RX
   result = libspdm_get_random_number(sizeof(rx_key_buffer.key), (void *)rx_key_buffer.key);
@@ -245,10 +156,15 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_TX, true);
   cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
 
+  uint8_t ide_km_mode = CXL_IDE_KM_KEY_MODE_SKID;
+  if(config_bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE)) {
+    ide_km_mode = CXL_IDE_KM_KEY_MODE_CONTAINMENT;
+  }
+
   // KSetGo in RX
   status = cxl_ide_km_key_set_go(doe_context, spdm_context,
                                  session_id, stream_id,
-                                 CXL_IDE_KM_KEY_DIRECTION_RX | CXL_IDE_KM_KEY_MODE_CONTAINMENT | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+                                 CXL_IDE_KM_KEY_DIRECTION_RX | ide_km_mode | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
                                  port_index);
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
@@ -267,7 +183,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // KSetGo in TX
   status = cxl_ide_km_key_set_go(doe_context, spdm_context,
                                  session_id, stream_id,
-                                 CXL_IDE_KM_KEY_DIRECTION_TX | CXL_IDE_KM_KEY_MODE_CONTAINMENT | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+                                 CXL_IDE_KM_KEY_DIRECTION_TX | ide_km_mode | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
                                  port_index);
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {

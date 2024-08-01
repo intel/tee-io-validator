@@ -25,6 +25,18 @@ bool cxl_ide_test_config_default_disable(void *test_context);
 bool cxl_ide_test_config_default_support(void *test_context);
 bool cxl_ide_test_config_default_check(void *test_context);
 
+// skid mode
+bool cxl_ide_test_config_skid_enable(void *test_context);
+bool cxl_ide_test_config_skid_disable(void *test_context);
+bool cxl_ide_test_config_skid_support(void *test_context);
+bool cxl_ide_test_config_skid_check(void *test_context);
+
+// skid mode
+bool cxl_ide_test_config_containment_enable(void *test_context);
+bool cxl_ide_test_config_containment_disable(void *test_context);
+bool cxl_ide_test_config_containment_support(void *test_context);
+bool cxl_ide_test_config_containment_check(void *test_context);
+
 //
 // CXL_IDE Test Group
 //
