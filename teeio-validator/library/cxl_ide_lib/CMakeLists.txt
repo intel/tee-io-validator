@@ -15,24 +15,19 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
                     ${LIBSPDM_DIR}/os_stub/include
                     ${LIBSPDM_DIR}/os_stub
                     ${SPDM_EMU_DIR}/include
-                    ${SPDM_EMU_DIR}/spdm_emu/spdm_emu_common
-                    ${TEEIO_VALIDATOR_DIR}/include
+                    ${PROJECT_SOURCE_DIR}/include
+                    ${TEEIO_VALIDATOR_LIB_DIR}/cxl_ide_lib/include
 )
 
-SET(src_teeio_validator
-    teeio_validator.c
-    cmdline.c
-    ide_test_ini.c
-    ide_test.c
-    )
+SET(src_cxl_ide_lib
+  cxl_ide.c
+)
 
-SET(teeio_validator_LIBRARY
-    debuglib
-    helperlib
-    spdmlib
-    pcie_ide_test_lib
-    cxl_ide_test_lib
-    )
+SET(cxl_ide_lib_LIBRARY
+  debuglib
+  helperlib
+  pcie_ide_lib
+)
 
-ADD_EXECUTABLE(teeio_validator ${src_teeio_validator})
-TARGET_LINK_LIBRARIES(teeio_validator ${teeio_validator_LIBRARY})
+ADD_LIBRARY(cxl_ide_lib STATIC ${src_cxl_ide_lib})
+TARGET_LINK_LIBRARIES(cxl_ide_lib ${cxl_ide_lib_LIBRARY})
