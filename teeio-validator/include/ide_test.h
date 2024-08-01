@@ -392,6 +392,21 @@ typedef struct {
   ide_common_test_switch_internal_conn_context_t* sw_conn1;
   ide_common_test_switch_internal_conn_context_t* sw_conn2;
   // end of common part of test_group_context
+} teeio_common_test_group_context_t;
+
+typedef struct {
+  // start of common part of test_group_context
+  uint32_t signature;
+  ide_common_test_suite_context_t *suite_context;
+  IDE_TEST_TOPOLOGY *top;
+
+  ide_common_test_port_context_t root_port;
+  ide_common_test_port_context_t upper_port;
+  ide_common_test_port_context_t lower_port;
+
+  ide_common_test_switch_internal_conn_context_t* sw_conn1;
+  ide_common_test_switch_internal_conn_context_t* sw_conn2;
+  // end of common part of test_group_context
 
   void *spdm_context;
   uint32_t session_id;
@@ -517,6 +532,7 @@ typedef ide_test_config_funcs_t*(*teeio_get_test_configuration_funcs_func_t) (in
 typedef ide_test_group_funcs_t*(*teeio_get_test_group_funcs_func_t) (int top_type);
 typedef ide_test_case_funcs_t*(*teeio_get_test_case_funcs_func_t) (int case_class, int case_id);
 typedef ide_test_case_name_t*(*teeio_get_test_case_name_func_t) (int case_class);
+typedef void*(*teeio_alloc_test_group_context_func_t)(void);
 
 typedef struct {
   teeio_get_test_configuration_name_func_t get_configuration_name_func;
@@ -525,6 +541,7 @@ typedef struct {
   teeio_get_test_group_funcs_func_t get_group_funcs_func;
   teeio_get_test_case_funcs_func_t get_case_funcs_func;
   teeio_get_test_case_name_func_t get_case_name_func;
+  teeio_alloc_test_group_context_func_t alloc_test_group_context_func;
 } teeio_test_funcs_t;
 
 typedef struct _ide_run_test_suite ide_run_test_suite_t;
