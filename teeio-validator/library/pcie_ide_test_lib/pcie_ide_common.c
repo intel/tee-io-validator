@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 #include "ide_test.h"
 #include "teeio_debug.h"
 #include "pcie_ide_common.h"
@@ -223,6 +224,16 @@ static ide_test_case_name_t* get_test_case_name (int case_class)
   return &m_test_case_names[case_class];
 }
 
+static void* alloc_pcie_ide_test_group_context(void)
+{
+  pcie_ide_test_group_context_t* context = (pcie_ide_test_group_context_t*)malloc(sizeof(pcie_ide_test_group_context_t));
+  TEEIO_ASSERT(context);
+  memset(context, 0, sizeof(pcie_ide_test_group_context_t));
+  context->signature = GROUP_CONTEXT_SIGNATURE;
+
+  return context;
+}
+
 bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
 {
   TEEIO_ASSERT(funcs);
@@ -233,6 +244,7 @@ bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_funcs_func = get_test_configuration_funcs;
   funcs->get_configuration_name_func = get_test_configuration_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
+  funcs->alloc_test_group_context_func = alloc_pcie_ide_test_group_context;
 
   return true;
 }
