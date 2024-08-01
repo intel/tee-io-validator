@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include "pcie.h"
+#include "cxl_ide.h"
 #include "intel_keyp.h"
 
 #define NOT_IMPLEMENTED(msg) \
@@ -53,8 +54,11 @@
 #define MAX_KSETSTOP_CASE_ID 4
 #define MAX_SPDMSESSION_CASE_ID 2
 #define MAX_FULL_CASE_ID 1
-#define MAX_CASE_ID \
+#define MAX_PCIE_CASE_ID \
   (MAX(MAX_QUERY_CASE_ID, MAX(MAX_KEYPROG_CASE_ID, MAX(MAX_KSETGO_CASE_ID, MAX(MAX_KSETSTOP_CASE_ID, MAX(MAX_SPDMSESSION_CASE_ID, MAX_FULL_CASE_ID))))))
+
+#define MAX_CASE_ID \
+  MAX(MAX_PCIE_CASE_ID, MAX_CXL_CASE_ID)
 
 #define INVALID_PORT_ID 0
 
@@ -115,6 +119,9 @@ typedef enum {
   IDE_COMMON_TEST_CASE_TEST,
   IDE_COMMON_TEST_CASE_NUM
 } IDE_COMMON_TEST_CASE;
+
+#define MAX_TEST_CASE_NUM \
+  (MAX(IDE_COMMON_TEST_CASE_NUM, CXL_MEM_IDE_TEST_CASE_NUM))
 
 typedef struct
 {
@@ -204,7 +211,7 @@ typedef struct {
 } IDE_TEST_CASE;
 
 typedef struct {
-  IDE_TEST_CASE cases[IDE_COMMON_TEST_CASE_NUM];
+  IDE_TEST_CASE cases[MAX_TEST_CASE_NUM];
 } IDE_TEST_CASES;
 
 typedef struct {
@@ -315,6 +322,9 @@ typedef struct {
   // rid/addr assoc_reg_block
   PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+
+  // cxl related data
+  CXL_PRIV_DATA cxl_data;
 } ide_common_test_port_context_t;
 
 typedef struct _ide_common_test_switch_internal_conn_context_t ide_common_test_switch_internal_conn_context_t;
@@ -416,6 +426,29 @@ typedef struct {
   uint8_t rp_stream_index;
   ide_key_set_t k_set[PCIE_IDE_STREAM_KS_NUM];
 } pcie_ide_test_group_context_t;
+
+typedef struct {
+  // start of common part of test_group_context
+  uint32_t signature;
+  ide_common_test_suite_context_t *suite_context;
+  IDE_TEST_TOPOLOGY *top;
+
+  ide_common_test_port_context_t root_port;
+  ide_common_test_port_context_t upper_port;
+  ide_common_test_port_context_t lower_port;
+
+  ide_common_test_switch_internal_conn_context_t* sw_conn1;
+  ide_common_test_switch_internal_conn_context_t* sw_conn2;
+  // end of common part of test_group_context
+
+  void *spdm_context;
+  uint32_t session_id;
+  void *doe_context;
+
+  uint8_t stream_id;
+  uint8_t rp_stream_index;
+  ide_key_set_t k_set[PCIE_IDE_STREAM_KS_NUM];
+} cxl_ide_test_group_context_t;
 
 typedef struct {
   uint32_t signature;

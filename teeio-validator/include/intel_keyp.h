@@ -19,6 +19,19 @@ typedef enum {
   INTEL_KEYP_PROTOCOL_TYPE_CXL_MEMCACHE = 2
 } INTEL_KEYP_PROTOCOL_TYPE;
 
+#define CXL_LINK_ENC_KEYS_SLOT_NUM  4
+
+typedef enum {
+  INTEL_CXL_IDE_MODE_RSVD = 0,
+  INTEL_CXL_IDE_MODE_DETER_CONTAINMENT,
+  INTEL_CXL_IDE_MODE_SKID,
+  INTEL_CXL_IDE_MODE_MAX
+} INTEL_CXL_IDE_MODE;
+
+//
+// PCIE & CXL.IO IDE
+//
+
 // Table 2-1. Key Programming Table Reporting Structure
 typedef struct {
   uint8_t   signature[4];
@@ -197,6 +210,54 @@ typedef union
     uint8_t bytes[PCIE_IDE_IV_SIZE];
     uint32_t dwords[PCIE_IDE_IV_SIZE_IN_DWORDS];
 } INTEL_KEYP_IV_SLOT;
+
+//
+// CXL.memcache IDE
+//
+
+typedef union {
+  struct {
+    uint32_t  link_enc_enable:1;
+    uint32_t  mode:5;
+    uint32_t  algorithm:6;
+    uint32_t  rsvd:20;
+  };
+  uint32_t raw;
+} INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG;
+
+typedef union {
+  struct {
+    uint32_t  start_trigger:1;
+    uint32_t  rxkey_valid:1;
+    uint32_t  txkey_valid:1;
+    uint32_t  rsvd:29;
+  };
+  uint32_t  raw;
+} INTEL_KEYP_CXL_LINK_ENC_CONTROL;
+
+typedef struct {
+  uint64_t  link_enc_key;
+} INTEL_KEYP_CXL_TXRX_ENCRYPTION_KEY;
+
+typedef struct {
+  uint64_t  iv;
+} INTEL_KEYP_CXL_TXRX_IV;
+
+typedef struct {
+  INTEL_KEYP_CXL_TXRX_ENCRYPTION_KEY  keys[CXL_LINK_ENC_KEYS_SLOT_NUM];
+} INTEL_KEYP_CXL_TXRX_ENC_KEYS_BLOCK;
+
+// Figure 2-5
+typedef struct {
+  INTEL_KEYP_CXL_LINK_ENC_GLOBAL_CONFIG link_enc_global_config;
+  uint32_t                              rsvd0;
+  INTEL_KEYP_CXL_LINK_ENC_CONTROL       link_enc_control;
+  uint32_t                              rsvd1;
+  INTEL_KEYP_CXL_TXRX_ENC_KEYS_BLOCK    tx_enc_keys;
+  INTEL_KEYP_CXL_TXRX_IV                tx_iv;
+  INTEL_KEYP_CXL_TXRX_ENC_KEYS_BLOCK    rx_enc_keys;
+  INTEL_KEYP_CXL_TXRX_IV                rx_iv;
+} INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR;
 
 #pragma pack()
 
