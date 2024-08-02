@@ -12,7 +12,7 @@
 /**
  * initialize pcie doe
 */
-bool pcie_doe_init_request();
+bool pcie_doe_init_request(uint8_t doe_discovery_version);
 
 /**
  * trigger doe abort

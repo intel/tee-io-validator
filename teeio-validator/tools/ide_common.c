@@ -207,7 +207,7 @@ ide_test_case_name_t *get_test_case_from_string(const char *test_case_name, int 
     return NULL;
 }
 
-bool pcie_doe_init_request()
+bool pcie_doe_init_request(uint8_t doe_discovery_version)
 {
     return true;
 }
