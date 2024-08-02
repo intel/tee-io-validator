@@ -598,10 +598,17 @@ bool init_pci_doe(int fd)
     TEEIO_ASSERT(false);
   }
 
+  PCIE_CAP_ID ecap_id = {.raw = 0};
+  uint8_t doe_discovery_version = 0;
   for(int i = 0; i < doe_cnt; i++) {
     g_doe_extended_offset = doe_extended_offsets[i];
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Try to init pci_doe (doe_offset=0x%04x)\n", g_doe_extended_offset));
-    if(pcie_doe_init_request()) {
+    ecap_id.raw = device_pci_read_32(g_doe_extended_offset, fd);
+    if(ecap_id.version >= PCIE_DOE_ECAP_VERSION2) {
+      // PCIE Spec 6.1 Section 6.30.1.1
+      doe_discovery_version = PCIE_DOE_DISCOVERY_VERSION2;
+    }
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Try to init pci_doe (doe_offset=0x%04x, ecap_id=0x%08x)\n", g_doe_extended_offset, ecap_id.raw));
+    if(pcie_doe_init_request(doe_discovery_version)) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "doe_offset=0x%04x is the one to be used in teeio-validator.\n", g_doe_extended_offset));
       return true;
     }

@@ -421,7 +421,7 @@ libspdm_return_t pci_doe_send_receive_data(const void *pci_doe_context,
     return LIBSPDM_STATUS_SUCCESS;
 }
 
-bool pcie_doe_init_request()
+bool pcie_doe_init_request(uint8_t doe_discovery_version)
 {
     pci_doe_data_object_protocol_t data_object_protocol[6];
     size_t data_object_protocol_size;
@@ -430,7 +430,7 @@ bool pcie_doe_init_request()
 
     data_object_protocol_size = sizeof(data_object_protocol);
     status =
-        pci_doe_discovery (m_pci_doe_context, data_object_protocol, &data_object_protocol_size);
+        pci_doe_discovery (m_pci_doe_context, data_object_protocol, &data_object_protocol_size, doe_discovery_version);
     if (LIBSPDM_STATUS_IS_ERROR(status)) {
         return false;
     }
