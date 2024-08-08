@@ -98,13 +98,13 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   memset(rx_key_buffer.key, 0x11, sizeof(rx_key_buffer.key));
   rx_key_buffer.iv[0] = 0;
   rx_key_buffer.iv[1] = 1;
-  rx_key_buffer.iv[2] = 2;
+  rx_key_buffer.iv[2] = 0x80;
   cxl_dump_key_iv(&rx_key_buffer);
 
   status = cxl_ide_km_key_prog(
       doe_context, spdm_context,
       session_id, stream_id,
-      CXL_IDE_KM_KEY_DIRECTION_RX | CXL_IDE_KM_KEY_IV_INITIAL | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+      CXL_IDE_KM_KEY_DIRECTION_RX | CXL_IDE_KM_KEY_IV_DEFAULT | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
       port_index, // port_index
       &rx_key_buffer, &kp_ack_status);
 
@@ -126,13 +126,13 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   memset(tx_key_buffer.key, 0x22, sizeof(tx_key_buffer.key));
   tx_key_buffer.iv[0] = 0;
   tx_key_buffer.iv[1] = 1;
-  tx_key_buffer.iv[2] = 2;
+  tx_key_buffer.iv[2] = 0x80;
   cxl_dump_key_iv(&tx_key_buffer);
 
   status = cxl_ide_km_key_prog(
       doe_context, spdm_context,
       session_id, stream_id,
-      CXL_IDE_KM_KEY_DIRECTION_TX | CXL_IDE_KM_KEY_IV_INITIAL | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+      CXL_IDE_KM_KEY_DIRECTION_TX | CXL_IDE_KM_KEY_IV_DEFAULT | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
       port_index,
       &tx_key_buffer, &kp_ack_status);
   if (LIBSPDM_STATUS_IS_ERROR(status))
@@ -147,9 +147,15 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
   revert_copy_by_dw(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  tx_key_buffer.iv[0] = 1;
+  tx_key_buffer.iv[1] = 0;
+  tx_key_buffer.iv[2] = 0;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_key_buffer.iv, sizeof(tx_key_buffer.iv));
 
   revert_copy_by_dw(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  rx_key_buffer.iv[0] = 1;
+  rx_key_buffer.iv[1] = 0;
+  rx_key_buffer.iv[2] = 0;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_key_buffer.iv, sizeof(rx_key_buffer.iv));
 
   // Set TxKeyValid and RxKeyValid bit
