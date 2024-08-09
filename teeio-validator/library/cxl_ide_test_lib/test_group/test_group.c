@@ -78,7 +78,7 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
 {
   libspdm_return_t status;
 
-  uint8_t caps;
+  CXL_QUERY_RESP_CAPS caps;
   uint8_t bus_num;
   uint8_t segment;
   uint8_t dev_func_num;
@@ -87,7 +87,7 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   uint32_t ide_reg_block_count;
 
   // query
-  caps = 0;
+  caps.raw = 0;
   ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
   status = cxl_ide_km_query(group_context->doe_context,
                             group_context->spdm_context,
@@ -97,7 +97,7 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
                             &bus_num,
                             &segment,
                             &max_port_index,
-                            &caps,
+                            &caps.raw,
                             ide_reg_block,
                             &ide_reg_block_count);
   if (LIBSPDM_STATUS_IS_ERROR(status))
@@ -105,8 +105,14 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_query failed with status=0x%x\n", status));
     return false;
   }
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "max_port_index - 0x%02x\n", max_port_index));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "caps - 0x%02x\n", caps));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL_QUERY_RESP:\n"));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  max_port_index - 0x%02x\n", max_port_index));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  caps - 0x%02x\n", caps.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "         cap_version=0x%01x, iv_gen_capable=0x%01x, key_gen_capable=0x%01x, k_set_stop_capable=0x%01x\n",
+                                            caps.cxl_ide_cap_version,
+                                            caps.iv_generation_capable,
+                                            caps.ide_key_generation_capable,
+                                            caps.k_set_stop_capable));
 
   if(!cxl_check_device_ide_reg_block(ide_reg_block, ide_reg_block_count)) {
     return false;
