@@ -43,7 +43,6 @@ extern bool g_run_test_suite;
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
 const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEGORY test_category);
 ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category);
-bool teeio_check_configuration_bitmap(uint32_t* bitmap, TEEIO_TEST_CATEGORY test_category);
 
 const char *IDE_PORT_TYPE_NAMES[] = {
     "rootport",
@@ -1755,6 +1754,9 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   }
 
 
+  // default config is always set
+  config.bit_map |= (uint32_t)(1<<IDE_TEST_CONFIGURATION_TYPE_DEFAULT);
+
   const char* configuration_name;
   while(true) {
     configuration_name = get_test_configuration_name(i, config.test_category);
@@ -1769,9 +1771,6 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
       }
     }
     i++;
-  }
-  if(!teeio_check_configuration_bitmap(&config.bit_map, config.test_category)) {
-    return false;
   }
 
   // id

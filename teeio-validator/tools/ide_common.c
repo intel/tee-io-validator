@@ -234,8 +234,3 @@ ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY tes
 {
     return NULL;
 }
-
-bool teeio_check_configuration_bitmap(uint32_t* bitmap, TEEIO_TEST_CATEGORY test_category)
-{
-    return true;
-}
