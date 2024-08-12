@@ -14,8 +14,6 @@
 
 #include "library/spdm_requester_lib.h"
 #include "library/spdm_crypt_lib.h"
-// #include "library/cxl_ide_km_common_lib.h"
-#include "library/cxl_ide_km_requester_lib.h"
 #include "ide_test.h"
 #include "helperlib.h"
 #include "teeio_debug.h"
@@ -43,87 +41,10 @@ bool cxl_scan_devices(void *test_context)
   return ret;
 }
 
-// CXL Spec 3.1 Section 8.2.4.22
-// CXL IDE Capability Structure
-bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_block_count)
-{
-  int i;
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_reg_block:\n"));
-  for (i = 0; i < ide_reg_block_count; i++)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_reg_block %04x: 0x%08x\n", i, ide_reg_block[i]));
-  }
-
-  // Section 8.2.4.22.1
-  // check CXL IDE Capability at offset 00h
-  TEEIO_ASSERT(ide_reg_block_count > 1);
-  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Capability : 0x%08x\n", ide_cap.raw));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    cxl_ide_capable=0x%x, cxl_ide_modes=0x%02x\n",
-                                  ide_cap.cxl_ide_capable, ide_cap.supported_cxl_ide_modes));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    supported_algo=0x%02x, ide_stop_capable=%d, lopt_ide_capable=%d\n",
-                                  ide_cap.supported_algo, ide_cap.ide_stop_capable,
-                                  ide_cap.lopt_ide_capable));
-
-  if(ide_cap.cxl_ide_capable == 0) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "CXL IDE is not supported by device.\n"));
-    return false;
-  }
-
-  return true;
-}
-
-bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
-{
-  libspdm_return_t status;
-
-  uint8_t caps;
-  uint8_t bus_num;
-  uint8_t segment;
-  uint8_t dev_func_num;
-  uint8_t max_port_index;
-  uint32_t ide_reg_block[CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT] = {0};
-  uint32_t ide_reg_block_count;
-
-  // query
-  caps = 0;
-  ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
-  status = cxl_ide_km_query(group_context->doe_context,
-                            group_context->spdm_context,
-                            &group_context->session_id,
-                            0, // port_index
-                            &dev_func_num,
-                            &bus_num,
-                            &segment,
-                            &max_port_index,
-                            &caps,
-                            ide_reg_block,
-                            &ide_reg_block_count);
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_query failed with status=0x%x\n", status));
-    return false;
-  }
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "max_port_index - 0x%02x\n", max_port_index));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "caps - 0x%02x\n", caps));
-
-  if(!cxl_check_device_ide_reg_block(ide_reg_block, ide_reg_block_count)) {
-    return false;
-  }
-
-  // check CXL IDE Capability at offset 00h
-  TEEIO_ASSERT(ide_reg_block_count > 1);
-  CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  group_context->lower_port.cxl_data.memcache.ide_cap.raw = ide_cap.raw;
-
-  return true;
-}
-
-// link_ide test group
+// selective_ide test group
 
 /**
- * This function works to setup link_ide
+ * This function works to setup selective_ide and link_ide
  *
  * 1. open cofiguration_space and find the ecap_offset
  * 2. map kcbar to user space
@@ -175,11 +96,6 @@ static bool common_test_group_setup(void *test_context)
 
   context->spdm_context = spdm_context;
   context->session_id = session_id;
-
-  // cxl query is called in group_setup
-  if(!cxl_ide_query(context)) {
-    return false;
-  }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
 

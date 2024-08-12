@@ -17,8 +17,6 @@ const char* m_cxl_ide_test_configuration_name[] = {
   "default",
   "pcrc",
   "ide_stop",
-  "skid",
-  "containment",
   NULL
 };
 
@@ -32,22 +30,9 @@ ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] =
     cxl_ide_test_config_default_support,
     cxl_ide_test_config_default_check
   },
+
   {NULL, NULL, NULL, NULL},
-  {NULL, NULL, NULL, NULL},
-  {
-    // skid mode
-    cxl_ide_test_config_skid_enable,
-    cxl_ide_test_config_skid_disable,
-    cxl_ide_test_config_skid_support,
-    cxl_ide_test_config_skid_check
-  },
-  {
-    // containment mode
-    cxl_ide_test_config_containment_enable,
-    cxl_ide_test_config_containment_disable,
-    cxl_ide_test_config_containment_support,
-    cxl_ide_test_config_containment_check
-  }
+  {NULL, NULL, NULL, NULL}
 };
 
 ide_test_group_funcs_t m_cxl_ide_group_funcs = {
@@ -192,26 +177,6 @@ static void* alloc_cxl_ide_test_group_context(void)
   return context;
 }
 
-static bool cxl_ide_check_configuration_bitmap(uint32_t* bitmap)
-{
-  // default config is always set
-  *bitmap |= CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_DEFAULT);
-
-  // either skid mode or containment mode shall be set
-  // by default skid mode is set
-  if(*bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE)) {
-    *bitmap &= ~CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE);
-  } else if(*bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE)) {
-    *bitmap &= ~CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE);
-  } else {
-    *bitmap |= CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE);
-  }
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl-ide configuration bitmap=0x%08x\n", *bitmap));
-
-  return true;
-}
-
 bool cxl_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
 {
   TEEIO_ASSERT(funcs);
@@ -223,7 +188,6 @@ bool cxl_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_name_func = get_test_configuration_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
   funcs->alloc_test_group_context_func = alloc_cxl_ide_test_group_context;
-  funcs->check_configuration_bitmap_func = cxl_ide_check_configuration_bitmap;
 
   return true;
 }
