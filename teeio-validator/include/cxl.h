@@ -440,19 +440,6 @@ typedef struct {
   CXL_KEY_REFRESH_TIME_CAPABILITY2 key_refresh_time_capability2;
 } CXL_IDE_CAPABILITY_STRUCT;
 
-// Section 11.4.4 Discovery Messages
-// Table 11-7 Byte offset 13h in CXL_QUERY_RESP
-typedef union {
-  struct {
-    uint8_t cxl_ide_cap_version: 4;
-    uint8_t iv_generation_capable: 1;
-    uint8_t ide_key_generation_capable: 1;
-    uint8_t k_set_stop_capable: 1;
-    uint8_t rsvd: 1;
-  };
-  uint8_t raw;
-} CXL_QUERY_RESP_CAPS;
-
 #pragma pack(0)
 
 #define DVSEC_VENDOR_ID_CXL 0x1E98
