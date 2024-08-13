@@ -358,9 +358,10 @@ typedef union {
 // CXL IDE Status
 typedef union {
   struct {
-    uint32_t rx_ide_status:4;
-    uint32_t tx_ide_status:4;
-    uint32_t rsvd:30;
+    uint8_t rx_ide_status:4;
+    uint8_t tx_ide_status:4;
+    uint8_t rsvd0;
+    uint16_t rsvd1;
   };
   uint32_t raw;
 } CXL_IDE_STATUS;
@@ -369,10 +370,11 @@ typedef union {
 // CXL IDE Error Status
 typedef union {
   struct {
-    uint32_t rx_error_status:4;
-    uint32_t tx_error_status:4;
-    uint32_t unexpected_ide_stop_received:1;
-    uint32_t rsvd:29;
+    uint8_t rx_error_status:4;
+    uint8_t tx_error_status:4;
+    uint8_t unexpected_ide_stop_received:1;
+    uint8_t rsvd0:7;
+    uint16_t rsvd1;
   };
   uint32_t raw;
 } CXL_IDE_ERROR_STATUS;

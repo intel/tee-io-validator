@@ -69,6 +69,17 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
+static void dump_cxl_ide_status(ide_common_test_port_context_t* upper_port, ide_common_test_port_context_t* lower_port)
+{
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Print host cxl ide status\n"));
+  cxl_dump_ide_status(upper_port->cxl_data.memcache.cap_headers, upper_port->cxl_data.memcache.cap_headers_cnt, upper_port->cxl_data.memcache.mapped_memcache_reg_block);
+
+  TEEIO_PRINT(("\n"));
+  TEEIO_PRINT(("Print device cxl ide status.\n"));
+  cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
+}
+
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
@@ -96,9 +107,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     return false;
   }
   memset(rx_key_buffer.key, 0x11, sizeof(rx_key_buffer.key));
-  rx_key_buffer.iv[0] = 0;
-  rx_key_buffer.iv[1] = 1;
-  rx_key_buffer.iv[2] = 0x80;
+  rx_key_buffer.iv[0] = 0x80000000;
+  rx_key_buffer.iv[1] = 0;
+  rx_key_buffer.iv[2] = 1;
   cxl_dump_key_iv(&rx_key_buffer);
 
   status = cxl_ide_km_key_prog(
@@ -124,9 +135,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     return false;
   }
   memset(tx_key_buffer.key, 0x22, sizeof(tx_key_buffer.key));
-  tx_key_buffer.iv[0] = 0;
-  tx_key_buffer.iv[1] = 1;
-  tx_key_buffer.iv[2] = 0x80;
+  tx_key_buffer.iv[0] = 0x80000000;
+  tx_key_buffer.iv[1] = 0;
+  tx_key_buffer.iv[2] = 1;
   cxl_dump_key_iv(&tx_key_buffer);
 
   status = cxl_ide_km_key_prog(
@@ -200,7 +211,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go TX\n"));
 
   // wait for 10 ms for device to get ide ready
-  libspdm_sleep(10 * 1000);
+  libspdm_sleep(100 * 1000);
+
+  dump_cxl_ide_status(upper_port, lower_port);
 
   printf("cxl_setup_ide_stream is done. Press any key to continue.\n");
   getchar();
