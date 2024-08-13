@@ -83,4 +83,7 @@ void cxl_dump_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);
 
 void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap);
 
+void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block);
+void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block);
+
 #endif

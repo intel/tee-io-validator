@@ -264,7 +264,7 @@ bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Map CXL.memcache reg block failed.\n"));
     goto InitRootPortFail;
   }
-    // dump CXL IDE Capability in memcache reg block
+  // dump CXL IDE Capability in memcache reg block
   cxl_dump_ide_capability(cxl_data->memcache.cap_headers, cxl_data->memcache.cap_headers_cnt, cxl_data->memcache.mapped_memcache_reg_block);
 
   port_context->ecap_offset = 0;
@@ -549,6 +549,10 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
   CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ptr)};
 
+  // CXL_IDE_ERROR_STATUS error_status;
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
+  CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
+
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL IDE Capability\n"));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_cap = 0x%08x\n", ide_cap.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    cxl_ide_capable=0x%x, cxl_ide_modes=0x%02x\n",
@@ -564,7 +568,45 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_status = 0x%08x\n", ide_status.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_ide_status=0x%02x, tx_ide_status=0x%02x\n",
                                   ide_status.rx_ide_status, ide_status.tx_ide_status));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  error_status = 0x%08x\n", error_status.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_error_status=0x%02x, tx_error_status=0x%02x, unexpected_ide_stop_received=0x%02x\n",
+                                  error_status.rx_error_status, error_status.tx_error_status, error_status.unexpected_ide_stop_received));
+
 }
+
+void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
+{
+  // walk thru to find CXL IDE Capability
+  int i = 0;
+  for(; i < cap_headers_cnt; i++) {
+    if(cap_header[i].cap_id == CXL_CAPABILITY_ID_IDE_CAP) {
+      break;
+    }
+  }
+
+  if(i == cap_headers_cnt) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Cannot find CXL IDE Capability!\n"));
+    return;
+  }
+
+  uint8_t* ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
+  CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ptr)};
+
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
+  CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL IDE Status\n"));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_status = 0x%08x off=0x%04x\n", ide_status.raw, OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status)));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_ide_status=0x%02x, tx_ide_status=0x%02x\n",
+                                  ide_status.rx_ide_status, ide_status.tx_ide_status));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  error_status = 0x%08x off=0x%04x\n", error_status.raw, OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status)));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_error_status=0x%02x, tx_error_status=0x%02x, unexpected_ide_stop_received=0x%02x\n",
+                                  error_status.rx_error_status, error_status.tx_error_status, error_status.unexpected_ide_stop_received));
+}
+
 
 /*
  * Open device port
