@@ -20,6 +20,7 @@
 #include "pcie_ide_lib.h"
 #include "cxl_ide_lib.h"
 #include "cxl_ide_internal.h"
+#include "library/cxl_ide_km_common_lib.h"
 
 extern uint32_t g_doe_extended_offset;
 extern uint32_t g_ide_extended_offset;
@@ -81,6 +82,18 @@ bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context)
   return true;
 }
 
+void cxl_clear_rootport_key_ivs(ide_common_test_port_context_t* port_context)
+{
+  TEEIO_ASSERT(port_context);
+  TEEIO_ASSERT(port_context->mapped_kcbar_addr);
+
+  // clear the keys & ivs in rootport
+  cxl_ide_km_aes_256_gcm_key_buffer_t keys;
+  memset(&keys, 0, sizeof(cxl_ide_km_aes_256_gcm_key_buffer_t));
+  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+}
+
 /**
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
@@ -103,6 +116,9 @@ bool cxl_init_root_port(cxl_ide_test_group_context_t *group_context)
   }
 
   cxl_reset_kcbar_registers(port_context);
+
+  // clear the keys & ivs in rootport
+  cxl_clear_rootport_key_ivs(port_context);
 
   return true;
 }
