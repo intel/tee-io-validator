@@ -121,7 +121,13 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   // check CXL IDE Capability at offset 00h
   TEEIO_ASSERT(ide_reg_block_count > 1);
   CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  group_context->lower_port.cxl_data.memcache.ide_cap.raw = ide_cap.raw;
+  CXL_PRIV_DATA *cxl_data = &group_context->lower_port.cxl_data;
+  cxl_data->memcache.ide_cap.raw = ide_cap.raw;
+  cxl_data->query_resp.bus_num = bus_num;
+  cxl_data->query_resp.dev_func_num = dev_func_num;
+  cxl_data->query_resp.segment = segment;
+  cxl_data->query_resp.max_port_index = max_port_index;
+  cxl_data->query_resp.caps = caps.raw;
 
   return true;
 }

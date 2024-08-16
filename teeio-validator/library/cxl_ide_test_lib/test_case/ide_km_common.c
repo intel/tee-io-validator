@@ -80,6 +80,45 @@ static void dump_cxl_ide_status(ide_common_test_port_context_t* upper_port, ide_
   cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
 }
 
+static bool cxl_ide_generate_key(const void *pci_doe_context,
+                                  void *spdm_context, const uint32_t *session_id,
+                                  uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
+                                  cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
+                                  uint8_t caps,
+                                  uint8_t key_direction // CXL_IDE_KM_KEY_DIRECTION_RX or CXL_IDE_KM_KEY_DIRECTION_TX
+                                  )
+{
+  bool result = false;
+  CXL_QUERY_RESP_CAPS dev_caps = {.raw = caps};
+
+  if(key_direction == CXL_IDE_KM_KEY_DIRECTION_RX
+     || (dev_caps.ide_key_generation_capable == 0 && dev_caps.iv_generation_capable == 0)) {
+
+    result = libspdm_get_random_number(sizeof(key_buffer->key), (void *)key_buffer->key);
+    if (!result) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number for tx_key_buffer failed.\n"));
+    }
+
+    key_buffer->iv[0] = (uint32_t)(CXL_IDE_KM_KEY_SUB_STREAM_CXL<< 24);
+    key_buffer->iv[1] = 0;
+    key_buffer->iv[2] = 1;
+  } else {
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "generate key/iv with cxl_ide_km_get_key.\n"));
+    libspdm_return_t status = cxl_ide_km_get_key(pci_doe_context, spdm_context, session_id,
+                                stream_id, CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
+                                key_buffer);
+
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_get_key failed with status=0x%08x.\n", status));
+    } else {
+      result = true;
+    }
+  }
+
+  return result;
+}
+
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
@@ -100,10 +139,14 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
 
   // ide_km_key_prog in RX
-  result = libspdm_get_random_number(sizeof(rx_key_buffer.key), (void *)rx_key_buffer.key);
+  result = cxl_ide_generate_key(doe_context, spdm_context,
+                               session_id, stream_id,
+                               CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
+                               &rx_key_buffer, lower_port->cxl_data.query_resp.caps,
+                               CXL_IDE_KM_KEY_DIRECTION_RX);
   if (!result)
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number for rx_key_buffer failed.\n"));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_generate_key for rx_key_buffer failed.\n"));
     return false;
   }
 
@@ -123,10 +166,14 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_prog RX - %02x\n", kp_ack_status));
 
   // ide_km_key_prog in TX
-  result = libspdm_get_random_number(sizeof(tx_key_buffer.key), (void *)tx_key_buffer.key);
+  result = cxl_ide_generate_key(doe_context, spdm_context,
+                               session_id, stream_id,
+                               CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
+                               &tx_key_buffer, lower_port->cxl_data.query_resp.caps,
+                               CXL_IDE_KM_KEY_DIRECTION_TX);
   if (!result)
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number for tx_key_buffer failed.\n"));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_generate_key for tx_key_buffer failed.\n"));
     return false;
   }
 
@@ -147,12 +194,10 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
   revert_copy_by_dw(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  tx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_key_buffer.iv, sizeof(tx_key_buffer.iv));
   cxl_dump_key_iv(&tx_key_buffer);
 
   revert_copy_by_dw(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  rx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_key_buffer.iv, sizeof(rx_key_buffer.iv));
   cxl_dump_key_iv(&rx_key_buffer);
 
