@@ -84,9 +84,18 @@ typedef struct {
 } CXL_PRIV_DATA_MEMCACHE_REG_DATA;
 
 typedef struct {
+  uint8_t max_port_index;
+  uint8_t dev_func_num;
+  uint8_t bus_num;
+  uint8_t segment;
+  uint8_t caps;
+} CXL_PRIV_DATA_QUERY_RESP_DATA;
+
+typedef struct {
   CXL_PRIV_DATA_ECAP ecap;
   CXL_PRIV_DATA_KCBAR kcbar;
   CXL_PRIV_DATA_MEMCACHE_REG_DATA memcache;
+  CXL_PRIV_DATA_QUERY_RESP_DATA query_resp;
 } CXL_PRIV_DATA;
 
 #pragma pack(0)
