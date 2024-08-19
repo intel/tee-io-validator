@@ -38,7 +38,6 @@ bool cxl_ide_test_config_default_support(void *test_context)
   CXL_PRIV_DATA* rp_cxl_data = &group_context->upper_port.cxl_data;
   CXL_PRIV_DATA* ep_cxl_data = &group_context->lower_port.cxl_data;
 
-  // TODO
   bool supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1 && ep_cxl_data->memcache.ide_cap.cxl_ide_capable == 1
                   && ep_cxl_data->ecap.cap.mem_capable == 1;
 

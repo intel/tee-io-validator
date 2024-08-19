@@ -144,7 +144,6 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   }
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_prog TX - %02x\n", kp_ack_status));
 
-  // TODO
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
   revert_copy_by_dw(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));

@@ -531,14 +531,7 @@ bool cxl_init_dev_port(cxl_ide_test_group_context_t *group_context)
     return false;
   }
 
-  // prepare range registers?
-
   return true;
-
-// InitDevFailed:
-//   close(port_context->cfg_space_fd);
-//   unset_device_info(port_context->cfg_space_fd);
-//   return false;
 }
 
 void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
@@ -750,18 +743,10 @@ void cxl_cfg_rp_link_enc_key_iv(
 
 void cxl_cfg_cache_enable(int fd, uint32_t ecap_offset, bool enable)
 {
-  // CXL_DEV_CONTROL ctrl = {.raw = device_pci_read_16(ecap_offset + CXL_CONTROL_OFFSET, fd)};
-  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_cache_enable(%d) cxl_control.raw=0x%04x\n", enable, ctrl.raw));
-  // ctrl.cache_enable = enable ? 1 : 0;
-  // device_pci_write_16(ecap_offset + CXL_CONTROL_OFFSET, ctrl.raw, fd);
 }
 
 void cxl_cfg_mem_enable(int fd, uint32_t ecap_offset, bool enable)
 {
-  // CXL_DEV_CONTROL ctrl = {.raw = device_pci_read_16(ecap_offset + CXL_CONTROL_OFFSET, fd)};
-  // TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_mem_enable(%d) cxl_control.raw=0x%04x\n", enable, ctrl.raw));
-  // ctrl.mem_enable = enable ? 1 : 0;
-  // device_pci_write_16(ecap_offset + CXL_CONTROL_OFFSET, ctrl.raw, fd);
 }
 
 void cxl_cfg_rp_mode(
@@ -891,8 +876,5 @@ void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap)
                                     cap.cxl_reset_timeout, cap.cxl_mem_clr_capable, cap.tsp_capable));
   TEEIO_PRINT(("                  : multiple_logical_device=%d, viral_capable=%d, pm_init_capable=%d\n",
                                     cap.multiple_logical_device, cap.viral_capable, cap.pm_init_completion_reporting_capable));
-
-  // CXL Capability2
-  // CXL Capability3
 }
 
