@@ -22,10 +22,17 @@ SET(src_cxl_ide_test_lib
   # test_case
   test_case/ide_km_common.c
   test_case/test_case_full.c
+  test_case/test_case_query.c
+  test_case/test_case_key_prog.c
+  test_case/test_case_kset_go.c
+  test_case/test_case_kset_stop.c
+  test_case/test_case_get_key.c
   ## test configs
   test_config/test_config_containment.c
   test_config/test_config_default.c
   test_config/test_config_skid.c
+  test_config/test_config_pcrc.c
+  test_config/test_config_ide_stop.c
   ## test groups
   test_group/test_group.c
   cxl_ide_common.c

@@ -12,6 +12,11 @@
 #include "ide_test.h"
 #include "cxl_ide_test_common.h"
 
+typedef struct {
+  ide_test_case_funcs_t* funcs;
+  int cnt;
+} CXL_IDE_TEST_CASES;
+
 // CXL-IDE supported config items
 const char* m_cxl_ide_test_configuration_name[] = {
   "default",
@@ -32,8 +37,20 @@ ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] =
     cxl_ide_test_config_default_support,
     cxl_ide_test_config_default_check
   },
-  {NULL, NULL, NULL, NULL},
-  {NULL, NULL, NULL, NULL},
+  {
+    // pcrc Config
+    cxl_ide_test_config_pcrc_enable,
+    cxl_ide_test_config_pcrc_disable,
+    cxl_ide_test_config_pcrc_support,
+    cxl_ide_test_config_pcrc_check
+  },
+  {
+    // ide stop Config
+    cxl_ide_test_config_ide_stop_enable,
+    cxl_ide_test_config_ide_stop_disable,
+    cxl_ide_test_config_ide_stop_support,
+    cxl_ide_test_config_ide_stop_check
+  },
   {
     // skid mode
     cxl_ide_test_config_skid_enable,
@@ -66,80 +83,46 @@ ide_test_case_name_t m_cxl_ide_test_case_names[] = {
   {NULL,          NULL,                         CXL_MEM_IDE_TEST_CASE_NUM       }
 };
 
+ide_test_case_funcs_t m_cxl_ide_query_cases[MAX_CXL_QUERY_CASE_ID] = {
+  {cxl_ide_test_query_1_setup, cxl_ide_test_query_1_run, cxl_ide_test_query_1_teardown, false},
+  {cxl_ide_test_query_2_setup, cxl_ide_test_query_2_run, cxl_ide_test_query_2_teardown, false},
+};
 
-ide_test_case_funcs_t m_cxl_ide_test_case_funcs[CXL_MEM_IDE_TEST_CASE_NUM][MAX_CXL_CASE_ID] = {
-  // Query
-  {
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KeyProg
-  {
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KSetGo
-  {
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KSetStop
-  {
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // GetKey
-  {
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // Test Full
-  {
-    { cxl_ide_test_full_ide_stream_setup, cxl_ide_test_full_ide_stream_run, cxl_ide_test_full_ide_stream_teardown, true },  // IdeStream
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  }
+ide_test_case_funcs_t m_cxl_ide_key_prog_cases[MAX_CXL_KEYPROG_CASE_ID] = {
+  {cxl_ide_test_key_prog_1_setup, cxl_ide_test_key_prog_1_run, cxl_ide_test_key_prog_1_teardown, false},
+  {cxl_ide_test_key_prog_2_setup, cxl_ide_test_key_prog_2_run, cxl_ide_test_key_prog_2_teardown, false},
+  {cxl_ide_test_key_prog_3_setup, cxl_ide_test_key_prog_3_run, cxl_ide_test_key_prog_3_teardown, false},
+  {cxl_ide_test_key_prog_4_setup, cxl_ide_test_key_prog_4_run, cxl_ide_test_key_prog_4_teardown, false},
+  {cxl_ide_test_key_prog_5_setup, cxl_ide_test_key_prog_5_run, cxl_ide_test_key_prog_5_teardown, false},
+  {cxl_ide_test_key_prog_6_setup, cxl_ide_test_key_prog_6_run, cxl_ide_test_key_prog_6_teardown, false},
+  {cxl_ide_test_key_prog_7_setup, cxl_ide_test_key_prog_7_run, cxl_ide_test_key_prog_7_teardown, false},
+  {cxl_ide_test_key_prog_8_setup, cxl_ide_test_key_prog_8_run, cxl_ide_test_key_prog_8_teardown, false},
+  {cxl_ide_test_key_prog_9_setup, cxl_ide_test_key_prog_9_run, cxl_ide_test_key_prog_9_teardown, false},
+};
+
+ide_test_case_funcs_t m_cxl_ide_kset_go_cases[MAX_CXL_KSETGO_CASE_ID] = {
+  {cxl_ide_test_kset_go_1_setup, cxl_ide_test_kset_go_1_run, cxl_ide_test_kset_go_1_teardown, true},
+};
+
+ide_test_case_funcs_t m_cxl_ide_kset_stop_cases[MAX_CXL_KSETSTOP_CASE_ID] = {
+  {cxl_ide_test_kset_stop_1_setup, cxl_ide_test_kset_stop_1_run, cxl_ide_test_kset_stop_1_teardown, false},
+};
+
+ide_test_case_funcs_t m_cxl_ide_get_key_cases[MAX_CXL_GETKEY_CASE_ID] = {
+  {cxl_ide_test_get_key_1_setup, cxl_ide_test_get_key_1_run, cxl_ide_test_get_key_1_teardown, false},
+};
+
+ide_test_case_funcs_t m_cxl_ide_test_full_cases[MAX_CXL_FULL_CASE_ID] = {
+  { cxl_ide_test_full_ide_stream_setup, cxl_ide_test_full_ide_stream_run, cxl_ide_test_full_ide_stream_teardown, true },  // IdeStream
+};
+
+CXL_IDE_TEST_CASES m_cxl_ide_test_case_funcs[CXL_MEM_IDE_TEST_CASE_NUM] = {
+  {m_cxl_ide_query_cases,       MAX_CXL_QUERY_CASE_ID},
+  {m_cxl_ide_key_prog_cases,    MAX_CXL_KEYPROG_CASE_ID},
+  {m_cxl_ide_kset_go_cases,     MAX_CXL_KSETGO_CASE_ID},
+  {m_cxl_ide_kset_stop_cases,   MAX_CXL_KSETSTOP_CASE_ID},
+  {m_cxl_ide_get_key_cases,     MAX_CXL_GETKEY_CASE_ID},
+  {m_cxl_ide_test_full_cases,   MAX_CXL_FULL_CASE_ID}
 };
 
 static const char* get_test_configuration_name (int configuration_type)
@@ -172,8 +155,11 @@ static ide_test_group_funcs_t* get_test_group_funcs (int top_type)
 
 static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
 {
-  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM && case_id < MAX_PCIE_CASE_ID);
-  return &m_cxl_ide_test_case_funcs[case_class][case_id];
+  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM);
+  CXL_IDE_TEST_CASES* test_cases = &m_cxl_ide_test_case_funcs[case_class];
+
+  TEEIO_ASSERT(case_id < test_cases->cnt);
+  return &test_cases->funcs[case_id];
 }
 
 static ide_test_case_name_t* get_test_case_name (int case_class)
