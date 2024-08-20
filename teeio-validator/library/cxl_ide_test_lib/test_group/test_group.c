@@ -187,6 +187,9 @@ static bool common_test_group_setup(void *test_context)
     return false;
   }
 
+  // stream id in cxl-ide is always 0 according to cxl-spec
+  context->stream_id = 0;
+
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
 
   return true;
