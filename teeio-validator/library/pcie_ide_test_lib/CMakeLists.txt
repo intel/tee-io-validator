@@ -39,6 +39,7 @@ SET(src_pcie_ide_test_lib
   test_case/test_case_ksetstop_4.c
   test_case/test_case_full.c
   test_case/test_case_full_keyrefresh.c
+  test_case/test_case_spdm_session.c
   ## test configs
   test_config/test_config_common.c
   test_config/test_config_pcrc.c

@@ -12,11 +12,6 @@
 #include "ide_test.h"
 #include "cxl_ide_test_common.h"
 
-typedef struct {
-  ide_test_case_funcs_t* funcs;
-  int cnt;
-} CXL_IDE_TEST_CASES;
-
 // CXL-IDE supported config items
 const char* m_cxl_ide_test_configuration_name[] = {
   "default",
@@ -116,7 +111,7 @@ ide_test_case_funcs_t m_cxl_ide_test_full_cases[MAX_CXL_FULL_CASE_ID] = {
   { cxl_ide_test_full_ide_stream_setup, cxl_ide_test_full_ide_stream_run, cxl_ide_test_full_ide_stream_teardown, true },  // IdeStream
 };
 
-CXL_IDE_TEST_CASES m_cxl_ide_test_case_funcs[CXL_MEM_IDE_TEST_CASE_NUM] = {
+TEEIO_TEST_CASES m_cxl_ide_test_case_funcs[CXL_MEM_IDE_TEST_CASE_NUM] = {
   {m_cxl_ide_query_cases,       MAX_CXL_QUERY_CASE_ID},
   {m_cxl_ide_key_prog_cases,    MAX_CXL_KEYPROG_CASE_ID},
   {m_cxl_ide_kset_go_cases,     MAX_CXL_KSETGO_CASE_ID},
@@ -155,8 +150,8 @@ static ide_test_group_funcs_t* get_test_group_funcs (int top_type)
 
 static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
 {
-  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM);
-  CXL_IDE_TEST_CASES* test_cases = &m_cxl_ide_test_case_funcs[case_class];
+  TEEIO_ASSERT(case_class < CXL_MEM_IDE_TEST_CASE_NUM);
+  TEEIO_TEST_CASES* test_cases = &m_cxl_ide_test_case_funcs[case_class];
 
   TEEIO_ASSERT(case_id < test_cases->cnt);
   return &test_cases->funcs[case_id];
