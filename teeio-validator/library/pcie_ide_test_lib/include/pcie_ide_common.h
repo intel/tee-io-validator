@@ -91,6 +91,15 @@ bool pcie_ide_test_ksetstop_4_setup(void *test_context);
 bool pcie_ide_test_ksetstop_4_run(void *test_context);
 bool pcie_ide_test_ksetstop_4_teardown(void *test_context);
 
+// SpdmSession
+bool pcie_ide_test_spdm_session_1_setup(void *test_context);
+bool pcie_ide_test_spdm_session_1_run(void *test_context);
+bool pcie_ide_test_spdm_session_1_teardown(void *test_context);
+
+bool pcie_ide_test_spdm_session_2_setup(void *test_context);
+bool pcie_ide_test_spdm_session_2_run(void *test_context);
+bool pcie_ide_test_spdm_session_2_teardown(void *test_context);
+
 // Full case
 bool pcie_ide_test_full_1_setup(void *test_context);
 bool pcie_ide_test_full_1_run(void *test_context);

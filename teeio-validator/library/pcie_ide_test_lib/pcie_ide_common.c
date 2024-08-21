@@ -128,61 +128,51 @@ ide_test_case_name_t m_test_case_names[] = {
   {NULL,          NULL,                   IDE_COMMON_TEST_CASE_NUM}
 };
 
-ide_test_case_funcs_t m_test_case_funcs[IDE_COMMON_TEST_CASE_NUM][MAX_PCIE_CASE_ID] = {
-  // Query
-  {
-    { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
-    { pcie_ide_test_query_2_setup, pcie_ide_test_query_2_run, pcie_ide_test_query_2_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false},
-  },
-  // KeyProg
-  {
-    {pcie_ide_test_keyprog_1_setup, pcie_ide_test_keyprog_1_run, pcie_ide_test_keyprog_1_teardown, false},
-    {pcie_ide_test_keyprog_2_setup, pcie_ide_test_keyprog_2_run, pcie_ide_test_keyprog_2_teardown, false},
-    {pcie_ide_test_keyprog_3_setup, pcie_ide_test_keyprog_3_run, pcie_ide_test_keyprog_3_teardown, false},
-    {pcie_ide_test_keyprog_4_setup, pcie_ide_test_keyprog_4_run, pcie_ide_test_keyprog_4_teardown, false},
-    {pcie_ide_test_keyprog_5_setup, pcie_ide_test_keyprog_5_run, pcie_ide_test_keyprog_5_teardown, false},
-    {pcie_ide_test_keyprog_6_setup, pcie_ide_test_keyprog_6_run, pcie_ide_test_keyprog_6_teardown, false}
-  },
-  // KSetGo
-  {
-    { pcie_ide_test_ksetgo_1_setup, pcie_ide_test_ksetgo_1_run, pcie_ide_test_ksetgo_1_teardown, true },
-    { pcie_ide_test_ksetgo_2_setup, pcie_ide_test_ksetgo_2_run, pcie_ide_test_ksetgo_2_teardown, true },
-    { pcie_ide_test_ksetgo_3_setup, pcie_ide_test_ksetgo_3_run, pcie_ide_test_ksetgo_3_teardown, true },
-    { pcie_ide_test_ksetgo_4_setup, pcie_ide_test_ksetgo_4_run, pcie_ide_test_ksetgo_4_teardown, true },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // KSetStop
-  {
-    { pcie_ide_test_ksetstop_1_setup, pcie_ide_test_ksetstop_1_run, pcie_ide_test_ksetstop_1_teardown, false },
-    { pcie_ide_test_ksetstop_2_setup, pcie_ide_test_ksetstop_2_run, pcie_ide_test_ksetstop_2_teardown, false },
-    { pcie_ide_test_ksetstop_3_setup, pcie_ide_test_ksetstop_3_run, pcie_ide_test_ksetstop_3_teardown, false },
-    { pcie_ide_test_ksetstop_4_setup, pcie_ide_test_ksetstop_4_run, pcie_ide_test_ksetstop_4_teardown, false },
-    {NULL, NULL, NULL, false},
-    {NULL, NULL, NULL, false}
-  },
-  // SpdmSession
-  {
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  },
-  // Test Full
-  {
-    { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
-    { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false },  // KeyRefresh
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL},
-    {NULL, NULL, NULL}
-  }
+ide_test_case_funcs_t m_pcie_ide_query_cases[MAX_QUERY_CASE_ID] = {
+  { pcie_ide_test_query_1_setup, pcie_ide_test_query_1_run, pcie_ide_test_query_1_teardown, false },
+  { pcie_ide_test_query_2_setup, pcie_ide_test_query_2_run, pcie_ide_test_query_2_teardown, false }
+};
+
+ide_test_case_funcs_t m_pcie_ide_key_prog_cases[MAX_KEYPROG_CASE_ID] = {
+  {pcie_ide_test_keyprog_1_setup, pcie_ide_test_keyprog_1_run, pcie_ide_test_keyprog_1_teardown, false},
+  {pcie_ide_test_keyprog_2_setup, pcie_ide_test_keyprog_2_run, pcie_ide_test_keyprog_2_teardown, false},
+  {pcie_ide_test_keyprog_3_setup, pcie_ide_test_keyprog_3_run, pcie_ide_test_keyprog_3_teardown, false},
+  {pcie_ide_test_keyprog_4_setup, pcie_ide_test_keyprog_4_run, pcie_ide_test_keyprog_4_teardown, false},
+  {pcie_ide_test_keyprog_5_setup, pcie_ide_test_keyprog_5_run, pcie_ide_test_keyprog_5_teardown, false},
+  {pcie_ide_test_keyprog_6_setup, pcie_ide_test_keyprog_6_run, pcie_ide_test_keyprog_6_teardown, false}
+};
+
+ide_test_case_funcs_t m_pcie_ide_kset_go_cases[MAX_KSETGO_CASE_ID] = {
+  { pcie_ide_test_ksetgo_1_setup, pcie_ide_test_ksetgo_1_run, pcie_ide_test_ksetgo_1_teardown, true },
+  { pcie_ide_test_ksetgo_2_setup, pcie_ide_test_ksetgo_2_run, pcie_ide_test_ksetgo_2_teardown, true },
+  { pcie_ide_test_ksetgo_3_setup, pcie_ide_test_ksetgo_3_run, pcie_ide_test_ksetgo_3_teardown, true },
+  { pcie_ide_test_ksetgo_4_setup, pcie_ide_test_ksetgo_4_run, pcie_ide_test_ksetgo_4_teardown, true }
+};
+
+ide_test_case_funcs_t m_pcie_ide_kset_stop_cases[MAX_KSETSTOP_CASE_ID] = {
+  { pcie_ide_test_ksetstop_1_setup, pcie_ide_test_ksetstop_1_run, pcie_ide_test_ksetstop_1_teardown, false },
+  { pcie_ide_test_ksetstop_2_setup, pcie_ide_test_ksetstop_2_run, pcie_ide_test_ksetstop_2_teardown, false },
+  { pcie_ide_test_ksetstop_3_setup, pcie_ide_test_ksetstop_3_run, pcie_ide_test_ksetstop_3_teardown, false },
+  { pcie_ide_test_ksetstop_4_setup, pcie_ide_test_ksetstop_4_run, pcie_ide_test_ksetstop_4_teardown, false }
+};
+
+ide_test_case_funcs_t m_pcie_ide_spdm_session_cases[MAX_SPDMSESSION_CASE_ID] = {
+  {pcie_ide_test_spdm_session_1_setup, pcie_ide_test_spdm_session_1_run, pcie_ide_test_spdm_session_1_teardown, false},
+  {pcie_ide_test_spdm_session_2_setup, pcie_ide_test_spdm_session_2_run, pcie_ide_test_spdm_session_2_teardown, false},
+};
+
+ide_test_case_funcs_t m_pcie_ide_test_full_cases[MAX_FULL_CASE_ID] = {
+  { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
+  { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false }  // KeyRefresh
+};
+
+TEEIO_TEST_CASES m_pcie_ide_test_case_funcs[IDE_COMMON_TEST_CASE_NUM] = {
+  {m_pcie_ide_query_cases,          MAX_QUERY_CASE_ID},
+  {m_pcie_ide_key_prog_cases,       MAX_KEYPROG_CASE_ID},
+  {m_pcie_ide_kset_go_cases,        MAX_KSETGO_CASE_ID},
+  {m_pcie_ide_kset_stop_cases,      MAX_KSETSTOP_CASE_ID},
+  {m_pcie_ide_spdm_session_cases,   MAX_SPDMSESSION_CASE_ID},
+  {m_pcie_ide_test_full_cases,      MAX_FULL_CASE_ID}
 };
 
 static const char* get_test_configuration_name (int configuration_type)
@@ -214,8 +204,11 @@ static ide_test_group_funcs_t* get_test_group_funcs (int top_type)
 
 static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
 {
-  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM && case_id < MAX_PCIE_CASE_ID);
-  return &m_test_case_funcs[case_class][case_id];
+  TEEIO_ASSERT(case_class < IDE_COMMON_TEST_CASE_NUM);
+  TEEIO_TEST_CASES* test_cases = &m_pcie_ide_test_case_funcs[case_class];
+
+  TEEIO_ASSERT(case_id < test_cases->cnt);
+  return &test_cases->funcs[case_id];
 }
 
 static ide_test_case_name_t* get_test_case_name (int case_class)

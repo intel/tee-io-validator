@@ -53,7 +53,7 @@
 #define MAX_KSETGO_CASE_ID 4
 #define MAX_KSETSTOP_CASE_ID 4
 #define MAX_SPDMSESSION_CASE_ID 2
-#define MAX_FULL_CASE_ID 1
+#define MAX_FULL_CASE_ID 2
 #define MAX_PCIE_CASE_ID \
   (MAX(MAX_QUERY_CASE_ID, MAX(MAX_KEYPROG_CASE_ID, MAX(MAX_KSETGO_CASE_ID, MAX(MAX_KSETSTOP_CASE_ID, MAX(MAX_SPDMSESSION_CASE_ID, MAX_FULL_CASE_ID))))))
 
@@ -591,5 +591,10 @@ struct _ide_run_test_suite {
   ide_run_test_group_t *test_group;
   ide_run_test_config_t *test_config;
 };
+
+typedef struct {
+  ide_test_case_funcs_t* funcs;
+  int cnt;
+} TEEIO_TEST_CASES;
 
 #endif
