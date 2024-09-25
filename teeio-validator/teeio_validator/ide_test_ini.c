@@ -1833,7 +1833,7 @@ bool ParseSwitchesSection(void *context, IDE_TEST_CONFIG *test_config, int index
     }
 
     if (!is_valid_dev_func(entry_value)) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid %s df(%s). %s\n", section_name, entry_name, entry_value));
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid %s df(%s).\n", section_name, entry_name, entry_value));
       TEEIO_ASSERT(false);
       return false;
     }
