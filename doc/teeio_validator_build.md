@@ -6,8 +6,18 @@
 # For Ubuntu
 sudo apt install build-essential
 
-# For CentOS
-sudo yum groupinstall 'Development Tools'
+# For CentOS 8
+sudo dnf groupinstall 'Development Tools'
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager --set-enabled powertools
+sudo dnf install glibc-devel glibc-static
+
+# For CentOS 9
+sudo dnf groupinstall 'Development Tools'
+sudo dnf install dnf-plugins-core
+sudo dnf config-manager --set-enabled crb
+sudo dnf install glibc-devel glibc-static
+
 ```
 
 ## Build binaries
