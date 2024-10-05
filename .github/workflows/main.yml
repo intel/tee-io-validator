@@ -1,3 +1,6 @@
+name: Build binary
+permissions: read-all
+
 on:
   push:
     paths-ignore:
@@ -6,8 +9,6 @@ on:
     paths-ignore:
       - "**.md"
   workflow_dispatch:
-
-name: Build binary
 
 jobs:
   build:
