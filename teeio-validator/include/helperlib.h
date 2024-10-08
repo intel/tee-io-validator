@@ -60,7 +60,7 @@ IDE_PORT *get_port_from_switch_by_name(IDE_SWITCH *sw, const char* name);
 bool is_valid_port_in_switch(IDE_SWITCH *sw, int port_id);
 IDE_PORT* get_port_from_switch_by_id(IDE_SWITCH *sw, int port_id);
 
-bool revert_copy_by_dw(void* src, int src_size, void* dest, int dest_size);
+bool pcie_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp_keys, int rp_keys_size);
 bool IsValidDecimalString(uint8_t *Decimal, uint32_t Length);
 bool IsValidDigitalChar(uint8_t DigitalChar, bool IncludeHex);
 bool IsValidHexString(uint8_t *Hex, uint32_t Length);

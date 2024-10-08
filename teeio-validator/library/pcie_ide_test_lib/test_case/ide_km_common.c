@@ -101,7 +101,7 @@ bool ide_km_key_prog(
     kcbar_ptr = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
 
     // program key in root port kcbar registers
-    revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+    pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
     slot_id = k_set[ks].slot_id[direction][substream];
     cfg_rootport_ide_keys(kcbar_ptr, rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp key_prog %s|%s|%s - @key/iv slot[%02x]\n", k_set_names[ks], direction_names[direction], substream_names[substream], slot_id));

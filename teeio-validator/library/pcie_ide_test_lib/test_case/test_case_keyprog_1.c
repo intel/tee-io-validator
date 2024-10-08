@@ -220,7 +220,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
@@ -238,7 +238,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
@@ -256,7 +256,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
@@ -280,7 +280,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
@@ -298,7 +298,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
@@ -316,7 +316,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
-  revert_copy_by_dw(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
 
