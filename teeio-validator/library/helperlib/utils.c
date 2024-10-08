@@ -74,17 +74,22 @@ int revert_find_char_in_str(const char *str, char c)
   return i;
 }
 
-bool revert_copy_by_dw(void* src, int src_size, void* dest, int dest_size)
+/**
+ * Refer to doc/key_byte_order.md
+ *  ## PCIE IDE_KM KEY_PROG message
+ *  ## Intel Root Complex PCIE Key/IV register
+ */
+bool pcie_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp_keys, int rp_keys_size)
 {
-    if(src == NULL || dest == NULL ||
-      src_size == 0 || src_size != dest_size || src_size%4 != 0) {
+    if(key_prog_keys == NULL || rp_keys == NULL ||
+      key_prog_keys_size == 0 || key_prog_keys_size != rp_keys_size || key_prog_keys_size%4 != 0) {
         TEEIO_ASSERT(false);
         return false;
     }
 
-    int size_in_dw = src_size/4;
+    int size_in_dw = key_prog_keys_size/4;
     for(int i = 0; i < size_in_dw; i++) {
-        *((uint32_t *)dest + i) = *((uint32_t *)src + size_in_dw - i - 1);
+        *((uint32_t *)rp_keys + i) = *((uint32_t *)key_prog_keys + size_in_dw - i - 1);
     }
 
     return true;
