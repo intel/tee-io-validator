@@ -95,6 +95,42 @@ bool pcie_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* r
     return true;
 }
 
+static void revert_bytes_inside_dw(uint32_t* dw)
+{
+  uint8_t tmp;
+  for(int i = 0; i < 2; i++) {
+    tmp = *((uint8_t *)dw + i);
+    *((uint8_t *)dw + i) = *((uint8_t *)dw + 3 - i);
+    *((uint8_t *)dw + 3 - i) = tmp;
+  }
+}
+
+/**
+ * Refer to doc/key_byte_order.md
+ *  ## CXL IDE_KM KEY_PROG message
+ *  ## Intel Root Complex CXL Key/IV register
+ */
+bool cxl_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp_keys, int rp_keys_size)
+{
+    if(key_prog_keys == NULL || rp_keys == NULL ||
+      key_prog_keys_size == 0 || key_prog_keys_size != rp_keys_size || key_prog_keys_size%4 != 0) {
+        TEEIO_ASSERT(false);
+        return false;
+    }
+
+    int size_in_dw = key_prog_keys_size/4;
+    uint32_t *dest = 0;
+    uint32_t *src = 0;
+    for(int i = 0; i < size_in_dw; i++) {
+      dest = (uint32_t *)((uint8_t *)rp_keys + 4 * i);
+      src = (uint32_t *)((uint8_t *)key_prog_keys + 4 * i);
+      *dest = *src;
+      revert_bytes_inside_dw(dest);
+    }
+
+    return true;
+}
+
 /**
   Return if the decimal string is valid.
 

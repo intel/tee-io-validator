@@ -146,12 +146,12 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
 
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
-  revert_copy_by_dw(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  cxl_construct_rp_keys(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   tx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_key_buffer.iv, sizeof(tx_key_buffer.iv));
   cxl_dump_key_iv(&tx_key_buffer);
 
-  revert_copy_by_dw(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
+  cxl_construct_rp_keys(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   rx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_key_buffer.iv, sizeof(rx_key_buffer.iv));
   cxl_dump_key_iv(&rx_key_buffer);
