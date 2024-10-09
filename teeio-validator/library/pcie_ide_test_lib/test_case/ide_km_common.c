@@ -30,12 +30,27 @@ const char *direction_names[] = {
 const char *substream_names[] = {
     "PR", "NPR", "CPL"};
 
-void dump_key_iv(pci_ide_km_aes_256_gcm_key_buffer_t* key_buffer)
+/**
+ * Dump key_iv in rootport registers
+ * Refer to Root Complex IDE Key Configuration Unit Software Programing Guide Revision 1.01
+ *   Figure 2-3 Key Slot
+ *   Figure 2-4 IV Value Slot
+ */
+void pcie_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, uint8_t* iv, int iv_size)
 {
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Key:\n"));
-  dump_hex_array((uint8_t *)key_buffer->key, sizeof(key_buffer->key));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IV:\n"));
-  dump_hex_array((uint8_t *)key_buffer->iv, sizeof(key_buffer->iv));
+  int i = 0;
+  TEEIO_ASSERT(key_size == 32);
+  TEEIO_ASSERT(iv_size == 8);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "PCIe IDE Key in rootport registers (%s Key Slots):\n", direction));
+  for(i = 0; i < 8; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  Key_DW%d: 0x%08x\n", i, *(uint32_t *)(key + i*4)));
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "PCIe IDE IV in rootport registers (%s IV Slots):\n", direction));
+  for(i = 0; i < 8; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  IFV_DW%d: 0x%08x\n", i, *(uint32_t *)(iv + i*4)));
+  }
 }
 
 // program keys to device card and root port
@@ -79,8 +94,6 @@ bool ide_km_key_prog(
     key_buffer.iv[0] = 0;
     key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
 
-    dump_key_iv(&key_buffer);
-
     status = pci_ide_km_key_prog(pci_doe_context, spdm_context, session_id,
                                  stream_id,
                                  k_sets[ks] | directions[direction] | substreams[substream],
@@ -93,6 +106,8 @@ bool ide_km_key_prog(
     }
 
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dev key_prog %s|%s|%s - sts=%02x\n", k_set_names[ks], direction_names[direction], substream_names[substream], kp_ack_status));
+    dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
+
     if(kp_ack_status != PCI_IDE_KM_KP_ACK_STATUS_SUCCESS) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pci_ide_km_key_prog failed with kp_ack_status=0x%x\n", kp_ack_status));
       return false;
@@ -105,7 +120,7 @@ bool ide_km_key_prog(
     slot_id = k_set[ks].slot_id[direction][substream];
     cfg_rootport_ide_keys(kcbar_ptr, rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp key_prog %s|%s|%s - @key/iv slot[%02x]\n", k_set_names[ks], direction_names[direction], substream_names[substream], slot_id));
-    // dump_key_iv(RP_TYPE, (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
+    pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
     return true;
 }

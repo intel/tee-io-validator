@@ -95,4 +95,12 @@ bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
                             uint8_t stream_id, uint8_t key_sub_stream,
                             uint8_t port_index, const char* case_msg);
 
+/**
+ * Dump key_iv in rootport registers
+ * Refer to Root Complex IDE Key Configuration Unit Software Programing Guide Revision 1.01
+ *   Figure 2-3 Key Slot
+ *   Figure 2-4 IV Value Slot
+ */
+void pcie_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, uint8_t* iv, int iv_size);
+
 #endif
