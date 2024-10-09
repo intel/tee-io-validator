@@ -159,12 +159,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -173,12 +173,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -187,12 +187,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|PR
   ks = PCIE_IDE_STREAM_KS0;
@@ -201,12 +201,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -215,12 +215,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -229,12 +229,12 @@ bool pcie_ide_test_keyprog_5_run(void *test_context)
   key_buffer.iv[1] += 1;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL with iv=%d\n", key_buffer.iv[1]));
   status = test_ide_km_key_prog_case5(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
   pass = pass & status;
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   case_context->result = pass ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;
 

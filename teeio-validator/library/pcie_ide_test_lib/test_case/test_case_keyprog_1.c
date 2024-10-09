@@ -212,17 +212,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_PR;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR\n"));
   status = test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   // KS0|RX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -230,17 +231,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_NPR;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR\n"));
   status = test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   // KS0|RX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -248,17 +250,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_CPL;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL\n"));
   status = test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   prime_rp_ide_key_set(
       kcbar_ptr,
@@ -272,17 +275,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_PR;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR\n"));
   status = test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   // KS0|TX|NPR
   ks = PCIE_IDE_STREAM_KS0;
@@ -290,17 +294,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_NPR;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR\n"));
   status = test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   // KS0|TX|CPL
   ks = PCIE_IDE_STREAM_KS0;
@@ -308,17 +313,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
   substream = PCIE_IDE_SUB_STREAM_CPL;
   result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
   TEEIO_ASSERT(result);
-  dump_key_iv(&key_buffer);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL\n"));
   test_ide_km_key_prog_case1(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 0, &key_buffer, &kp_ack_status);
+  dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
   pass = pass & !LIBSPDM_STATUS_IS_ERROR(status);
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
   slot_id = group_context->k_set[ks].slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
+  pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
   prime_rp_ide_key_set(
       kcbar_ptr,
