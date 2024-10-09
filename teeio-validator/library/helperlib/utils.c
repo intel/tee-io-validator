@@ -531,3 +531,36 @@ bool get_uint32_array_from_string(uint32_t* array, uint32_t* array_size, const c
 
   return ret;
 }
+
+// dump key/iv stored in IDE-KM KEY_PROG message.
+// Refer to PCIe Spec 6.1 Figure 6-57 and CXL Spec 3.1 Table 11-8.
+void dump_key_iv_in_key_prog(const uint32_t *key, int key_dw_size, const uint32_t *iv, int iv_dw_size)
+{
+  // In AES-GCM-256 the key size is fixed. (8 dword)
+  TEEIO_ASSERT(key_dw_size == 8);
+
+  // For PCIE KEY_PROG message, iv_dw_size is 2. Refer to PCIE Spec 6.1 Figure 6-57.
+  // For CXL KEY_PROG message, iv_dw_size is 3. Refer to CXL Spec 3.1 Table 11-8.
+  TEEIO_ASSERT(iv_dw_size == 2 || iv_dw_size == 3);
+
+  uint32_t key_buf[8] = {0};
+  uint32_t iv_buf[3] = {0};
+
+  memcpy(key_buf, key, key_dw_size * sizeof(uint32_t));
+  memcpy(iv_buf, iv, iv_dw_size * sizeof(uint32_t));
+
+  int i;
+  for(i = 0; i < key_dw_size; i++) {
+    revert_bytes_inside_dw(key_buf + i);
+  }
+
+  for(i = 0; i < iv_dw_size; i++) {
+    revert_bytes_inside_dw(iv_buf + i);
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Key (big-endian):\n"));
+  dump_hex_array((uint8_t *)key_buf, key_dw_size * sizeof(uint32_t));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IV (big-endian):\n"));
+  dump_hex_array((uint8_t *)iv_buf, iv_dw_size * sizeof(uint32_t));
+}

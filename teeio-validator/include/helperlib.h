@@ -83,4 +83,8 @@ bool get_uint32_array_from_string(uint32_t* array, uint32_t* array_size, const c
 // get the max value from uint32_t array
 uint32_t get_max_from_uint32_array(uint32_t* array, uint32_t size);
 
+// dump key/iv stored in IDE-KM KEY_PROG message.
+// Refer to PCIe Spec 6.1 Figure 6-57
+void dump_key_iv_in_key_prog(const uint32_t *key, int key_dw_size, const uint32_t *iv, int iv_dw_size);
+
 #endif
