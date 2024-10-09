@@ -8,6 +8,7 @@
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+#include <inttypes.h>
 
 #include "assert.h"
 #include "hal/base.h"
@@ -24,12 +25,19 @@
 #include "cxl_ide_lib.h"
 #include "cxl_ide_test_common.h"
 
-void cxl_dump_key_iv(cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer)
+void cxl_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, uint8_t *iv, int iv_size)
 {
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Key:\n"));
-  dump_hex_array((uint8_t *)key_buffer->key, sizeof(key_buffer->key));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IV:\n"));
-  dump_hex_array((uint8_t *)key_buffer->iv, sizeof(key_buffer->iv));
+  int i = 0;
+  TEEIO_ASSERT(key_size == 32);
+  TEEIO_ASSERT(iv_size == 8);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Key in rootport registers:\n"));
+  for(i = 0; i < 4; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, " %s Encryption key %d: 0x%016"PRIx64"\n", direction, i, *(uint64_t *)(key + i*8)));
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE IV in rootport registers:\n"));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  %s IF: 0x%016"PRIx64"\n", direction, *(uint64_t *)iv));
 }
 
 // setup cxl ide stream
@@ -121,6 +129,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     return false;
   }
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_prog RX - %02x\n", kp_ack_status));
+  dump_key_iv_in_key_prog(rx_key_buffer.key, sizeof(rx_key_buffer.key)/sizeof(uint32_t), rx_key_buffer.iv, sizeof(rx_key_buffer.iv)/sizeof(uint32_t));
 
   // ide_km_key_prog in TX
   result = libspdm_get_random_number(sizeof(tx_key_buffer.key), (void *)tx_key_buffer.key);
@@ -143,18 +152,19 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     return false;
   }
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_prog TX - %02x\n", kp_ack_status));
+  dump_key_iv_in_key_prog(tx_key_buffer.key, sizeof(tx_key_buffer.key)/sizeof(uint32_t), tx_key_buffer.iv, sizeof(tx_key_buffer.iv)/sizeof(uint32_t));
 
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
   cxl_construct_rp_keys(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   tx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_key_buffer.iv, sizeof(tx_key_buffer.iv));
-  cxl_dump_key_iv(&tx_key_buffer);
+  cxl_dump_key_iv_in_rp("Rx", keys.bytes, 32, (uint8_t *)tx_key_buffer.iv, 8);
 
   cxl_construct_rp_keys(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   rx_key_buffer.iv[0] = 1;
   cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_key_buffer.iv, sizeof(rx_key_buffer.iv));
-  cxl_dump_key_iv(&rx_key_buffer);
+  cxl_dump_key_iv_in_rp("Tx", keys.bytes, 32, (uint8_t *)rx_key_buffer.iv, 8);
 
   // Set TxKeyValid and RxKeyValid bit
   cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_TX, true);
