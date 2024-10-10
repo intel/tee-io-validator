@@ -132,6 +132,22 @@ bool cxl_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp
 }
 
 /**
+ * Refer to doc/key_byte_order.md
+ *  ## CXL IDE_KM KEY_PROG message
+ *  ## Intel Root Complex CXL Key/IV register
+ */
+bool cxl_construct_rp_iv(uint32_t* key_prog_iv, int key_prog_iv_size, uint32_t* rp_iv, int rp_iv_size)
+{
+  TEEIO_ASSERT(key_prog_iv_size == 3 * 4);
+  TEEIO_ASSERT(rp_iv_size == 2 * 4);
+
+  *rp_iv = *(key_prog_iv + 2);
+  *(rp_iv + 1) = *(key_prog_iv + 1);
+
+  return true;
+}
+
+/**
   Return if the decimal string is valid.
 
   @param[in] Decimal The decimal string to be checked.
