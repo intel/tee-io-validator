@@ -62,6 +62,7 @@ IDE_PORT* get_port_from_switch_by_id(IDE_SWITCH *sw, int port_id);
 
 bool pcie_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp_keys, int rp_keys_size);
 bool cxl_construct_rp_keys(void* key_prog_keys, int key_prog_keys_size, void* rp_keys, int rp_keys_size);
+bool cxl_construct_rp_iv(uint32_t* key_prog_iv, int key_prog_iv_size, uint32_t* rp_iv, int rp_iv_size);
 bool IsValidDecimalString(uint8_t *Decimal, uint32_t Length);
 bool IsValidDigitalChar(uint8_t DigitalChar, bool IncludeHex);
 bool IsValidHexString(uint8_t *Hex, uint32_t Length);
