@@ -84,6 +84,8 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
 // set ft_supported
 bool set_ft_supported_in_switch(char* port_bdf)
 {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "set_ft_supported_in_switch bdf=%s\n", port_bdf));
+
     if(port_bdf == NULL) {
         return false;
     }
@@ -94,6 +96,10 @@ bool set_ft_supported_in_switch(char* port_bdf)
         return false;
     }
 
+    char dev_info[MAX_LINE_LENGTH] = {0};
+    sprintf(dev_info, "switch-port: %s", port_bdf);
+    set_deivce_info(fd, dev_info);
+
     uint32_t ecap_offset = get_extended_cap_offset(fd, 0x30);
 
     if (ecap_offset == 0) {
@@ -103,13 +109,19 @@ bool set_ft_supported_in_switch(char* port_bdf)
 
     uint32_t offset = ecap_offset + 8;
     PCIE_IDE_CTRL ide_ctrl = {.raw = device_pci_read_32(offset, fd)};
-    ide_ctrl.ft_supported = 1;
-    device_pci_write_32(offset, ide_ctrl.raw, fd);
+    if(ide_ctrl.ft_supported == 0) {
+      ide_ctrl.ft_supported = 1;
+      device_pci_write_32(offset, ide_ctrl.raw, fd);
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ft_supported is set.\n"));
+    } else {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ft_supported is already set.\n"));
+    }
 
     ret = true;
 
 SetFailed:
     close(fd);
+    unset_device_info(fd);
 
     return ret;
 }
@@ -203,10 +215,16 @@ static bool get_pcie_ide_cap(PCIE_IDE_CAP *cap, uint32_t ecap_offset, int fd) {
 // check if the switch port supports ft_supported
 bool check_ft_supported_in_switch_port(char* bdf)
 {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "check_ft_supported_in_switch_port bdf(%s)\n", bdf));
+
     int fd = open_configuration_space(bdf);
     if(fd == -1) {
         return false;
     }
+
+    char dev_info[MAX_LINE_LENGTH] = {0};
+    sprintf(dev_info, "switch-port: %s", bdf);
+    set_deivce_info(fd, dev_info);
 
     bool supported = false;
 
@@ -223,9 +241,11 @@ bool check_ft_supported_in_switch_port(char* bdf)
     }
 
     supported = ide_cap.ft_supported == 1;
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_cap.ft_supported=%d\n", ide_cap.ft_supported));
 
 CheckFailed:
     close(fd);
+    unset_device_info(fd);
 
     return supported;
 }
@@ -249,6 +269,10 @@ bool test_config_support_common(void *test_context)
   } else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE) {
     supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1 && host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
   }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO,
+              "test_config_support_common: host_cap->sel_ide_supported == %d && dev_cap->sel_ide_supported == %d\n",
+              host_cap->sel_ide_supported, dev_cap->sel_ide_supported));
 
   if(!supported) {
     return false;
