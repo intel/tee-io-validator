@@ -439,6 +439,7 @@ bool populate_rid_assoc_reg_block(
 // If the device is 64-bit and bit3 (prefetchable bit) is set, then use_prefetchable registers
 bool check_use_prefetchable(char* bdf)
 {
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "check_use_prefetchable at bdf=%s\n", bdf));
   int fd = open_configuration_space(bdf);
   if(fd == -1) {
     TEEIO_ASSERT(false);
@@ -463,11 +464,18 @@ bool check_use_prefetchable(char* bdf)
 }
 
 bool populate_addr_assoc_reg_block(
-    int cfg_space_fd,
+    char *bdf,
     bool use_prefetch_memory,
     PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK *addr_assoc_reg_block)
 {
     if(addr_assoc_reg_block == NULL) {
+      return false;
+    }
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "populate_addr_assoc_reg_block. Value of Mem Base/Limit are read from bdf=%s\n", bdf));
+    int cfg_space_fd = open_configuration_space(bdf);
+    if(cfg_space_fd == -1) {
+      TEEIO_ASSERT(false);
       return false;
     }
 
@@ -498,6 +506,8 @@ bool populate_addr_assoc_reg_block(
 
     addr_assoc_reg_block->addr_assoc2.raw = addr_assoc2.raw;
     addr_assoc_reg_block->addr_assoc3.raw = addr_assoc3.raw;
+
+    close(cfg_space_fd);
 
     return true;
 }
@@ -560,7 +570,7 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
   }
 
   bool use_prefetch_memory = check_use_prefetchable(dev_bdf);
-  if(!populate_addr_assoc_reg_block(port_context->cfg_space_fd, use_prefetch_memory, &port_context->addr_assoc_reg_block)) {
+  if(!populate_addr_assoc_reg_block(dev_bdf, use_prefetch_memory, &port_context->addr_assoc_reg_block)) {
     goto InitHostFail;
   }
 
