@@ -19,6 +19,7 @@ const char* m_cxl_ide_test_configuration_name[] = {
   "ide_stop",
   "skid",
   "containment",
+  "cxl_get_key",
   NULL
 };
 
@@ -59,6 +60,13 @@ ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] =
     cxl_ide_test_config_containment_disable,
     cxl_ide_test_config_containment_support,
     cxl_ide_test_config_containment_check
+  },
+  {
+    // get_key
+    cxl_ide_test_config_get_key_enable,
+    cxl_ide_test_config_get_key_disable,
+    cxl_ide_test_config_get_key_support,
+    cxl_ide_test_config_get_key_check
   }
 };
 

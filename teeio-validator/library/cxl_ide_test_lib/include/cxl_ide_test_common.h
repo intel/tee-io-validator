@@ -111,6 +111,12 @@ bool cxl_ide_test_config_containment_disable(void *test_context);
 bool cxl_ide_test_config_containment_support(void *test_context);
 bool cxl_ide_test_config_containment_check(void *test_context);
 
+// get_key
+bool cxl_ide_test_config_get_key_enable(void *test_context);
+bool cxl_ide_test_config_get_key_disable(void *test_context);
+bool cxl_ide_test_config_get_key_support(void *test_context);
+bool cxl_ide_test_config_get_key_check(void *test_context);
+
 //
 // CXL_IDE Test Group
 //
