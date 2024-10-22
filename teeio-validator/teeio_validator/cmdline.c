@@ -37,6 +37,7 @@ extern TEEIO_DEBUG_LEVEL g_debug_level;
 extern bool g_libspdm_log;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
+extern bool g_teeio_fixed_key;
 
 bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category);
 
@@ -56,6 +57,7 @@ void print_usage()
   TEEIO_PRINT(("  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
   TEEIO_PRINT(("  -b <scan_bus>       : Bus number in hex format. For example 0x1a\n"));
   TEEIO_PRINT(("  -i <test_category>  : test category. For example pcie-ide, cxl-ide\n"));
+  TEEIO_PRINT(("  -k                  : Use fixed IDE Key for debug purpose.\n"));
   TEEIO_PRINT(("  -h                  : Display this usage\n"));
 }
 
@@ -89,7 +91,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   }
   TEEIO_PRINT(("%s\n", buf));
 
-  while ((opt = getopt(argc, argv, "f:t:c:s:l:i:b:h")) != -1) {
+  while ((opt = getopt(argc, argv, "f:t:c:s:l:i:b:kh")) != -1) {
       switch (opt) {
           case 'f':
               if(!validate_file_name(optarg)) {
@@ -142,6 +144,10 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
               TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -i parameter. %s\n", optarg));
               return false;
             }
+            break;
+
+        case 'k':
+            g_teeio_fixed_key = true;
             break;
 
           case 'h':
