@@ -6,6 +6,7 @@
 
 #include <stdlib.h>
 #include <ctype.h>
+#include <string.h>
 
 #include "assert.h"
 #include "hal/base.h"
@@ -20,6 +21,8 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "pcie_ide_test_lib.h"
+
+extern bool g_teeio_fixed_key;
 
 const char *k_set_names[] = {
     "KS0", "KS1"};
@@ -75,6 +78,7 @@ bool ide_km_key_prog(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr = 0;
     INTEL_KEYP_KEY_SLOT keys = {0};
     INTEL_KEYP_IV_SLOT iv = {0};
+    uint8_t fixed_key_byte = 0;
 
     uint8_t k_sets[] = {PCI_IDE_KM_KEY_SET_K0, PCI_IDE_KM_KEY_SET_K1};
     uint8_t directions[] = {PCI_IDE_KM_KEY_DIRECTION_RX, PCI_IDE_KM_KEY_DIRECTION_TX};
@@ -86,9 +90,19 @@ bool ide_km_key_prog(
     TEEIO_ASSERT(direction < PCIE_IDE_STREAM_DIRECTION_NUM);
     TEEIO_ASSERT(substream < PCIE_IDE_SUB_STREAM_NUM);
 
-    result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
-    if(!result) {
-      return false;
+    if(direction == PCIE_IDE_STREAM_RX) {
+      fixed_key_byte = TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE;
+    } else {
+      fixed_key_byte = TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE;
+    }
+
+    if(!g_teeio_fixed_key) {
+      result = libspdm_get_random_number(sizeof(key_buffer.key), (void *)key_buffer.key);
+      if(!result) {
+        return false;
+      }
+    } else {
+      memset(key_buffer.key, fixed_key_byte, sizeof(key_buffer.key));
     }
 
     key_buffer.iv[0] = 0;
