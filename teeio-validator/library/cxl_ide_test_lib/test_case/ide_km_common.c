@@ -25,6 +25,8 @@
 #include "cxl_ide_lib.h"
 #include "cxl_ide_test_common.h"
 
+extern bool g_teeio_fixed_key;
+
 void cxl_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, uint8_t *iv, int iv_size)
 {
   int i = 0;
@@ -47,33 +49,42 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
                                   void *spdm_context, const uint32_t *session_id,
                                   uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
                                   cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
-                                  bool key_iv_gen_capable
+                                  bool key_iv_gen_capable, uint8_t direction
                                   )
 {
   bool result = true;
   libspdm_return_t status;
 
-  if(key_iv_gen_capable) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "generate key/iv in device with cxl_ide_km_get_key.\n"));
-    status = cxl_ide_km_get_key(pci_doe_context, spdm_context, session_id,
-                                stream_id, key_sub_stream, port_index,
-                                key_buffer);
+  if(direction != CXL_IDE_STREAM_DIRECTION_TX && direction != CXL_IDE_STREAM_DIRECTION_RX) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid CXL Direction (%d)\n", direction));
+    return false;
+  }
 
-    if (LIBSPDM_STATUS_IS_ERROR(status)) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_get_key failed with status=0x%08x.\n", status));
-      result = false;
-    }
+  key_buffer->iv[0] = CXL_IDE_KM_KEY_SUB_STREAM_CXL<<24;
+  key_buffer->iv[1] = 0;
+  key_buffer->iv[2] = 1;
 
+  if(g_teeio_fixed_key) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate fixed key in rootport side.\n"));
+    memset(key_buffer->key, direction == CXL_IDE_STREAM_DIRECTION_RX ? TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE : TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE, sizeof(key_buffer->key));
   } else {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "generate key/iv in rootport side.\n"));
-    result = libspdm_get_random_number(sizeof(key_buffer->key), (void *)key_buffer->key);
+    if(key_iv_gen_capable) {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate key/iv in device with cxl_ide_km_get_key.\n"));
+      memset(key_buffer->iv, 0, sizeof(key_buffer->iv));
+      status = cxl_ide_km_get_key(pci_doe_context, spdm_context, session_id,
+                                  stream_id, key_sub_stream, port_index,
+                                  key_buffer);
 
-    if (!result) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number failed.\n"));
+      if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_get_key failed with status=0x%08x.\n", status));
+        result = false;
+      }
     } else {
-      key_buffer->iv[0] = CXL_IDE_KM_KEY_SUB_STREAM_CXL<<24;
-      key_buffer->iv[1] = 0;
-      key_buffer->iv[2] = 1;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate dynamic key/iv in rootport side.\n"));
+      result = libspdm_get_random_number(sizeof(key_buffer->key), (void *)key_buffer->key);
+      if (!result) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number failed.\n"));
+      }
     }
   }
 
@@ -152,6 +163,32 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dev_caps: ide_key_generation_capable=%d, iv_generation_capable=%d\n",
                                 dev_caps.ide_key_generation_capable, dev_caps.iv_generation_capable));
   bool key_iv_gen_capable = dev_caps.ide_key_generation_capable && dev_caps.iv_generation_capable;
+  bool get_key = config_bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_GET_KEY);
+
+  if(g_teeio_fixed_key) {
+    // Tester intends to set up CXL IDE stream with fixed key.
+    // So ignore key_iv_gen_capable and get_key.
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Test with fixed IDE Key.\n"));
+    key_iv_gen_capable = false;
+    get_key = false;
+  }
+
+  if(key_iv_gen_capable) {
+    // GET_KEY is supported by device.
+    // Check if cxl_get_key is set in [Configuratioin] setion.
+    if(!get_key) {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Disable CXL GET_KEY though it is supported.\n"));
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "To enable CXL GET_KEY set \"cxl_get_key\" in [Configuration] section.\n"));
+      key_iv_gen_capable = false;
+    }
+  } else {
+    // GET_KEY is not supported by device.
+    // If cxl_get_key is set in [Configuraition] section, it return false.
+    if(get_key) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "CXL GET_KEY is not supported.\n"));
+      return false;
+    }
+  }
 
   uint8_t cxl_ide_km_iv = key_iv_gen_capable ? CXL_IDE_KM_KEY_IV_INITIAL : CXL_IDE_KM_KEY_IV_DEFAULT;
 
@@ -159,7 +196,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   result = cxl_ide_generate_key(doe_context, spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
-                               &rx_key_buffer, key_iv_gen_capable);
+                               &rx_key_buffer, key_iv_gen_capable,
+                               CXL_IDE_KM_KEY_DIRECTION_RX
+                               );
   if (!result) {
     return false;
   }
@@ -167,7 +206,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   result = cxl_ide_generate_key(doe_context, spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
-                               &tx_key_buffer, key_iv_gen_capable);
+                               &tx_key_buffer, key_iv_gen_capable,
+                               CXL_IDE_KM_KEY_DIRECTION_TX
+                               );
   if (!result) {
     return false;
   }
