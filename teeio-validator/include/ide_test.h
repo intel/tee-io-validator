@@ -123,6 +123,9 @@ typedef enum {
 #define MAX_TEST_CASE_NUM \
   (MAX(IDE_COMMON_TEST_CASE_NUM, CXL_MEM_IDE_TEST_CASE_NUM))
 
+#define TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE 0x11
+#define TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE 0x22
+
 typedef struct
 {
   int id;

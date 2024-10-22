@@ -71,6 +71,7 @@ EntryName=EntryValue
 |aggregation|0/1|0|O||
 |selective_ide_for_configuration|0/1|0|O||
 |tee_limited_stream|0/1|0|O||
+|cxl_get_key|0/1|0|O|Generate keys by IDEKM GET_KEY when setting up CXL.memcache IDE Stream.|
 
 [TestSuite_x]
 |Entry|Value|Default|Mandatory|Comment|

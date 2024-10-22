@@ -33,6 +33,7 @@ SET(src_cxl_ide_test_lib
   test_config/test_config_skid.c
   test_config/test_config_pcrc.c
   test_config/test_config_ide_stop.c
+  test_config/test_config_get_key.c
   ## test groups
   test_group/test_group.c
   cxl_ide_common.c
