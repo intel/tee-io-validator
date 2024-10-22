@@ -53,6 +53,7 @@ void cxl_cfg_mem_enable(int fd, uint32_t ecap_offset, bool enable);
 void cxl_cfg_rp_link_enc_key_iv(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     CXL_IDE_STREAM_DIRECTION direction, // RX TX
+    bool program_iv,
     const uint8_t key_slot,             // key 0, 1, 2, 3
     uint8_t* key, uint32_t key_size,    // key
     uint8_t* iv, uint32_t iv_size       // iv vals
