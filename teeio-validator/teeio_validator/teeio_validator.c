@@ -24,6 +24,7 @@ int g_top_id = 0;
 int g_config_id = 0;
 char g_test_case[MAX_CASE_NAME_LENGTH] = {0};
 bool g_run_test_suite = true;
+bool g_teeio_fixed_key = false;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 bool g_libspdm_log = false;
