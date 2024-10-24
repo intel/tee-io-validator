@@ -191,12 +191,16 @@ bool initialize_kcbar_registers(
     const uint8_t rp_stream_index);
 
 /**
- * pre-allocate slot_ids
-*/
-bool pre_alloc_slot_ids(uint8_t rp_stream_index,
-    ide_key_set_t* k_set,
-    uint8_t num_rx_key_slots,
-    bool ide_key_refresh);
+ * This function is to find free key/iv slots for PCIE-IDE stream.
+ *
+ * There are 3 substreams (PR/NPR/CPL) in a PCIE-IDE stream. We assume
+ * the key/iv slots allocated for these substreams are continuous. For
+ * example, 0|1|2 or 3|4|5.
+ */
+bool pcie_ide_alloc_slot_ids(
+    ide_common_test_port_context_t* port_context,
+    uint8_t rp_stream_index,
+    ide_key_set_t* k_set);
 
 /**
  * enable rootport ide stream.
