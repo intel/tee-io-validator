@@ -55,12 +55,6 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
 
-  // by default slot_ids are not allocated for key_refresh.
-  // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->stream_cap.num_rx_key_slots, true)) {
-    return false;
-  }
-
   mKeySet = PCI_IDE_KM_KEY_SET_K0;
 
   // An ide_stream is first setup so that key_refresh can be tested in run.
@@ -129,7 +123,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
                               group_context->k_set, group_context->rp_stream_index,
-                              0, group_context->top->type, upper_port, lower_port, mKeySet, false);
+                              0, group_context->top->type, upper_port, lower_port, 0, false);
       if(!res) {
         break;
       }

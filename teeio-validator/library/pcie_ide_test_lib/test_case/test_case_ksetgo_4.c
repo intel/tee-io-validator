@@ -42,12 +42,6 @@ bool pcie_ide_test_ksetgo_4_setup(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->lower_port;
 
-  // by default slot_ids are not allocated for key_refresh.
-  // this case need to re-allocate slot_ids for key_refresh
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, upper_port->stream_cap.num_rx_key_slots, true)) {
-    return false;
-  }
-
   // first setup ide_stream for KS1 (skip ksetgo)
   bool res = setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K1,

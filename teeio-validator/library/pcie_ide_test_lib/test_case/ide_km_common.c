@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "assert.h"
 #include "hal/base.h"
@@ -437,6 +438,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
                     ide_common_test_port_context_t* lower_port,
                     uint8_t ks, bool skip_ksetgo)
 {
+    int cmd = 0;
     TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
     if(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
         ide_type = TEST_IDE_TYPE_LNK_IDE;
@@ -455,6 +457,25 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     }
 
     // step 2: program keys in rp/dev in RX/TX direction
+
+  // Before programming keys, we shall find empty key/iv slot
+  if(!pcie_ide_alloc_slot_ids(upper_port, rp_stream_index, k_set)) {
+    return false;
+  }
+
+  while(true) {
+    if(pcie_ide_alloc_slot_ids(upper_port, rp_stream_index, k_set)) {
+      break;
+    } else {
+      TEEIO_PRINT(("There is no empty key/iv slots for PCIE-IDE KeyRefresh.\n"));
+      TEEIO_PRINT(("Close other PCIE-IDE Streams and Press any other keys to try again.\n"));
+      TEEIO_PRINT(("Or press 'q' to quit the test.\n"));
+      cmd = getchar();
+      if(cmd == 'q' || cmd == 'Q') {
+        return false;
+      }
+    }
+  }
 
   bool result = ide_km_key_prog(doe_context, spdm_context, session_id,
                                 ks, PCIE_IDE_STREAM_RX, PCIE_IDE_SUB_STREAM_PR,

@@ -263,46 +263,103 @@ InitRootPortFail:
   return false;
 }
 
-bool pre_alloc_slot_ids(uint8_t rp_stream_index, ide_key_set_t* k_set, uint8_t num_rx_key_slots, bool ide_key_refresh)
+/**
+ * This function is to find free key/iv slots for PCIE-IDE stream.
+ *
+ * There are 3 substreams (PR/NPR/CPL) in a PCIE-IDE stream. We assume
+ * the key/iv slots allocated for these substreams are continuous. For
+ * example, 0|1|2 or 3|4|5.
+ */
+bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8_t rp_stream_index, ide_key_set_t* k_set)
 {
-  // pre-allocate the slot_ids
-  // if key_refresh is to be tested, then slot_ids are allocated like below:
-  // rp_stream_index      ks                 pr npr cpl
-  //  0,         0   tx/rx slot_ids: 0  1  2
-  //             1   tx/rx slot_ids: 3  4  5
-  //  1,         0   tx/rx slot_ids: 6  7  8
-  //             1   tx/rx slot_ids: 9 10 11
-  //
-  // if key_refresh is NOT tested, then slot_ids are allocated like below:
-  // rp_stream_index      ks                 pr npr cpl
-  //  0,         0   tx/rx slot_ids: 0  1  2
-  //  1,         0   tx/rx slot_ids: 3  4  5
-  //  2,         0   tx/rx slot_ids: 6  7  8
-  //  3,         0   tx/rx slot_ids: 9 10 11
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "pre_alloc_slot_ids. ide_key_refresh = %d\n", ide_key_refresh ? 1 : 0));
+  int i = 0;
+  bool found = false;
+  uint8_t key_iv_slot_usage_map = 0;
 
-  int ks_num = ide_key_refresh ? 2 : 1;
-  ide_key_set_t *key_set = NULL;
-  uint16_t slot_id = 0;
-  for (int ks = PCIE_IDE_STREAM_KS0; ks < ks_num; ks++)
-  {
-    key_set = &k_set[ks];
-    for (int substream = 0; substream < PCIE_IDE_SUB_STREAM_NUM; substream++)
-    {
-      slot_id = rp_stream_index * PCIE_IDE_SUB_STREAM_NUM * ks_num + ks * PCIE_IDE_SUB_STREAM_NUM + substream;
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Allocate kv/iv slot for %s. Its rp_stream_index is stream_%c\n", port_context->port->port_name, rp_stream_index + 'a'));
 
-      if (slot_id >= num_rx_key_slots + 1)
-      {
-        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pre_alloc_slot_ids failed because slot_id exceeds max rx/tx key_slots.\n"));
-        return false;
-      }
+  TEEIO_ASSERT(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
 
-      key_set->slot_id[PCIE_IDE_STREAM_RX][substream] = slot_id;
-      key_set->slot_id[PCIE_IDE_STREAM_TX][substream] = slot_id;
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to collect the used key/iv slots.\n"));
+
+  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
+  INTEL_KEYP_PCIE_STREAM_CAP stream_cap = { .raw = mmio_read_reg32(&kcbar->capabilities)};
+  int num_stream_supported = stream_cap.num_stream_supported + 1;
+  int num_key_iv_slots = stream_cap.num_tx_key_slots + 1;
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "num_stream_supported=%d, num_key_iv_slots=%d\n", num_stream_supported, num_key_iv_slots));
+  TEEIO_ASSERT(num_key_iv_slots % 3 == 0);
+
+  // We use key_iv_slot_usage_map to indicate the usage of key/iv slots.
+  // We assume PR/NPR/CPL substreams are allocated continuously. So 1 bit in key_iv_slot_usage_map represents 3 key/iv slots. 
+  // In the future if the supported key/iv slots exceeds key_iv_slot_usage_map, we will revisit here.
+  if(num_key_iv_slots > sizeof(key_iv_slot_usage_map) * 8 * 3) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "supported num_key_iv_slots (%d) exceeds key_iv_slot_usage_map (%d) and it shall be expanded.\n", num_key_iv_slots, sizeof(key_iv_slot_usage_map) * 8 * 3));
+    return false;
+  }
+
+  for(i = 0; i < num_stream_supported; i++) {
+    INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = &kcbar->stream_config_reg_block + i;
+    INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_%c:\n", 'a' + i));
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    stream_control: enable=%d, stream_id=%d\n", stream_ctrl.en, stream_ctrl.stream_id));
+    if(stream_ctrl.en == 0) {
+      continue;
+    }
+
+    INTEL_KEYP_STREAM_TXRX_CONTROL tx_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->tx_ctrl)};
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    tx_control    : key_set_select=%d, prime_key_set_0=%d, prime_key_set_1=%d\n",
+                                    tx_ctrl.stream_tx_control.key_set_select,
+                                    tx_ctrl.stream_tx_control.prime_key_set_0,
+                                    tx_ctrl.stream_tx_control.prime_key_set_1));
+
+    INTEL_KEYP_STREAM_KEYSET_SLOT_ID* keyset_ptr;
+    if(tx_ctrl.stream_tx_control.key_set_select == 1) {
+      keyset_ptr = &stream_config_reg_block->tx_key_set_0;
+    } else if(tx_ctrl.stream_tx_control.key_set_select == 2) {
+      keyset_ptr = &stream_config_reg_block->tx_key_set_1;
+    } else {
+      TEEIO_ASSERT(false);
+    }
+    INTEL_KEYP_STREAM_KEYSET_SLOT_ID keyset = {.raw = mmio_read_reg32(keyset_ptr)};
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    keyset_%d    : pr=%d, npr=%d, cpl=%d\n",
+                                    tx_ctrl.stream_tx_control.key_set_select - 1,
+                                    keyset.pr, keyset.npr, keyset.cpl));
+
+    TEEIO_ASSERT(keyset.pr < num_key_iv_slots);
+    TEEIO_ASSERT(keyset.pr % 3 == 0);
+    TEEIO_ASSERT(keyset.npr < num_key_iv_slots);
+    TEEIO_ASSERT(keyset.cpl < num_key_iv_slots);
+
+    key_iv_slot_usage_map = (1 << keyset.pr/3) | key_iv_slot_usage_map;
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key/iv slot usage: key_iv_slot_usage_map=%08x\n", key_iv_slot_usage_map));
+  for(i = 0; i < num_key_iv_slots / 3; i++) {
+    uint8_t key_iv_slot = (key_iv_slot_usage_map >> i) & 0x1;
+    // 0 indicates the slots are free, 1 indicates the slots are occupied.
+    if(key_iv_slot == 0) {
+      k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_PR] = i * 3;
+      k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_NPR] = i * 3 + 1;
+      k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_CPL] = i * 3 + 2;
+
+      k_set->slot_id[PCIE_IDE_STREAM_TX][PCIE_IDE_SUB_STREAM_PR] = i * 3;
+      k_set->slot_id[PCIE_IDE_STREAM_TX][PCIE_IDE_SUB_STREAM_NPR] = i * 3 + 1;
+      k_set->slot_id[PCIE_IDE_STREAM_TX][PCIE_IDE_SUB_STREAM_CPL] = i * 3 + 2;
+      found = true;
+      break;
     }
   }
 
-  return true;
+  if(found) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Find free key/iv slots: pr=%d, npr=%d, cpl=%d\n", i*3, i*3 + 1, i*3 + 2));
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to find free key/iv slots.\n"));
+  }
+
+  return found;
 }
 
 /**
@@ -578,9 +635,8 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
   dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
   dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 
-  // kset
-  // pre-allocate the slot_ids
-  if(!pre_alloc_slot_ids(group_context->rp_stream_index, group_context->k_set, port_context->stream_cap.num_rx_key_slots, false)) {
+  // allocate key/iv slots
+  if(!pcie_ide_alloc_slot_ids(port_context, group_context->rp_stream_index, group_context->k_set)) {
     goto InitHostFail;
   }
 
