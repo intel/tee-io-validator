@@ -49,7 +49,8 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
                                   void *spdm_context, const uint32_t *session_id,
                                   uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
                                   cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
-                                  bool key_iv_gen_capable, uint8_t direction
+                                  bool key_iv_gen_capable, uint8_t direction,
+                                  uint8_t *cxl_ide_km_iv
                                   )
 {
   bool result = true;
@@ -67,6 +68,7 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
   if(g_teeio_fixed_key) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate fixed key in rootport side.\n"));
     memset(key_buffer->key, direction == CXL_IDE_STREAM_DIRECTION_RX ? TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE : TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE, sizeof(key_buffer->key));
+    *cxl_ide_km_iv = CXL_IDE_KM_KEY_IV_DEFAULT;
   } else {
     if(key_iv_gen_capable) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate key/iv in device with cxl_ide_km_get_key.\n"));
@@ -79,12 +81,28 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_get_key failed with status=0x%08x.\n", status));
         result = false;
       }
+
+      *cxl_ide_km_iv = CXL_IDE_KM_KEY_IV_INITIAL;
+
+      // Check the first 4 bytes of IV returned in IDEKM GET_KEY
+      // In current stage, Intel Rootport requires it shall be [80 00 00 00]
+      if(key_buffer->iv[0] != CXL_IDE_KM_KEY_SUB_STREAM_CXL << 24) {
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "The first 4 bytes of IV returned from IDEKM GET_KEY is random value.\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "In current stage Intel Rootport requires it shall be [80 00 00 00].\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "It will fall back to use DEFAULT_IV.\n"));
+        *cxl_ide_km_iv = CXL_IDE_KM_KEY_IV_DEFAULT;
+        key_buffer->iv[0] = CXL_IDE_KM_KEY_SUB_STREAM_CXL<<24;
+        key_buffer->iv[1] = 0;
+        key_buffer->iv[2] = 1;
+      }
+
     } else {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate dynamic key/iv in rootport side.\n"));
       result = libspdm_get_random_number(sizeof(key_buffer->key), (void *)key_buffer->key);
       if (!result) {
         TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "libspdm_get_random_number failed.\n"));
       }
+      *cxl_ide_km_iv = CXL_IDE_KM_KEY_IV_DEFAULT;
     }
   }
 
@@ -190,14 +208,14 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     }
   }
 
-  uint8_t cxl_ide_km_iv = key_iv_gen_capable ? CXL_IDE_KM_KEY_IV_INITIAL : CXL_IDE_KM_KEY_IV_DEFAULT;
+  uint8_t cxl_ide_km_iv = 0;
 
   // generate cxl-ide key/iv for RX direction
   result = cxl_ide_generate_key(doe_context, spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
                                &rx_key_buffer, key_iv_gen_capable,
-                               CXL_IDE_KM_KEY_DIRECTION_RX
+                               CXL_IDE_KM_KEY_DIRECTION_RX, &cxl_ide_km_iv
                                );
   if (!result) {
     return false;
@@ -207,7 +225,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
                                &tx_key_buffer, key_iv_gen_capable,
-                               CXL_IDE_KM_KEY_DIRECTION_TX
+                               CXL_IDE_KM_KEY_DIRECTION_TX, &cxl_ide_km_iv
                                );
   if (!result) {
     return false;
