@@ -45,7 +45,7 @@ bool pcie_ide_test_ksetgo_4_setup(void *test_context)
   // first setup ide_stream for KS1 (skip ksetgo)
   bool res = setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K1,
-                          group_context->k_set, group_context->rp_stream_index,
+                          &group_context->k_set, group_context->rp_stream_index,
                           0, group_context->top->type, upper_port, lower_port, true);
   if(!res) {
     return false;
@@ -260,7 +260,7 @@ bool pcie_ide_test_ksetgo_4_run(void *test_context)
   // then switch to KS0 (skip ksetgo)
   res = ide_key_switch_to(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id,
-                          group_context->k_set, group_context->rp_stream_index,
+                          &group_context->k_set, group_context->rp_stream_index,
                           0, group_context->top->type, upper_port, lower_port,
                           PCIE_IDE_STREAM_KS0, true);
   if(!res) {

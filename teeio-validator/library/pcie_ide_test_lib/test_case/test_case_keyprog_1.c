@@ -221,7 +221,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -240,7 +240,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -259,7 +259,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -284,7 +284,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -303,7 +303,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
@@ -322,7 +322,7 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   // program key in root port kcbar registers
   pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  slot_id = group_context->k_set[ks].slot_id[direction][substream];
+  slot_id = group_context->k_set.slot_id[direction][substream];
   cfg_rootport_ide_keys(kcbar_ptr, group_context->rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
   pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
 
