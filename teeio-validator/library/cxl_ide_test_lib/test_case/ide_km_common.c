@@ -164,7 +164,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap)
+                          bool skip_ksetgo, uint32_t config_bitmap,
+                          bool set_link_enc_enable)
 {
   bool result;
   uint8_t kp_ack_status;
@@ -299,7 +300,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go RX\n"));
 
   // Set LinkEncEnable bit
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  if(set_link_enc_enable) {
+    cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  }
 
   // Set StartTrigger bit
   cxl_cfg_rp_start_trigger(kcbar_ptr, true);
@@ -320,9 +323,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
 
+  printf("cxl_setup_ide_stream is done.\n");
   dump_cxl_ide_status(upper_port, lower_port);
 
-  printf("cxl_setup_ide_stream is done. Press any key to continue.\n");
-  getchar();
   return true;
 }
