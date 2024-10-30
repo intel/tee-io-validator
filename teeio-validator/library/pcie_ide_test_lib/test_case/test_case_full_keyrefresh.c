@@ -60,7 +60,7 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
   // An ide_stream is first setup so that key_refresh can be tested in run.
   return setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, mKeySet,
-                          group_context->k_set, group_context->rp_stream_index,
+                          &group_context->k_set, group_context->rp_stream_index,
                           0, group_context->top->type, upper_port, lower_port, false);
 }
 
@@ -122,7 +122,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     } else {
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
-                              group_context->k_set, group_context->rp_stream_index,
+                              &group_context->k_set, group_context->rp_stream_index,
                               0, group_context->top->type, upper_port, lower_port, mKeySet, false);
       if(!res) {
         break;

@@ -39,7 +39,7 @@ bool pcie_ide_test_full_1_setup(void *test_context)
 
   return setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K0,
-                          group_context->k_set, group_context->rp_stream_index,
+                          &group_context->k_set, group_context->rp_stream_index,
                           0, group_context->top->type, upper_port, lower_port, false);
 
 }

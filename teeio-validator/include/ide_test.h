@@ -429,7 +429,7 @@ typedef struct {
 
   uint8_t stream_id;
   uint8_t rp_stream_index;
-  ide_key_set_t k_set[PCIE_IDE_STREAM_KS_NUM];
+  ide_key_set_t k_set;
 } pcie_ide_test_group_context_t;
 
 typedef struct {

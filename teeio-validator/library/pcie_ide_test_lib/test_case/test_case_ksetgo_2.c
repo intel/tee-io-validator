@@ -39,7 +39,7 @@ bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 
   return test_ksetgo_setup_common(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
     group_context->upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
-    group_context->upper_port.ide_id, group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
+    group_context->upper_port.ide_id, &group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
 }
 
 bool pcie_ide_test_ksetgo_2_run(void *test_context)

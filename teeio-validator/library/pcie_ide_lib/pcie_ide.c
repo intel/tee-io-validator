@@ -636,7 +636,7 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
   dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 
   // allocate key/iv slots
-  if(!pcie_ide_alloc_slot_ids(port_context, group_context->rp_stream_index, group_context->k_set)) {
+  if(!pcie_ide_alloc_slot_ids(port_context, group_context->rp_stream_index, &group_context->k_set)) {
     goto InitHostFail;
   }
 
