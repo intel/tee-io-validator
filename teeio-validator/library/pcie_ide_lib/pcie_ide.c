@@ -336,7 +336,7 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
     key_iv_slot_usage_map = (1 << keyset.pr/3) | key_iv_slot_usage_map;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key/iv slot usage: key_iv_slot_usage_map=%08x\n", key_iv_slot_usage_map));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key/iv slot usage: key_iv_slot_usage_map=%02x\n", key_iv_slot_usage_map));
   for(i = 0; i < num_key_iv_slots / 3; i++) {
     uint8_t key_iv_slot = (key_iv_slot_usage_map >> i) & 0x1;
     // 0 indicates the slots are free, 1 indicates the slots are occupied.
