@@ -132,7 +132,7 @@ bool ide_km_key_prog(
 
     // program key in root port kcbar registers
     pcie_construct_rp_keys(key_buffer.key, sizeof(key_buffer.key), keys.bytes, sizeof(keys.bytes));
-    slot_id = k_set[ks].slot_id[direction][substream];
+    slot_id = k_set->slot_id[direction][substream];
     cfg_rootport_ide_keys(kcbar_ptr, rp_stream_index, direction, ks, substream, slot_id, &keys, &iv);
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp key_prog %s|%s|%s - @key/iv slot[%02x]\n", k_set_names[ks], direction_names[direction], substream_names[substream], slot_id));
     pcie_dump_key_iv_in_rp(direction == PCIE_IDE_STREAM_RX ? "TX" : "RX", (uint8_t *)keys.bytes, sizeof(keys.bytes), (uint8_t *)iv.bytes, sizeof(iv.bytes));
@@ -459,10 +459,6 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
     // step 2: program keys in rp/dev in RX/TX direction
 
   // Before programming keys, we shall find empty key/iv slot
-  if(!pcie_ide_alloc_slot_ids(upper_port, rp_stream_index, k_set)) {
-    return false;
-  }
-
   while(true) {
     if(pcie_ide_alloc_slot_ids(upper_port, rp_stream_index, k_set)) {
       break;

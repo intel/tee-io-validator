@@ -123,7 +123,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
                               group_context->k_set, group_context->rp_stream_index,
-                              0, group_context->top->type, upper_port, lower_port, 0, false);
+                              0, group_context->top->type, upper_port, lower_port, mKeySet, false);
       if(!res) {
         break;
       }
