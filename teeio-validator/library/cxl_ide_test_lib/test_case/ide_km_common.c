@@ -56,7 +56,7 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
   bool result = true;
   libspdm_return_t status;
 
-  if(direction != CXL_IDE_STREAM_DIRECTION_TX && direction != CXL_IDE_STREAM_DIRECTION_RX) {
+  if(direction != CXL_IDE_KM_KEY_DIRECTION_RX && direction != CXL_IDE_KM_KEY_DIRECTION_TX) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid CXL Direction (%d)\n", direction));
     return false;
   }
@@ -67,7 +67,7 @@ static bool cxl_ide_generate_key(const void *pci_doe_context,
 
   if(g_teeio_fixed_key) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Generate fixed key in rootport side.\n"));
-    memset(key_buffer->key, direction == CXL_IDE_STREAM_DIRECTION_RX ? TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE : TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE, sizeof(key_buffer->key));
+    memset(key_buffer->key, direction == CXL_IDE_KM_KEY_DIRECTION_RX ? TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE : TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE, sizeof(key_buffer->key));
     *cxl_ide_km_iv = CXL_IDE_KM_KEY_IV_DEFAULT;
   } else {
     if(key_iv_gen_capable) {
