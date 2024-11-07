@@ -24,23 +24,7 @@
 
 static uint8_t mKeySet = 0;
 
-// bool setup_ide_stream(void* doe_context, void* spdm_context,
-//                                 uint32_t* session_id, uint8_t* kcbar_addr,
-//                                 uint8_t stream_id, uint8_t ks,
-//                                 ide_key_set_t* k_set, uint8_t rp_stream_index,
-//                                 uint8_t port_index, IDE_TEST_TOPOLOGY_TYPE top_type,
-//                                 ide_common_test_port_context_t* upper_port,
-//                                 ide_common_test_port_context_t* lower_port,
-//                                 bool skip_ksetgo);
-
-// // key switch to @ks
-// bool ide_key_switch_to(void* doe_context, void* spdm_context,
-//                     uint32_t* session_id, uint8_t* kcbar_addr,
-//                     uint8_t stream_id, ide_key_set_t* k_set, uint8_t rp_stream_index,
-//                     uint8_t port_index, IDE_TEST_TOPOLOGY_TYPE top_type,
-//                     ide_common_test_port_context_t* upper_port,
-//                     ide_common_test_port_context_t* lower_port,
-//                     uint8_t ks, bool skip_ksetgo);
+bool test_full_teardown_common(void *test_context, uint8_t ks);
 
 bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
 {
@@ -138,5 +122,5 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
 
 bool pcie_ide_test_full_keyrefresh_teardown(void *test_context)
 {
-  return true;
+  return test_full_teardown_common(test_context, mKeySet);
 }
