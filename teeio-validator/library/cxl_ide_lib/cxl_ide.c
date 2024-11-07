@@ -410,7 +410,9 @@ bool cxl_populate_memcache_reg_block(CXL_PRIV_DATA_MEMCACHE_REG_DATA* memcache_r
     return false;
   }
 
-  ptr = memcache_reg->mapped_memcache_reg_block + memcache_reg->cap_headers[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, cap);
+  // cache the pointer to CXL_IDE_CAPABILITY_STRUCT
+  memcache_reg->cxl_ide_capability_struct_ptr = memcache_reg->mapped_memcache_reg_block + memcache_reg->cap_headers[i].pointer;
+  ptr = memcache_reg->cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, cap);
   memcache_reg->ide_cap.raw = mmio_read_reg32(ptr);
 
   return true; 
@@ -558,6 +560,18 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
   CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ptr)};
 
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
+  CXL_KEY_REFRESH_TIME_CAPABILITY key_refresh_time_cap = {.raw = mmio_read_reg32(ptr)};
+
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_capability);
+  CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY truncation_transmit_delay_cap = {.raw = mmio_read_reg32(ptr)};
+
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_control);
+  CXL_KEY_REFRESH_TIME_CONTROL key_refresh_time_ctrl = {.raw = mmio_read_reg32(ptr)};
+
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_control);
+  CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL truncation_transmit_delay_ctrl = {.raw = mmio_read_reg32(ptr)};
+
   // CXL_IDE_ERROR_STATUS error_status;
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
   CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
@@ -573,6 +587,12 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_control = 0x%08x\n", ide_control.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    pcrc_disable=%d, ide_stop_enable=%d\n",
                                   ide_control.pcrc_disable, ide_control.ide_stop_enable));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  key_refresh_time_cap.rx_min_key_refresh_time = 0x%08x\n", key_refresh_time_cap.rx_min_key_refresh_time));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  key_refresh_time_ctrl.tx_key_refresh_time    = 0x%08x\n", key_refresh_time_ctrl.tx_key_refresh_time));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  truncation_transmit_delay_cap.rx_min_truncation_transmit_delay = 0x%08x\n", truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  truncation_transmit_delay_ctrl.tx_truncation_transmit_delay    = 0x%08x\n", truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_status = 0x%08x\n", ide_status.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_ide_status=0x%02x, tx_ide_status=0x%02x\n",
@@ -878,3 +898,100 @@ void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap)
                                     cap.multiple_logical_device, cap.viral_capable, cap.pm_init_completion_reporting_capable));
 }
 
+bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_port, ide_common_test_port_context_t* dev_port)
+{
+  uint8_t* host_ptr;
+  uint8_t* dev_ptr;
+
+  uint8_t *host_cxl_ide_capability_struct_ptr = host_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
+  uint8_t *dev_cxl_ide_capability_struct_ptr = dev_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
+
+  if(host_cxl_ide_capability_struct_ptr == NULL || dev_cxl_ide_capability_struct_ptr == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pointer to cxl_ide_capability_struct_ptr is NULL(host:%llx, dev:%llx)!\n",
+                                    (uint64_t)host_cxl_ide_capability_struct_ptr,
+                                    (uint64_t)dev_cxl_ide_capability_struct_ptr));
+    return false;
+  }
+
+  // Check Key Refresh Time Control in Host side
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Key Refresh Time Control in Host side\n"));
+  dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
+  host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_control);
+
+  CXL_KEY_REFRESH_TIME_CAPABILITY dev_key_refresh_time_cap = {.raw = mmio_read_reg32(dev_ptr)};
+  CXL_KEY_REFRESH_TIME_CONTROL host_key_refresh_time_ctrl = {.raw = mmio_read_reg32(host_ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_KEY_REFRESH_TIME_CAPABILITY.rx_min_key_refresh_time = 0x%x\n", dev_key_refresh_time_cap.rx_min_key_refresh_time));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_KEY_REFRESH_TIME_CONTROL.tx_key_refresh_time        = 0x%x\n", host_key_refresh_time_ctrl.tx_key_refresh_time));
+
+  if(host_key_refresh_time_ctrl.tx_key_refresh_time < dev_key_refresh_time_cap.rx_min_key_refresh_time) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Host CXL_KEY_REFRESH_TIME_CONTROL.tx_key_refresh_time as 0x%x\n", dev_key_refresh_time_cap.rx_min_key_refresh_time));
+    mmio_write_reg32(host_ptr, dev_key_refresh_time_cap.rx_min_key_refresh_time);
+  }
+
+  // Check Key Refresh Time Control in Device side
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Key Refresh Time Control in Device side\n"));
+  host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
+  dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_control);
+
+  CXL_KEY_REFRESH_TIME_CAPABILITY host_key_refresh_time_cap = {.raw = mmio_read_reg32(host_ptr)};
+  CXL_KEY_REFRESH_TIME_CONTROL dev_key_refresh_time_ctrl = {.raw = mmio_read_reg32(dev_ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_KEY_REFRESH_TIME_CAPABILITY.rx_min_key_refresh_time = 0x%x\n", host_key_refresh_time_cap.rx_min_key_refresh_time));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_KEY_REFRESH_TIME_CONTROL.tx_key_refresh_time        = 0x%x\n", dev_key_refresh_time_ctrl.tx_key_refresh_time));
+
+  if(dev_key_refresh_time_ctrl.tx_key_refresh_time < host_key_refresh_time_cap.rx_min_key_refresh_time) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Device CXL_KEY_REFRESH_TIME_CONTROL.tx_key_refresh_time as 0x%x\n", host_key_refresh_time_cap.rx_min_key_refresh_time));
+    mmio_write_reg32(dev_ptr, host_key_refresh_time_cap.rx_min_key_refresh_time);
+  }
+
+  return true;
+}
+
+bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t* host_port, ide_common_test_port_context_t* dev_port)
+{
+  uint8_t* host_ptr;
+  uint8_t* dev_ptr;
+
+  uint8_t *host_cxl_ide_capability_struct_ptr = host_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
+  uint8_t *dev_cxl_ide_capability_struct_ptr = dev_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
+
+  if(host_cxl_ide_capability_struct_ptr == NULL || dev_cxl_ide_capability_struct_ptr == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pointer to cxl_ide_capability_struct_ptr is NULL!\n"));
+    return false;
+  }
+
+  // Truncation Transmit Delay Control in Host side
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Truncation Transmit Delay Control in Host side\n"));
+  dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_capability);
+  host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_control);
+
+  CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY dev_truncation_transmit_delay_cap = {.raw = mmio_read_reg32(dev_ptr)};
+  CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL host_truncation_transmit_delay_ctrl = {.raw = mmio_read_reg32(host_ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay = 0x%x\n", dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay        = 0x%x\n", host_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
+
+  if(host_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Host CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+    mmio_write_reg32(host_ptr, dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay);
+  }
+
+  // Truncation Transmit Delay Control in Device side
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Truncation Transmit Delay Control in Device side\n"));
+  host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_capability);
+  dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_control);
+
+  CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY host_truncation_transmit_delay_cap = {.raw = mmio_read_reg32(host_ptr)};
+  CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL dev_truncation_transmit_delay_ctrl = {.raw = mmio_read_reg32(dev_ptr)};
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay = 0x%x\n", host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay        = 0x%x\n", dev_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
+
+  if(dev_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Device CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+    mmio_write_reg32(dev_ptr, host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay);
+  }
+
+  return true;
+}

@@ -82,6 +82,7 @@ typedef struct {
   CXL_CAPABILITY_XXX_HEADER cap_headers[CXL_CAPABILITY_ID_NUM];
   int cap_headers_cnt;
 
+  uint8_t* cxl_ide_capability_struct_ptr;   // Pointer to CXL_IDE_CAPABILITY_STRUCT in memcache_reg_block
   CXL_IDE_CAPABILITY ide_cap;
 } CXL_PRIV_DATA_MEMCACHE_REG_DATA;
 
