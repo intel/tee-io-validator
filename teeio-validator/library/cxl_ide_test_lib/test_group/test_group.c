@@ -173,6 +173,16 @@ static bool common_test_group_setup(void *test_context)
     return false;
   }
 
+  // set KeyRefreshControl and Truncation transmit control registers
+  if(!cxl_ide_set_key_refresh_control_reg(&context->upper_port, &context->lower_port)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to set Key Refresh Control registers in host/dev side.\n"));
+    return false;
+  }
+  if(!cxl_ide_set_truncation_transmit_control_reg(&context->upper_port, &context->lower_port)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to set Truncation transmit registers in host/dev side.\n"));
+    return false;
+  }
+
   // init spdm_context
   void *spdm_context = spdm_client_init();
   TEEIO_ASSERT(spdm_context != NULL);
