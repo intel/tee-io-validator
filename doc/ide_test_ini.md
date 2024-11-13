@@ -49,11 +49,21 @@ EntryName=EntryValue
 |------|------|------|------|------|
 |port_y|dev/func string||M|For example 00.0. **y** in [1, 16]|
 
+**TEE-IO Device Validation Utility** supports multiple test categories.
+- [PCIE-IDE Test](../doc/ide_test/)
+- [CXL-IDE Test](../doc/cxl_ide_test/)
+
+Settings of **Topology** / **Configuration** / **TestSuite** are different.
+
+- [PCIE-IDE Section settings](#pcie-ide-section-settings)
+- [CXL-IDE Section settings](#cxl-ide-section-settings)
+
+### PCIE-IDE Section settings
 [Topology_x]
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
-|connection|string||M|available values are: **direct, switch, peer2peer**|
+|connection|string||M|available values are: **direct, switch**|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
 |path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
@@ -63,7 +73,7 @@ EntryName=EntryValue
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 |type|string||M|available values are **selective_ide, link_ide, selective_and_link_ide**|
-|category|string|pcie-ide|O|Test category. Available values are: **pcie-ide**|
+|category|string|pcie-ide|O|must be **pcie-ide**|
 |default|0/1|1|O||
 |switch|0/1|0|O||
 |partial_header_encryption|0/1|0|O||
@@ -71,13 +81,12 @@ EntryName=EntryValue
 |aggregation|0/1|0|O||
 |selective_ide_for_configuration|0/1|0|O||
 |tee_limited_stream|0/1|0|O||
-|cxl_get_key|0/1|0|O|Generate keys by IDEKM GET_KEY when setting up CXL.memcache IDE Stream.|
 
 [TestSuite_x]
 |Entry|Value|Default|Mandatory|Comment|
 |------|------|------|------|------|
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
-|category|string|pcie-ide|O|Test category. Available values are: **pcie-ide**|
+|category|string|pcie-ide|O|must be **pcie-ide**|
 |topology|number||M|Topology_x|
 |configuration|number||M|Configuration_x|
 |query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Query.md](../doc/ide_test/IdeKmTestCase/1.Query.md)|
@@ -85,3 +94,39 @@ EntryName=EntryValue
 |KSetGo|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetGo.md](../doc/ide_test/IdeKmTestCase/3.KSetGo.md)|
 |KSetStop|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KSetStop.md](../doc/ide_test/IdeKmTestCase/4.KSetStop.md)|
 |SpdmSession|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [SpdmSession.md](../doc/ide_test/IdeKmTestCase/5.SpdmSession.md)|
+
+### CXL-IDE Section settings
+[Topology_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|connection|string||M|available values are: **direct, switch**|
+|bus|hex||M|The bus which rootport is connected to. For example 0x1a|
+|path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
+|path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
+|stream_id|number|0|O|it shall always be **0**|
+
+[Configration_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|category|string||M|must be **cxl-ide**|
+|default|0/1|1|O||
+|pcrc|0/1|0|O||
+|ide_stop|0/1|0|O||
+|skid_mode|0/1|0|O||
+|containment_mode|0/1|0|O||
+|cxl_get_key|0/1|0|O|Generate keys by IDEKM GET_KEY when setting up CXL.memcache IDE Stream.|
+
+[TestSuite_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|category|string||M|must be **cxl-ide**|
+|topology|number||M|Topology_x|
+|configuration|number||M|Configuration_x|
+|query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [CxlQuery.md](../doc/cxl_ide_test/CxlIdeKmTestCase/1.CxlQuery.md)|
+|KeyProg|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [CxlKeyProg.md](../doc/cxl_ide_test/CxlIdeKmTestCase/2.CxlKeyProg.md)|
+|KSetGo|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlKSetGo.md](../doc/cxl_ide_test/CxlIdeKmTestCase/3.CxlKSetGo.md)|
+|KSetStop|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlKSetStop.md](../doc/cxl_ide_test/CxlIdeKmTestCase/4.CxlKSetStop.md)|
+|GetKey|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlGetKey.md](../doc/cxl_ide_test/CxlIdeKmTestCase/5.CxlGetKey.md)|
