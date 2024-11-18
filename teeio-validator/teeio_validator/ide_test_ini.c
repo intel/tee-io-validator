@@ -65,7 +65,8 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
 
 const char *TEEIO_TEST_CATEGORY_NAMES[] = {
     "pcie-ide",
-    "cxl-ide"
+    "cxl-ide",
+    "cxl-tsp"
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
