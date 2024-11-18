@@ -165,21 +165,21 @@ bool pcie_ide_test_query_1_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
   uint8_t port_index = 0;
-  uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);
-  uint8_t bus = group_context->lower_port.port->bus;
+  uint8_t dev_func = ((group_context->common.lower_port.port->device & 0x1f) << 3) | (group_context->common.lower_port.port->function & 0x7);
+  uint8_t bus = group_context->common.lower_port.port->bus;
   uint8_t segment = 0;
   uint8_t max_port_index = 0;
   uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
   uint32_t ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
 
-  libspdm_return_t status = test_pci_ide_km_query(group_context->doe_context,
-                                                  group_context->spdm_context,
-                                                  &group_context->session_id,
+  libspdm_return_t status = test_pci_ide_km_query(group_context->spdm_doe.doe_context,
+                                                  group_context->spdm_doe.spdm_context,
+                                                  &group_context->spdm_doe.session_id,
                                                   port_index, &dev_func, &bus, &segment,
                                                   &max_port_index, ide_reg_block, &ide_reg_block_count,
                                                   true, "Assertion 1.1");
@@ -203,20 +203,20 @@ bool pcie_ide_test_query_2_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
   uint8_t port_index = 0;
-  uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);
-  uint8_t bus = group_context->lower_port.port->bus;
+  uint8_t dev_func = ((group_context->common.lower_port.port->device & 0x1f) << 3) | (group_context->common.lower_port.port->function & 0x7);
+  uint8_t bus = group_context->common.lower_port.port->bus;
   uint8_t segment = 0;
   uint8_t max_port_index = 0;
   uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
   uint32_t ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
 
-  libspdm_return_t status = test_pci_ide_km_query(group_context->doe_context,
-                                                  group_context->spdm_context, &group_context->session_id,
+  libspdm_return_t status = test_pci_ide_km_query(group_context->spdm_doe.doe_context,
+                                                  group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                                                   port_index, &dev_func, &bus, &segment,
                                                   &max_port_index, ide_reg_block, &ide_reg_block_count,
                                                   false, "");
@@ -245,21 +245,21 @@ bool pcie_ide_test_query_2_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
   uint8_t port_index = mMaxPortIndex;
-  uint8_t dev_func = ((group_context->lower_port.port->device & 0x1f) << 3) | (group_context->lower_port.port->function & 0x7);
-  uint8_t bus = group_context->lower_port.port->bus;
+  uint8_t dev_func = ((group_context->common.lower_port.port->device & 0x1f) << 3) | (group_context->common.lower_port.port->function & 0x7);
+  uint8_t bus = group_context->common.lower_port.port->bus;
   uint8_t segment = 0;
   uint8_t max_port_index = 0;
   uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
   uint32_t ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
 
-  libspdm_return_t status = test_pci_ide_km_query(group_context->doe_context,
-                                                  group_context->spdm_context,
-                                                  &group_context->session_id,
+  libspdm_return_t status = test_pci_ide_km_query(group_context->spdm_doe.doe_context,
+                                                  group_context->spdm_doe.spdm_context,
+                                                  &group_context->spdm_doe.session_id,
                                                   port_index, &dev_func, &bus, &segment,
                                                   &max_port_index, ide_reg_block, &ide_reg_block_count,
                                                   true, "Assertion 2.1");

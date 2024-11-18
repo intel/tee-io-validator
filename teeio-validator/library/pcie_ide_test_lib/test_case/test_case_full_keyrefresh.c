@@ -34,18 +34,18 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   mKeySet = PCI_IDE_KM_KEY_SET_K0;
 
   // An ide_stream is first setup so that key_refresh can be tested in run.
-  return setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
+  return setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, mKeySet,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->top->type, upper_port, lower_port, false);
+                          0, group_context->common.top->type, upper_port, lower_port, false);
 }
 
 bool pcie_ide_test_full_keyrefresh_run(void *test_context)
@@ -56,22 +56,22 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
-  void *doe_context = group_context->doe_context;
-  void *spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void *doe_context = group_context->spdm_doe.doe_context;
+  void *spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
-  if (group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
+  if (group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
   {
     ide_type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
   }
-  else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
+  else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
@@ -83,18 +83,18 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     TEEIO_PRINT(("\n"));
     TEEIO_PRINT(("Current KeySet=%d. Check the registers below.\n", mKeySet));
     TEEIO_PRINT(("Print host registers.\n"));
-    dump_rootport_registers(group_context->upper_port.mapped_kcbar_addr,
+    dump_rootport_registers(group_context->common.upper_port.mapped_kcbar_addr,
                       group_context->rp_stream_index,
-                      group_context->upper_port.cfg_space_fd,
-                      group_context->upper_port.ide_id,
-                      group_context->upper_port.ecap_offset,
+                      group_context->common.upper_port.cfg_space_fd,
+                      group_context->common.upper_port.ide_id,
+                      group_context->common.upper_port.ecap_offset,
                       ide_type);
 
     TEEIO_PRINT(("\n"));
     TEEIO_PRINT(("Print device registers.\n"));
-    dump_dev_registers(group_context->lower_port.cfg_space_fd,
-                      group_context->lower_port.ide_id,
-                      group_context->lower_port.ecap_offset,
+    dump_dev_registers(group_context->common.lower_port.cfg_space_fd,
+                      group_context->common.lower_port.ide_id,
+                      group_context->common.lower_port.ecap_offset,
                       ide_type);
 
     mKeySet = mKeySet == PCI_IDE_KM_KEY_SET_K0 ? PCI_IDE_KM_KEY_SET_K1 : PCI_IDE_KM_KEY_SET_K0;
@@ -107,7 +107,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
                               &group_context->k_set, group_context->rp_stream_index,
-                              0, group_context->top->type, upper_port, lower_port, mKeySet, false);
+                              0, group_context->common.top->type, upper_port, lower_port, mKeySet, false);
       if(!res) {
         break;
       }

@@ -27,17 +27,17 @@ bool cxl_scan_devices(void *test_context)
 {
   bool ret = false;
   cxl_ide_test_group_context_t *context = (cxl_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
 
-  TEEIO_ASSERT(context->suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
+  TEEIO_ASSERT(context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
-  ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn1, context->top->bus);
+  ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->bus);
   if(ret) {
-    context->upper_port.port->bus = context->root_port.port->bus;
-    strncpy(context->upper_port.port->bdf, context->root_port.port->bdf, BDF_LENGTH);
+    context->common.upper_port.port->bus = context->common.root_port.port->bus;
+    strncpy(context->common.upper_port.port->bdf, context->common.root_port.port->bdf, BDF_LENGTH);
   }
 
   return ret;
@@ -89,9 +89,9 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   // query
   caps.raw = 0;
   ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
-  status = cxl_ide_km_query(group_context->doe_context,
-                            group_context->spdm_context,
-                            &group_context->session_id,
+  status = cxl_ide_km_query(group_context->spdm_doe.doe_context,
+                            group_context->spdm_doe.spdm_context,
+                            &group_context->spdm_doe.session_id,
                             0, // port_index
                             &dev_func_num,
                             &bus_num,
@@ -121,8 +121,8 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   // check CXL IDE Capability at offset 00h
   TEEIO_ASSERT(ide_reg_block_count > 1);
   CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  group_context->lower_port.cxl_data.memcache.ide_cap.raw = ide_cap.raw;
-  CXL_PRIV_DATA *cxl_data = &group_context->lower_port.cxl_data;
+  group_context->common.lower_port.cxl_data.memcache.ide_cap.raw = ide_cap.raw;
+  CXL_PRIV_DATA *cxl_data = &group_context->common.lower_port.cxl_data;
   cxl_data->memcache.ide_cap.raw = ide_cap.raw;
   cxl_data->query_resp.bus_num = bus_num;
   cxl_data->query_resp.dev_func_num = dev_func_num;
@@ -147,7 +147,7 @@ static bool common_test_group_setup(void *test_context)
   bool ret = false;
 
   cxl_ide_test_group_context_t *context = (cxl_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup start\n"));
 
@@ -164,7 +164,7 @@ static bool common_test_group_setup(void *test_context)
     return false;
   }
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
   ret = cxl_init_root_port(context);
@@ -174,11 +174,11 @@ static bool common_test_group_setup(void *test_context)
   }
 
   // set KeyRefreshControl and Truncation transmit control registers
-  if(!cxl_ide_set_key_refresh_control_reg(&context->upper_port, &context->lower_port)) {
+  if(!cxl_ide_set_key_refresh_control_reg(&context->common.upper_port, &context->common.lower_port)) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to set Key Refresh Control registers in host/dev side.\n"));
     return false;
   }
-  if(!cxl_ide_set_truncation_transmit_control_reg(&context->upper_port, &context->lower_port)) {
+  if(!cxl_ide_set_truncation_transmit_control_reg(&context->common.upper_port, &context->common.lower_port)) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to set Truncation transmit registers in host/dev side.\n"));
     return false;
   }
@@ -195,8 +195,8 @@ static bool common_test_group_setup(void *test_context)
     return false;
   }
 
-  context->spdm_context = spdm_context;
-  context->session_id = session_id;
+  context->spdm_doe.spdm_context = spdm_context;
+  context->spdm_doe.session_id = session_id;
 
   // cxl query is called in group_setup
   if(!cxl_ide_query(context)) {
@@ -214,21 +214,21 @@ static bool common_test_group_setup(void *test_context)
 static bool common_test_group_teardown(void *test_context)
 {
   cxl_ide_test_group_context_t *context = (cxl_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   // close spdm_session and free spdm_context
-  if(context->spdm_context != NULL) {
-    spdm_stop(context->spdm_context, context->session_id);
-    free(context->spdm_context);
-    context->spdm_context = NULL;
-    context->session_id = 0;
+  if(context->spdm_doe.spdm_context != NULL) {
+    spdm_stop(context->spdm_doe.spdm_context, context->spdm_doe.session_id);
+    free(context->spdm_doe.spdm_context);
+    context->spdm_doe.spdm_context = NULL;
+    context->spdm_doe.session_id = 0;
   }
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
   // close ports
-  cxl_close_dev_port(&context->lower_port, top->type);
+  cxl_close_dev_port(&context->common.lower_port, top->type);
   cxl_close_root_port(context);
 
   return true;

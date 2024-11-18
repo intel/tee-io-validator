@@ -34,9 +34,9 @@ bool cxl_ide_test_config_get_key_support(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   cxl_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  CXL_PRIV_DATA* ep_cxl_data = &group_context->lower_port.cxl_data;
+  CXL_PRIV_DATA* ep_cxl_data = &group_context->common.lower_port.cxl_data;
 
   CXL_QUERY_RESP_CAPS dev_caps = {.raw = ep_cxl_data->query_resp.caps};
 

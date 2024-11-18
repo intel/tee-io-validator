@@ -409,23 +409,14 @@ typedef struct {
 } teeio_common_test_group_context_t;
 
 typedef struct {
-  // start of common part of test_group_context
-  uint32_t signature;
-  ide_common_test_suite_context_t *suite_context;
-  IDE_TEST_TOPOLOGY *top;
-  int config_id;
-
-  ide_common_test_port_context_t root_port;
-  ide_common_test_port_context_t upper_port;
-  ide_common_test_port_context_t lower_port;
-
-  ide_common_test_switch_internal_conn_context_t* sw_conn1;
-  ide_common_test_switch_internal_conn_context_t* sw_conn2;
-  // end of common part of test_group_context
-
   void *spdm_context;
   uint32_t session_id;
   void *doe_context;
+} spdm_doe_context_t;
+
+typedef struct {
+  teeio_common_test_group_context_t common;
+  spdm_doe_context_t spdm_doe;
 
   uint8_t stream_id;
   uint8_t rp_stream_index;
@@ -433,27 +424,11 @@ typedef struct {
 } pcie_ide_test_group_context_t;
 
 typedef struct {
-  // start of common part of test_group_context
-  uint32_t signature;
-  ide_common_test_suite_context_t *suite_context;
-  IDE_TEST_TOPOLOGY *top;
-  int config_id;
+  teeio_common_test_group_context_t common;
 
-  ide_common_test_port_context_t root_port;
-  ide_common_test_port_context_t upper_port;
-  ide_common_test_port_context_t lower_port;
-
-  ide_common_test_switch_internal_conn_context_t* sw_conn1;
-  ide_common_test_switch_internal_conn_context_t* sw_conn2;
-  // end of common part of test_group_context
-
-  void *spdm_context;
-  uint32_t session_id;
-  void *doe_context;
+  spdm_doe_context_t spdm_doe;
 
   uint8_t stream_id;
-  uint8_t rp_stream_index;
-  ide_key_set_t k_set[PCIE_IDE_STREAM_KS_NUM];
 } cxl_ide_test_group_context_t;
 
 typedef struct {

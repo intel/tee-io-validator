@@ -31,25 +31,25 @@ bool pcie_ide_test_ksetstop_3_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   // first setup ide_stream for KS0
-  bool res = setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
+  bool res = setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K0,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->top->type, upper_port, lower_port, false);
+                          0, group_context->common.top->type, upper_port, lower_port, false);
   if(!res) {
     return false;
   }
 
   // then switch to KS1
-  res = ide_key_switch_to(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
+  res = ide_key_switch_to(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->top->type, upper_port, lower_port, PCIE_IDE_STREAM_KS1, false);
+                          0, group_context->common.top->type, upper_port, lower_port, PCIE_IDE_STREAM_KS1, false);
 
   return res;
 }
@@ -62,12 +62,12 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
-  IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
+  IDE_TEST_TOPOLOGY_TYPE top_type = group_context->common.top->type;
 
   // disable dev ide
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
@@ -88,9 +88,9 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
                          upper_port->mapped_kcbar_addr,
                          group_context->rp_stream_index, false);
 
-  void* doe_context = group_context->doe_context;
-  void* spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void* doe_context = group_context->spdm_doe.doe_context;
+  void* spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
   uint8_t stream_id = group_context->stream_id;
   uint8_t port_index = 0;
   bool res = false;

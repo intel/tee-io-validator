@@ -125,9 +125,9 @@ bool pcie_ide_test_keyprog_3_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
   bool res = test_keyprog_setup_common(test_context);
   if(res) {
@@ -150,12 +150,12 @@ bool pcie_ide_test_keyprog_3_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
-  void *doe_context = group_context->doe_context;
-  void *spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void *doe_context = group_context->spdm_doe.doe_context;
+  void *spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
 
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer;
   uint8_t kp_ack_status;

@@ -533,7 +533,7 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_case_result_t
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   TEEIO_PRINT(("     Run %s\n", test_case->name));
 

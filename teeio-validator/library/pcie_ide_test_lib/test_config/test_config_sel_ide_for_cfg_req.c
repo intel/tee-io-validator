@@ -35,19 +35,19 @@ static bool test_config_set_sel_ide_for_cfg_req(void* test_context, bool enable)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);
+  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->common.top->type);
 
   // enable cfg_sel_ide bit in upper port and lower port
-  ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  ide_common_test_port_context_t* port_context = &group_context->common.upper_port;
   set_sel_ide_for_cfg_req_in_ecap(port_context->cfg_space_fd,
                           ide_type,
                           port_context->ide_id,
                           port_context->ecap_offset,
                           enable);
 
-  port_context = &group_context->lower_port;
+  port_context = &group_context->common.lower_port;
   set_sel_ide_for_cfg_req_in_ecap(port_context->cfg_space_fd,
                           ide_type,
                           port_context->ide_id,
@@ -66,16 +66,16 @@ static bool test_config_check_sel_ide_for_cfg_req_support(void* test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);
+  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->common.top->type);
   if(ide_type != TEST_IDE_TYPE_SEL_IDE) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "\"%s\" is not avaible in %s\n", m_config_name, m_ide_type_name[ide_type]));
     return false;    
   }
 
-  PCIE_IDE_CAP *upper_cap = &group_context->upper_port.ide_cap;
-  PCIE_IDE_CAP *lower_cap = &group_context->lower_port.ide_cap;
+  PCIE_IDE_CAP *upper_cap = &group_context->common.upper_port.ide_cap;
+  PCIE_IDE_CAP *lower_cap = &group_context->common.lower_port.ide_cap;
   bool supported = upper_cap->sel_ide_cfg_req_supported && lower_cap->sel_ide_cfg_req_supported;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s is %s.\n", m_config_name, supported ? "supported" : "NOT supported"));
   return supported;
@@ -103,18 +103,18 @@ bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->top->type);
+  TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->common.top->type);
   TEEIO_ASSERT(ide_type == TEST_IDE_TYPE_SEL_IDE);
 
-  ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  ide_common_test_port_context_t* port_context = &group_context->common.upper_port;
   uint32_t data1 =read_ide_stream_ctrl_in_ecap(port_context->cfg_space_fd,
                           ide_type,
                           port_context->ide_id,
                           port_context->ecap_offset);
 
-  port_context = &group_context->lower_port;
+  port_context = &group_context->common.lower_port;
   uint32_t data2 = read_ide_stream_ctrl_in_ecap(port_context->cfg_space_fd,
                           ide_type,
                           port_context->ide_id,
