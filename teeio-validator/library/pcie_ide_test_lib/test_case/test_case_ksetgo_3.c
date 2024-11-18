@@ -37,16 +37,16 @@ bool pcie_ide_test_ksetgo_3_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   // first setup ide_stream for KS0 (skip ksetgo)
-  bool res = setup_ide_stream(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
+  bool res = setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K0,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->top->type,
+                          0, group_context->common.top->type,
                           upper_port, lower_port, true);
   if(!res) {
     return false;
@@ -239,30 +239,30 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
-  void *doe_context = group_context->doe_context;
-  void *spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void *doe_context = group_context->spdm_doe.doe_context;
+  void *spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
 
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   // phase 1
   res = test_ksetgo_3_run_phase1(doe_context, spdm_context, &session_id,
                                 stream_id, group_context->rp_stream_index,
-                                upper_port->mapped_kcbar_addr, group_context->top->type,
+                                upper_port->mapped_kcbar_addr, group_context->common.top->type,
                                 upper_port, lower_port);
   if(!res) {
     goto Done;
   }
 
   // then switch to KS1 (skip ksetgo)
-  res = ide_key_switch_to(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
+  res = ide_key_switch_to(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->top->type, upper_port, lower_port, PCIE_IDE_STREAM_KS1, true);
+                          0, group_context->common.top->type, upper_port, lower_port, PCIE_IDE_STREAM_KS1, true);
   if(!res) {
     goto Done;
   }
@@ -270,7 +270,7 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
   // phase 2
   res = test_ksetgo_3_run_phase2(doe_context, spdm_context, &session_id,
                                 stream_id, group_context->rp_stream_index, upper_port->ide_id,
-                                upper_port->mapped_kcbar_addr, group_context->top->type);
+                                upper_port->mapped_kcbar_addr, group_context->common.top->type);
 
 Done:
   case_context->result = res ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;

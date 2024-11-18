@@ -50,15 +50,15 @@ bool test_keyprog_setup_common(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
   // query
   ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
-  status = pci_ide_km_query(group_context->doe_context,
-                            group_context->spdm_context,
-                            &group_context->session_id,
+  status = pci_ide_km_query(group_context->spdm_doe.doe_context,
+                            group_context->spdm_doe.spdm_context,
+                            &group_context->spdm_doe.session_id,
                             0,
                             &dev_func_num,
                             &bus_num,
@@ -178,18 +178,18 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
-  void *doe_context = group_context->doe_context;
-  void *spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void *doe_context = group_context->spdm_doe.doe_context;
+  void *spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
 
   INTEL_KEYP_KEY_SLOT keys = {0};
   INTEL_KEYP_IV_SLOT iv = {0};
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer;
   uint8_t kp_ack_status;
-  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)group_context->upper_port.mapped_kcbar_addr;
+  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
   uint8_t slot_id;
   uint8_t ks;
   uint8_t direction;

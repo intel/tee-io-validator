@@ -23,9 +23,9 @@ bool cxl_ide_test_config_containment_enable(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   cxl_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->upper_port.mapped_kcbar_addr;
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
   cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_CONTAINMENT);
 
   return true;
@@ -42,10 +42,10 @@ bool cxl_ide_test_config_containment_support(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   cxl_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  CXL_PRIV_DATA* rp_cxl_data = &group_context->upper_port.cxl_data;
-  CXL_PRIV_DATA* ep_cxl_data = &group_context->lower_port.cxl_data;
+  CXL_PRIV_DATA* rp_cxl_data = &group_context->common.upper_port.cxl_data;
+  CXL_PRIV_DATA* ep_cxl_data = &group_context->common.lower_port.cxl_data;
 
   bool supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1
                   && (rp_cxl_data->memcache.ide_cap.raw & (uint32_t)CXL_IDE_MODE_CONTAINMENT_MASK) != 0

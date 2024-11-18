@@ -24,23 +24,23 @@ bool scan_devices(void *test_context)
 {
   bool ret = false;
   pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
 
   // first scan pcie devices to populate the complete bdf of each devices in a specific topology
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
     // root_port and upper_port is the same port
-    ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn1, context->top->bus);
+    ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->bus);
     if(ret) {
-      context->upper_port.port->bus = context->root_port.port->bus;
-      strncpy(context->upper_port.port->bdf, context->root_port.port->bdf, BDF_LENGTH);
+      context->common.upper_port.port->bus = context->common.root_port.port->bus;
+      strncpy(context->common.upper_port.port->bdf, context->common.root_port.port->bdf, BDF_LENGTH);
     }
   } else if(top->connection == IDE_TEST_CONNECT_P2P) {
     // root_port and upper_port is not the same port
-    ret = scan_devices_at_bus(context->root_port.port, context->upper_port.port, context->sw_conn1, context->top->bus);
+    ret = scan_devices_at_bus(context->common.root_port.port, context->common.upper_port.port, context->common.sw_conn1, context->common.top->bus);
     if(ret) {
-      ret = scan_devices_at_bus(context->root_port.port, context->lower_port.port, context->sw_conn2, context->top->bus);
+      ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn2, context->common.top->bus);
     }
   }
 
@@ -62,7 +62,7 @@ static bool common_test_group_setup(void *test_context)
   bool ret = false;
 
   pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   // first scan devices
   if(!scan_devices(test_context)) {
@@ -75,7 +75,7 @@ static bool common_test_group_setup(void *test_context)
     return false;
   }
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
     ret = init_root_port(context);
   } else if(top->connection == IDE_TEST_CONNECT_P2P ){
@@ -96,8 +96,8 @@ static bool common_test_group_setup(void *test_context)
   ret = spdm_connect(spdm_context, &session_id);
   TEEIO_ASSERT(ret);
 
-  context->spdm_context = spdm_context;
-  context->session_id = session_id;
+  context->spdm_doe.spdm_context = spdm_context;
+  context->spdm_doe.session_id = session_id;
 
   return true;
 }
@@ -105,19 +105,19 @@ static bool common_test_group_setup(void *test_context)
 static bool common_test_group_teardown(void *test_context)
 {
   pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
-  TEEIO_ASSERT(context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   // close spdm_session and free spdm_context
-  if(context->spdm_context != NULL) {
-    spdm_stop(context->spdm_context, context->session_id);
-    free(context->spdm_context);
-    context->spdm_context = NULL;
-    context->session_id = 0;
+  if(context->spdm_doe.spdm_context != NULL) {
+    spdm_stop(context->spdm_doe.spdm_context, context->spdm_doe.session_id);
+    free(context->spdm_doe.spdm_context);
+    context->spdm_doe.spdm_context = NULL;
+    context->spdm_doe.session_id = 0;
   }
 
-  IDE_TEST_TOPOLOGY *top = context->top;
+  IDE_TEST_TOPOLOGY *top = context->common.top;
   // close ports
-  close_dev_port(&context->lower_port, top->type);
+  close_dev_port(&context->common.lower_port, top->type);
 
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
     close_root_port(context);

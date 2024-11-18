@@ -42,15 +42,15 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)config_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t *port = &group_context->upper_port;
+  ide_common_test_port_context_t *port = &group_context->common.upper_port;
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
-  if (group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
+  if (group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
   {
     ide_type = TEST_IDE_TYPE_LNK_IDE;
   }
-  else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
+  else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topology");
   }
@@ -131,8 +131,8 @@ static bool test_config_reset_ide_registers(pcie_ide_test_group_context_t *group
   bool res;
 
   // reset ide registers
-  res = reset_ide_registers(&group_context->upper_port,
-                            group_context->top->type,
+  res = reset_ide_registers(&group_context->common.upper_port,
+                            group_context->common.top->type,
                             group_context->stream_id,
                             group_context->rp_stream_index,
                             true);
@@ -142,8 +142,8 @@ static bool test_config_reset_ide_registers(pcie_ide_test_group_context_t *group
     return false;
   }
 
-  res = reset_ide_registers(&group_context->lower_port,
-                            group_context->top->type,
+  res = reset_ide_registers(&group_context->common.lower_port,
+                            group_context->common.top->type,
                             group_context->stream_id,
                             group_context->rp_stream_index,
                             false);
@@ -163,12 +163,12 @@ bool test_config_enable_common(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   // if connection is via switch or P2P, then we shall set ft_supported in the switch's port
   ide_common_test_switch_internal_conn_context_t* conn;
-  if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH || group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    conn = group_context->sw_conn1;
+  if(group_context->common.top->connection == IDE_TEST_CONNECT_SWITCH || group_context->common.top->connection == IDE_TEST_CONNECT_P2P) {
+    conn = group_context->common.sw_conn1;
     TEEIO_ASSERT(conn);
 
     res = true;
@@ -182,8 +182,8 @@ bool test_config_enable_common(void *test_context)
     return false;
   }
 
-  if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    conn = group_context->sw_conn2;
+  if(group_context->common.top->connection == IDE_TEST_CONNECT_P2P) {
+    conn = group_context->common.sw_conn2;
     TEEIO_ASSERT(conn);
     res = true;
     while(res && conn) {
@@ -256,17 +256,17 @@ bool test_config_support_common(void *test_context)
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
   pcie_ide_test_group_context_t *group_context = config_context->group_context;
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  PCIE_IDE_CAP *host_cap = &group_context->upper_port.ide_cap;
-  PCIE_IDE_CAP *dev_cap = &group_context->lower_port.ide_cap;
+  PCIE_IDE_CAP *host_cap = &group_context->common.upper_port.ide_cap;
+  PCIE_IDE_CAP *dev_cap = &group_context->common.lower_port.ide_cap;
 
   bool supported = false;
-  if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE) {
+  if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE) {
     supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
-  } else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
+  } else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
     supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
-  } else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE) {
+  } else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE) {
     supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1 && host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
   }
 
@@ -280,8 +280,8 @@ bool test_config_support_common(void *test_context)
 
   // check ft_supported if it is via switch
   ide_common_test_switch_internal_conn_context_t* conn;
-  if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH || group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    conn = group_context->sw_conn1;
+  if(group_context->common.top->connection == IDE_TEST_CONNECT_SWITCH || group_context->common.top->connection == IDE_TEST_CONNECT_P2P) {
+    conn = group_context->common.sw_conn1;
     TEEIO_ASSERT(conn);
 
     supported = true;
@@ -303,8 +303,8 @@ bool test_config_support_common(void *test_context)
     return false;
   }
 
-  if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    conn = group_context->sw_conn2;;
+  if(group_context->common.top->connection == IDE_TEST_CONNECT_P2P) {
+    conn = group_context->common.sw_conn2;;
     TEEIO_ASSERT(conn);
 
     supported = true;

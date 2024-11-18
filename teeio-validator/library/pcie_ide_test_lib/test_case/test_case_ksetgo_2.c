@@ -33,13 +33,13 @@ bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
-  TEEIO_ASSERT(group_context->spdm_context);
-  TEEIO_ASSERT(group_context->session_id);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
+  TEEIO_ASSERT(group_context->spdm_doe.session_id);
 
-  return test_ksetgo_setup_common(group_context->doe_context, group_context->spdm_context, &group_context->session_id,
-    group_context->upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
-    group_context->upper_port.ide_id, &group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
+  return test_ksetgo_setup_common(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
+    group_context->common.upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
+    group_context->common.upper_port.ide_id, &group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
 }
 
 bool pcie_ide_test_ksetgo_2_run(void *test_context)
@@ -53,12 +53,12 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   uint8_t stream_id = group_context->stream_id;
-  void *doe_context = group_context->doe_context;
-  void *spdm_context = group_context->spdm_context;
-  uint32_t session_id = group_context->session_id;
+  void *doe_context = group_context->spdm_doe.doe_context;
+  void *spdm_context = group_context->spdm_doe.spdm_context;
+  uint32_t session_id = group_context->spdm_doe.session_id;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|PR\n"));
   status = test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
@@ -85,7 +85,7 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
   }
 
   // set key_set_select in host ide
-  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)group_context->upper_port.mapped_kcbar_addr;
+  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
   set_rp_ide_key_set_select(kcbar, group_context->rp_stream_index, PCIE_IDE_STREAM_KS0);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|PR\n"));
@@ -114,21 +114,21 @@ bool pcie_ide_test_ksetgo_2_run(void *test_context)
 
   // enable dev ide
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
-  if (group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
+  if (group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
   {
     ide_type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
   }
-  else if(group_context->top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
+  else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE)
   {
     NOT_IMPLEMENTED("selective_and_link_ide topoplogy");
   }
-  enable_ide_stream_in_ecap(group_context->lower_port.cfg_space_fd, group_context->lower_port.ecap_offset, ide_type, group_context->lower_port.ide_id, true);
+  enable_ide_stream_in_ecap(group_context->common.lower_port.cfg_space_fd, group_context->common.lower_port.ecap_offset, ide_type, group_context->common.lower_port.ide_id, true);
 
   // enable host ide stream
-  enable_rootport_ide_stream(group_context->upper_port.cfg_space_fd,
-                         group_context->upper_port.ecap_offset,
-                         ide_type, group_context->upper_port.ide_id,
-                         group_context->upper_port.mapped_kcbar_addr,
+  enable_rootport_ide_stream(group_context->common.upper_port.cfg_space_fd,
+                         group_context->common.upper_port.ecap_offset,
+                         ide_type, group_context->common.upper_port.ide_id,
+                         group_context->common.upper_port.mapped_kcbar_addr,
                          group_context->rp_stream_index, true);
 
   res = true;

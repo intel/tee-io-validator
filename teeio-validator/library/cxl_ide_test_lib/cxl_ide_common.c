@@ -176,7 +176,7 @@ static void* alloc_cxl_ide_test_group_context(void)
   cxl_ide_test_group_context_t* context = (cxl_ide_test_group_context_t*)malloc(sizeof(cxl_ide_test_group_context_t));
   TEEIO_ASSERT(context);
   memset(context, 0, sizeof(cxl_ide_test_group_context_t));
-  context->signature = GROUP_CONTEXT_SIGNATURE;
+  context->common.signature = GROUP_CONTEXT_SIGNATURE;
 
   return context;
 }

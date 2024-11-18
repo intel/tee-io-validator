@@ -170,7 +170,7 @@ bool get_doe_extended_cap_offset(int fd, uint32_t* doe_offsets, int* size)
 bool close_root_port(pcie_ide_test_group_context_t *group_context)
 {
   // clean Link/Selective IDE Stream Control Registers and KCBar corresponding registers
-  ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  ide_common_test_port_context_t* port_context = &group_context->common.upper_port;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close_root_port %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
 
@@ -179,19 +179,19 @@ bool close_root_port(pcie_ide_test_group_context_t *group_context)
   port_context->rid_assoc_reg_block.rid_assoc1.raw = 0;
   port_context->rid_assoc_reg_block.rid_assoc2.raw = 0;
 
-  reset_ide_registers(port_context, group_context->top->type, 0, group_context->rp_stream_index, true);
+  reset_ide_registers(port_context, group_context->common.top->type, 0, group_context->rp_stream_index, true);
 
-  if(group_context->upper_port.kcbar_fd > 0) {
-    unmap_kcbar_addr(group_context->upper_port.kcbar_fd, group_context->upper_port.mapped_kcbar_addr);
+  if(group_context->common.upper_port.kcbar_fd > 0) {
+    unmap_kcbar_addr(group_context->common.upper_port.kcbar_fd, group_context->common.upper_port.mapped_kcbar_addr);
   }
-  group_context->upper_port.kcbar_fd = 0;
-  group_context->upper_port.mapped_kcbar_addr = 0;
+  group_context->common.upper_port.kcbar_fd = 0;
+  group_context->common.upper_port.mapped_kcbar_addr = 0;
 
-  if(group_context->upper_port.cfg_space_fd > 0) {
-    close(group_context->upper_port.cfg_space_fd);
-    unset_device_info(group_context->upper_port.cfg_space_fd);
+  if(group_context->common.upper_port.cfg_space_fd > 0) {
+    close(group_context->common.upper_port.cfg_space_fd);
+    unset_device_info(group_context->common.upper_port.cfg_space_fd);
   }
-  group_context->upper_port.cfg_space_fd = 0;
+  group_context->common.upper_port.cfg_space_fd = 0;
   
   return true;
 }
@@ -576,25 +576,25 @@ bool populate_addr_assoc_reg_block(
 bool init_root_port(pcie_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
-  TEEIO_ASSERT(group_context->top != NULL);
+  TEEIO_ASSERT(group_context->common.top != NULL);
 
-  // IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
-  ide_common_test_port_context_t *port_context = &group_context->upper_port;
+  // IDE_TEST_TOPOLOGY_TYPE top_type = group_context->common.top->type;
+  ide_common_test_port_context_t *port_context = &group_context->common.upper_port;
   TEEIO_ASSERT(port_context != NULL);
   TEEIO_ASSERT(port_context->port != NULL);
   TEEIO_ASSERT(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
-  TEEIO_ASSERT(group_context->upper_port.port->id == group_context->root_port.port->id);
+  TEEIO_ASSERT(group_context->common.upper_port.port->id == group_context->common.root_port.port->id);
 
   if(!open_root_port(port_context)) {
     return false;
   }
 
   // then set the rp_stream_index/ide_id/slot_id
-  group_context->stream_id = group_context->top->stream_id;
+  group_context->stream_id = group_context->common.top->stream_id;
 
   uint8_t rp_stream_index = 0;
   uint8_t ide_id = 0;
-  if(!find_free_rp_stream_index_and_ide_id(port_context, &rp_stream_index, &ide_id, group_context->top->type, true)) {
+  if(!find_free_rp_stream_index_and_ide_id(port_context, &rp_stream_index, &ide_id, group_context->common.top->type, true)) {
     goto InitHostFail;
   }
 
@@ -603,20 +603,20 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
   port_context->ide_id = ide_id;
 
   // rid & addr assoc_reg_block
-  ide_common_test_port_context_t *lower_port_context = &group_context->lower_port;
+  ide_common_test_port_context_t *lower_port_context = &group_context->common.lower_port;
   populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
   ide_common_test_switch_internal_conn_context_t *itr = NULL;
   char* dev_bdf = NULL;
-  if(group_context->top->connection == IDE_TEST_CONNECT_SWITCH) {
+  if(group_context->common.top->connection == IDE_TEST_CONNECT_SWITCH) {
 
-    itr = group_context->sw_conn1;
+    itr = group_context->common.sw_conn1;
     while(itr->next != NULL) {
       itr = itr->next;
     }
     dev_bdf = itr->dps.port->bdf;
-  } else if(group_context->top->connection == IDE_TEST_CONNECT_P2P) {
-    itr = group_context->sw_conn2;
+  } else if(group_context->common.top->connection == IDE_TEST_CONNECT_P2P) {
+    itr = group_context->common.sw_conn2;
     while(itr->next != NULL) {
       itr = itr->next;
     }
@@ -764,10 +764,10 @@ OpenDevFail:
 bool init_dev_port(pcie_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
-  TEEIO_ASSERT(group_context->top != NULL);
+  TEEIO_ASSERT(group_context->common.top != NULL);
 
-  IDE_TEST_TOPOLOGY_TYPE top_type = group_context->top->type;
-  ide_common_test_port_context_t *port_context = &group_context->lower_port;
+  IDE_TEST_TOPOLOGY_TYPE top_type = group_context->common.top->type;
+  ide_common_test_port_context_t *port_context = &group_context->common.lower_port;
   TEEIO_ASSERT(port_context != NULL);
 
   if(!open_dev_port(port_context)) {

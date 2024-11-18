@@ -46,16 +46,16 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context)
 
   cxl_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t *upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t *lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
 
-  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->suite_context->test_config, group_context->config_id);
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->common.suite_context->test_config, group_context->common.config_id);
   TEEIO_ASSERT(configuration);
 
-  return cxl_setup_ide_stream(group_context->doe_context, group_context->spdm_context,
-                              &group_context->session_id, upper_port->mapped_kcbar_addr,
+  return cxl_setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
+                              &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
                               group_context->stream_id, 0,
                               upper_port, lower_port, false, configuration->bit_map);
 }
@@ -68,11 +68,11 @@ bool cxl_ide_test_full_ide_stream_run(void *test_context)
 
   cxl_ide_test_group_context_t *group_context = (cxl_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->upper_port.mapped_kcbar_addr;
-  ide_common_test_port_context_t* upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t* lower_port = &group_context->lower_port;
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
+  ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
   // Now ide stream shall be in secure state
   // Dump registers to check
@@ -106,18 +106,18 @@ bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
 
   cxl_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
-  TEEIO_ASSERT(group_context->signature == GROUP_CONTEXT_SIGNATURE);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t *upper_port = &group_context->upper_port;
-  ide_common_test_port_context_t *lower_port = &group_context->lower_port;
+  ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
 
   CXL_QUERY_RESP_CAPS dev_caps = {.raw = lower_port->cxl_data.query_resp.caps};
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dev_caps.k_set_stop_capable = %d\n", dev_caps.k_set_stop_capable));
 
   // send KSetStop if supported.
   if(dev_caps.k_set_stop_capable == 1) {
-    ret = cxl_stop_ide_stream(group_context->doe_context, group_context->spdm_context,
-                              &group_context->session_id, upper_port->mapped_kcbar_addr,
+    ret = cxl_stop_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
+                              &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
                               group_context->stream_id, 0,
                               upper_port, lower_port);
     if(!ret) {

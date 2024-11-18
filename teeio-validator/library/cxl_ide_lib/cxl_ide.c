@@ -101,13 +101,13 @@ void cxl_clear_rootport_key_ivs(ide_common_test_port_context_t* port_context)
 bool cxl_init_root_port(cxl_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
-  TEEIO_ASSERT(group_context->top != NULL);
+  TEEIO_ASSERT(group_context->common.top != NULL);
 
-  ide_common_test_port_context_t *port_context = &group_context->upper_port;
+  ide_common_test_port_context_t *port_context = &group_context->common.upper_port;
   TEEIO_ASSERT(port_context != NULL);
   TEEIO_ASSERT(port_context->port != NULL);
   TEEIO_ASSERT(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
-  TEEIO_ASSERT(group_context->upper_port.port->id == group_context->root_port.port->id);
+  TEEIO_ASSERT(group_context->common.upper_port.port->id == group_context->common.root_port.port->id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_root_port start.\n"));
 
@@ -487,7 +487,7 @@ bool cxl_init_memcache_reg_block(int cfg_space_fd, CXL_PRIV_DATA_MEMCACHE_REG_DA
 bool cxl_close_root_port(cxl_ide_test_group_context_t *group_context)
 {
   // clean Control Registers @ecap and KCBar corresponding registers
-  ide_common_test_port_context_t* port_context = &group_context->upper_port;
+  ide_common_test_port_context_t* port_context = &group_context->common.upper_port;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "close cxl rootport %s(%s)\n", port_context->port->port_name, port_context->port->bdf));
 
   cxl_reset_ecap_registers(port_context);
@@ -497,17 +497,17 @@ bool cxl_close_root_port(cxl_ide_test_group_context_t *group_context)
 
   cxl_unmap_memcache_reg_block(cxl_data->memcache.mapped_fd, cxl_data->memcache.mapped_memcache_reg_block);
 
-  if(group_context->upper_port.kcbar_fd > 0) {
-    unmap_kcbar_addr(group_context->upper_port.kcbar_fd, group_context->upper_port.mapped_kcbar_addr);
+  if(group_context->common.upper_port.kcbar_fd > 0) {
+    unmap_kcbar_addr(group_context->common.upper_port.kcbar_fd, group_context->common.upper_port.mapped_kcbar_addr);
   }
-  group_context->upper_port.kcbar_fd = 0;
-  group_context->upper_port.mapped_kcbar_addr = 0;
+  group_context->common.upper_port.kcbar_fd = 0;
+  group_context->common.upper_port.mapped_kcbar_addr = 0;
 
-  if(group_context->upper_port.cfg_space_fd > 0) {
-    close(group_context->upper_port.cfg_space_fd);
-    unset_device_info(group_context->upper_port.cfg_space_fd);
+  if(group_context->common.upper_port.cfg_space_fd > 0) {
+    close(group_context->common.upper_port.cfg_space_fd);
+    unset_device_info(group_context->common.upper_port.cfg_space_fd);
   }
-  group_context->upper_port.cfg_space_fd = 0;
+  group_context->common.upper_port.cfg_space_fd = 0;
   
   memset(&port_context->cxl_data, 0, sizeof(CXL_PRIV_DATA));
 
@@ -520,13 +520,13 @@ bool cxl_close_root_port(cxl_ide_test_group_context_t *group_context)
 bool cxl_init_dev_port(cxl_ide_test_group_context_t *group_context)
 {
   TEEIO_ASSERT(group_context != NULL);
-  TEEIO_ASSERT(group_context->top != NULL);
+  TEEIO_ASSERT(group_context->common.top != NULL);
 
-  TEEIO_ASSERT(group_context->suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
+  TEEIO_ASSERT(group_context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_dev_port start.\n"));
 
-  ide_common_test_port_context_t *port_context = &group_context->lower_port;
+  ide_common_test_port_context_t *port_context = &group_context->common.lower_port;
   TEEIO_ASSERT(port_context != NULL);
 
   if(!cxl_open_dev_port(port_context)) {

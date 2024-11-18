@@ -222,7 +222,7 @@ static void* alloc_pcie_ide_test_group_context(void)
   pcie_ide_test_group_context_t* context = (pcie_ide_test_group_context_t*)malloc(sizeof(pcie_ide_test_group_context_t));
   TEEIO_ASSERT(context);
   memset(context, 0, sizeof(pcie_ide_test_group_context_t));
-  context->signature = GROUP_CONTEXT_SIGNATURE;
+  context->common.signature = GROUP_CONTEXT_SIGNATURE;
 
   return context;
 }
