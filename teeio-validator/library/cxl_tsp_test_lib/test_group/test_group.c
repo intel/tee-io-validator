@@ -41,14 +41,14 @@ static bool common_test_group_setup(void *test_context)
 
   // first scan devices
   if(!cxl_scan_devices(test_context)) {
-    TEEIO_ASSERT(false);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Scan device failed.");
     return false;
   }
 
   // initialize lower_port
   ret = cxl_init_dev_port(context);
   if(!ret) {
-    TEEIO_ASSERT(false);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Initialize device port failed.");
     return false;
   }
 
@@ -57,7 +57,7 @@ static bool common_test_group_setup(void *test_context)
 
   ret = cxl_init_root_port(context);
   if (!ret) {
-    TEEIO_ASSERT(false);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Initialize root port failed.");
     return false;
   }
 
@@ -69,7 +69,7 @@ static bool common_test_group_setup(void *test_context)
   ret = spdm_connect(spdm_context, &session_id);
   if (!ret) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_connect failed.\n"));
-    TEEIO_ASSERT(false);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Spdm connect failed.");
     return false;
   }
 
@@ -77,6 +77,8 @@ static bool common_test_group_setup(void *test_context)
   context->spdm_doe.session_id = session_id;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
+
+  teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_PASS, "");
 
   return true;
 }
@@ -100,6 +102,8 @@ static bool common_test_group_teardown(void *test_context)
   // close ports
   cxl_close_dev_port(&context->common.lower_port, top->type);
   cxl_close_root_port(context);
+
+  teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_TEARDOWN, TEEIO_TEST_RESULT_PASS, "");
 
   return true;
 }
