@@ -40,6 +40,11 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context);
  */
 bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOLOGY_TYPE top_type);
 
+/*
+ * Scan devices
+ */
+bool cxl_scan_devices(void *test_context);
+
 /**
  * enable/disable cache_enable bit in CXL_DEV_CONTROL
  */
