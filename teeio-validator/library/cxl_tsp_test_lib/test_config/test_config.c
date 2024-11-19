@@ -46,6 +46,9 @@ bool cxl_tsp_test_config_common_support(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "         mem_capable     = %d\n", ep_cxl_data->ecap.cap.mem_capable));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "         tsp_capable     = %d\n", ep_cxl_data->ecap.cap.tsp_capable));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_ide_test_config_support_common supported=%d\n", supported));
+
+  teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_SUPPORT, supported ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED); 
+
   return supported;
 }
 
