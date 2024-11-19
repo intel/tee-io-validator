@@ -52,11 +52,13 @@ EntryName=EntryValue
 **TEE-IO Device Validation Utility** supports multiple test categories.
 - [PCIE-IDE Test](../doc/ide_test/)
 - [CXL-IDE Test](../doc/cxl_ide_test/)
+- [CXL-TSP Test](../doc/tsp_test/)
 
 Settings of **Topology** / **Configuration** / **TestSuite** are different.
 
 - [PCIE-IDE Section settings](#pcie-ide-section-settings)
 - [CXL-IDE Section settings](#cxl-ide-section-settings)
+- [CXL-TSP Section settings](#cxl-tsp-section-settings)
 
 ### PCIE-IDE Section settings
 [Topology_x]
@@ -130,3 +132,35 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |KSetGo|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlKSetGo.md](../doc/cxl_ide_test/CxlIdeKmTestCase/3.CxlKSetGo.md)|
 |KSetStop|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlKSetStop.md](../doc/cxl_ide_test/CxlIdeKmTestCase/4.CxlKSetStop.md)|
 |GetKey|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [CxlGetKey.md](../doc/cxl_ide_test/CxlIdeKmTestCase/5.CxlGetKey.md)|
+
+### CXL-TSP Section settings
+[Topology_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|connection|string||M|available values are: **direct, switch**|
+|bus|hex||M|The bus which rootport is connected to. For example 0x1a|
+|path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
+|path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
+|stream_id|number|0|O|it shall always be **0**|
+
+[Configration_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|category|string||M|must be **cxl-tsp**|
+|default|0/1|1|O||
+
+[TestSuite_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|category|string||M|must be **cxl-tsp**|
+|topology|number||M|Topology_x|
+|configuration|number||M|Configuration_x|
+|GetVersion|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspVersionResponse.md](../doc/tsp_test/TspTestCase/1.GetTargetTspVersionResponse.md)|
+|GetCaps|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspCapabilitiesResponse.md](../doc/tsp_test/TspTestCase/2.GetTargetTspCapabilitiesResponse.md)|
+|SetConfiguration|string||O|numbers separated by comma.<br> For example **1** means Case1 in [SetTargetTspConfigurationResponse.md](../doc/tsp_test/TspTestCase/3.SetTargetTspConfigurationResponse.md)|
+|GetConfiguration|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspConfigurationResponse.md](../doc/tsp_test/TspTestCase/4.GetTargetTspConfigurationResponse.md)|
+|GetConfigurationReport|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspConfigurationReportResponse.md](../doc/tsp_test/TspTestCase/5.GetTargetTspConfigurationReportResponse.md)|
+|LockConfiguration|string||O|numbers separated by comma.<br> For example **1,2** means Case1 and Case2 in [LockTargetTspConfigurationResponse.md](../doc/tsp_test/TspTestCase/6.LockTargetTspConfigurationResponse.md)|
