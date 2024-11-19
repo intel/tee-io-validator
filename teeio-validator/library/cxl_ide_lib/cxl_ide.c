@@ -995,3 +995,23 @@ bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t*
 
   return true;
 }
+
+bool cxl_scan_devices(void *test_context)
+{
+  bool ret = false;
+  cxl_ide_test_group_context_t *context = (cxl_ide_test_group_context_t *)test_context;
+  TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
+
+  IDE_TEST_TOPOLOGY *top = context->common.top;
+
+  TEEIO_ASSERT(context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
+  TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
+
+  ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->bus);
+  if(ret) {
+    context->common.upper_port.port->bus = context->common.root_port.port->bus;
+    strncpy(context->common.upper_port.port->bdf, context->common.root_port.port->bdf, BDF_LENGTH);
+  }
+
+  return ret;
+}
