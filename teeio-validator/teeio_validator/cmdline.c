@@ -56,7 +56,7 @@ void print_usage()
   TEEIO_PRINT(("  -s <test_case>      : Test case to be tested. For example Test.IdeStream\n"));
   TEEIO_PRINT(("  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
   TEEIO_PRINT(("  -b <scan_bus>       : Bus number in hex format. For example 0x1a\n"));
-  TEEIO_PRINT(("  -i <test_category>  : test category. For example pcie-ide, cxl-ide\n"));
+  TEEIO_PRINT(("  -i <test_category>  : test category. For example pcie-ide, cxl-ide, cxl-tsp\n"));
   TEEIO_PRINT(("  -k                  : Use fixed IDE Key for debug purpose.\n"));
   TEEIO_PRINT(("  -h                  : Display this usage\n"));
 }

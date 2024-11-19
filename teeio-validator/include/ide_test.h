@@ -12,6 +12,7 @@
 #include <sys/param.h>
 #include "pcie.h"
 #include "cxl_ide.h"
+#include "cxl_tsp.h"
 #include "intel_keyp.h"
 
 #define NOT_IMPLEMENTED(msg) \
@@ -73,6 +74,7 @@
 typedef enum {
   TEEIO_TEST_CATEGORY_PCIE_IDE = 0,
   TEEIO_TEST_CATEGORY_CXL_IDE,
+  TEEIO_TEST_CATEGORY_CXL_TSP,
   TEEIO_TEST_CATEGORY_MAX
 } TEEIO_TEST_CATEGORY;
 
@@ -430,6 +432,12 @@ typedef struct {
 
   uint8_t stream_id;
 } cxl_ide_test_group_context_t;
+
+typedef struct {
+  teeio_common_test_group_context_t common;
+
+  spdm_doe_context_t spdm_doe;
+} cxl_tsp_test_group_context_t;
 
 typedef struct {
   uint32_t signature;
