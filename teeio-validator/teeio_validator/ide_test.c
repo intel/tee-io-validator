@@ -947,7 +947,7 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite)
         TEEIO_PRINT(("     TestGroup (%s %s) - pass: %d, fail: %d, skip: %d\n", group_result->name, case_result->class, passed, failed, skipped));
 
         while(case_result) {
-          TEEIO_PRINT(("       %s: case - %s; ide_stream_secure - %s\n", case_result->name, m_test_case_result_str[case_result->case_result], m_test_config_result_str[case_result->config_result]));
+          TEEIO_PRINT(("       %s: case - %s\n", case_result->name, m_test_case_result_str[case_result->case_result]));
 
           case_result = case_result->next;
         }
