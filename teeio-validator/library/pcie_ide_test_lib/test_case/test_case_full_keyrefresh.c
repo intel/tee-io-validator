@@ -97,19 +97,20 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
                       group_context->common.lower_port.ecap_offset,
                       ide_type);
 
-    mKeySet = mKeySet == PCI_IDE_KM_KEY_SET_K0 ? PCI_IDE_KM_KEY_SET_K1 : PCI_IDE_KM_KEY_SET_K0;
-
-    TEEIO_PRINT(("Press 'q' to quit test or any other keys to key_refresh to %d.\n", mKeySet));
+    TEEIO_PRINT(("Press 'q' to quit test or any other keys to key_refresh. (Current KeySet is %d).\n", mKeySet));
     cmd = getchar();
     if(cmd == 'q' || cmd == 'Q') {
       break;
     } else {
+      uint8_t ks = mKeySet == PCI_IDE_KM_KEY_SET_K0 ? PCI_IDE_KM_KEY_SET_K1 : PCI_IDE_KM_KEY_SET_K0;
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
                               &group_context->k_set, group_context->rp_stream_index,
-                              0, group_context->common.top->type, upper_port, lower_port, mKeySet, false);
+                              0, group_context->common.top->type, upper_port, lower_port, ks, false);
       if(!res) {
         break;
+      } else {
+        mKeySet = ks;
       }
 
     }
