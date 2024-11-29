@@ -150,17 +150,6 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
-static void dump_cxl_ide_status(ide_common_test_port_context_t* upper_port, ide_common_test_port_context_t* lower_port)
-{
-  TEEIO_PRINT(("\n"));
-  TEEIO_PRINT(("Print host cxl ide status\n"));
-  cxl_dump_ide_status(upper_port->cxl_data.memcache.cap_headers, upper_port->cxl_data.memcache.cap_headers_cnt, upper_port->cxl_data.memcache.mapped_memcache_reg_block);
-
-  TEEIO_PRINT(("\n"));
-  TEEIO_PRINT(("Print device cxl ide status.\n"));
-  cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
-}
-
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
@@ -168,7 +157,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap)
+                          bool skip_ksetgo, uint32_t config_bitmap,
+                          bool set_link_enc_enable)
 {
   bool result;
   uint8_t kp_ack_status;
@@ -303,7 +293,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go RX\n"));
 
   // Set LinkEncEnable bit
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  if(set_link_enc_enable) {
+    cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  }
 
   // Set StartTrigger bit
   cxl_cfg_rp_start_trigger(kcbar_ptr, true);
@@ -324,9 +316,5 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
 
-  dump_cxl_ide_status(upper_port, lower_port);
-
-  printf("cxl_setup_ide_stream is done. Press any key to continue.\n");
-  getchar();
   return true;
 }
