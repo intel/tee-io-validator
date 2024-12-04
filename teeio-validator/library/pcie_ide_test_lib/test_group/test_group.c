@@ -66,12 +66,14 @@ static bool common_test_group_setup(void *test_context)
 
   // first scan devices
   if(!scan_devices(test_context)) {
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Scan device failed.");
     return false;
   }
 
   // initialize lower_port
   ret = init_dev_port(context);
   if(!ret) {
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Initialize device port failed.");
     return false;
   }
 
@@ -85,19 +87,27 @@ static bool common_test_group_setup(void *test_context)
   }
 
   if (!ret) {
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Initialize root port failed.");
     return false;
   }
 
   // init spdm_context
   void *spdm_context = spdm_client_init();
-  TEEIO_ASSERT(spdm_context != NULL);
+  if(spdm_context == NULL) {
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Initialize spdm failed.");
+    return false;
+  }
 
   uint32_t session_id = 0;
-  ret = spdm_connect(spdm_context, &session_id);
-  TEEIO_ASSERT(ret);
+  if(!spdm_connect(spdm_context, &session_id)) {
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Spdm connect failed.");
+    return false;
+  }
 
   context->spdm_doe.spdm_context = spdm_context;
   context->spdm_doe.session_id = session_id;
+
+  teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_PASS, "");
 
   return true;
 }
@@ -125,6 +135,8 @@ static bool common_test_group_teardown(void *test_context)
     // close both root_port and upper_port
     NOT_IMPLEMENTED("Close both root_port and upper_port for peer2peer connection.");
   }
+
+  teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_TEARDOWN, TEEIO_TEST_RESULT_PASS, "");
 
   return true;
 }

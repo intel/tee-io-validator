@@ -43,11 +43,17 @@ static bool test_config_set_pcrc_common(void *test_context, bool enable)
   port_context = &group_context->common.lower_port;
   set_pcrc_in_ecap(port_context->cfg_space_fd, ide_type, port_context->ide_id, port_context->ecap_offset, enable);
 
+  teeio_record_config_item_result(
+    IDE_TEST_CONFIGURATION_TYPE_PCRC,
+    enable ? TEEIO_TEST_CONFIG_FUNC_ENABLE : TEEIO_TEST_CONFIG_FUNC_DISABLE,
+    TEEIO_TEST_RESULT_PASS);
+
   return true;
 }
 
 static bool test_config_check_pcrc_support_common(void *test_context)
 {
+  bool res = true;
   ide_common_test_config_context_t *config_context = (ide_common_test_config_context_t *)test_context;
   TEEIO_ASSERT(config_context->signature == CONFIG_CONTEXT_SIGNATURE);
 
@@ -58,10 +64,15 @@ static bool test_config_check_pcrc_support_common(void *test_context)
   PCIE_IDE_CAP *dev_cap = &group_context->common.lower_port.ide_cap;
   if(!host_cap->pcrc_supported || !dev_cap->pcrc_supported) {
     TEEIO_DEBUG((TEEIO_DEBUG_WARN, "check pcrc and it is NOT supported. host=%d, device=%d\n", host_cap->pcrc_supported, dev_cap->pcrc_supported));
-    return false;
+    res = false;
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "check pcrc and it is supported.\n"));
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "check pcrc and it is supported.\n"));
+  teeio_record_config_item_result(
+    IDE_TEST_CONFIGURATION_TYPE_PCRC,
+    TEEIO_TEST_CONFIG_FUNC_SUPPORT,
+    res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED);
 
   return true;
 }

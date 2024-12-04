@@ -60,6 +60,11 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
+  ide_run_test_case_t* test_case = case_context->test_case;
+  TEEIO_ASSERT(test_case);
+  int case_class = test_case->class_id;
+  int case_id = test_case->case_id;
+
   pcie_ide_test_group_context_t *group_context = case_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
@@ -93,56 +98,36 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
   uint32_t session_id = group_context->spdm_doe.session_id;
   uint8_t stream_id = group_context->stream_id;
   uint8_t port_index = 0;
-  bool res = false;
 
   // then test KSetStop  
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|PR\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index,
-                             "  Assertion 4.3");
-  if(!res) {
-    goto TestKSetStopCase3Done;
-  }
-
+                             "K1|RX|PR", case_class, case_id);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|NPR\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index,
-                             "  Assertion 4.3");
-  if(!res) {
-    goto TestKSetStopCase3Done;
-  }
+                             "K1|RX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|CPL\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
-                             "  Assertion 4.3");
-  if(!res) {
-    goto TestKSetStopCase3Done;
-  }
+                             "K1|RX|CPL", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|PR\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index,
-                             "  Assertion 4.3");
-  if(!res) {
-    goto TestKSetStopCase3Done;
-  }
+                             "K1|TX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|NPR\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index,
-                             "  Assertion 4.3");
-  if(!res) {
-    goto TestKSetStopCase3Done;
-  }
+                             "K1|TX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|CPL\n", k_set_names[PCI_IDE_KM_KEY_SET_K1]));
-  res = test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
-                             "  Assertion 4.3");
-
-TestKSetStopCase3Done:
-  case_context->result = res ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;
+                             "K1|TX|CPL", case_class, case_id);
 
   return true;
 }
