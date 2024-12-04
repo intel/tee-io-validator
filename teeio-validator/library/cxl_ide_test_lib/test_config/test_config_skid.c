@@ -28,6 +28,11 @@ bool cxl_ide_test_config_skid_enable(void *test_context)
   INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
   cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
 
+  teeio_record_config_item_result(
+    CXL_IDE_CONFIGURATION_TYPE_SKID_MODE,
+    TEEIO_TEST_CONFIG_FUNC_ENABLE,
+    TEEIO_TEST_RESULT_PASS);
+
   return true;
 }
 
