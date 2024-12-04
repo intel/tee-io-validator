@@ -88,4 +88,34 @@ uint32_t get_max_from_uint32_array(uint32_t* array, uint32_t size);
 // Refer to PCIe Spec 6.1 Figure 6-57
 void dump_key_iv_in_key_prog(const uint32_t *key, int key_dw_size, const uint32_t *iv, int iv_dw_size);
 
+bool teeio_record_assertion_result(
+  int case_class,
+  int case_id,
+  int assertion_id,
+  ide_common_test_case_assertion_type_t assertion_type,
+  teeio_test_result_t result,
+  const char *message_format,
+  ...);
+
+/**
+ * Check the test result of a case.
+ * Failure or Pass of a case is decided by its assertions result.
+ */
+teeio_test_result_t teeio_test_case_result(
+  int case_class,
+  int case_id
+  );
+
+bool teeio_record_config_item_result(
+  int config_item_id,
+  teeio_test_config_func_t func,
+  teeio_test_result_t result
+  );
+
+bool teeio_record_group_result(
+  teeio_test_group_func_t func,
+  teeio_test_result_t result,
+  const char *message_format,
+  ...  );
+
 #endif

@@ -23,6 +23,7 @@ SET(src_helperlib
     pcie_helper.c
     utils.c
     pcap.c
+    teeio_common.c
 )
 
 SET(helperlib_LIBRARY
