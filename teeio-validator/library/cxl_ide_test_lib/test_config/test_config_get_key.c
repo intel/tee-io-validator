@@ -50,6 +50,12 @@ bool cxl_ide_test_config_get_key_support(void *test_context)
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_ide_test_config_get_key_support supported=%d\n", supported));
+
+  teeio_record_config_item_result(
+    CXL_IDE_CONFIGURATION_TYPE_GET_KEY,
+    TEEIO_TEST_CONFIG_FUNC_SUPPORT,
+    supported ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED);
+
   return supported;
 }
 
