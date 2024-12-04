@@ -123,7 +123,7 @@ typedef enum {
 } IDE_COMMON_TEST_CASE;
 
 #define MAX_TEST_CASE_NUM \
-  (MAX(IDE_COMMON_TEST_CASE_NUM, CXL_MEM_IDE_TEST_CASE_NUM))
+  (MAX(IDE_COMMON_TEST_CASE_NUM, MAX(CXL_MEM_IDE_TEST_CASE_NUM, CXL_TSP_TEST_CASE_MAX)))
 
 #define TEEIO_TEST_FIXED_TX_KEY_BYTE_VALUE 0x11
 #define TEEIO_TEST_FIXED_RX_KEY_BYTE_VALUE 0x22
@@ -295,18 +295,6 @@ typedef enum {
   IDE_COMMON_TEST_ACTION_SKIP = 1
 } IDE_COMMON_TEST_ACTION;
 
-typedef enum {
-  IDE_COMMON_TEST_CASE_RESULT_SKIPPED = 0,
-  IDE_COMMON_TEST_CASE_RESULT_SUCCESS = 1,
-  IDE_COMMON_TEST_CASE_RESULT_FAILED = 2  
-} IDE_COMMON_TEST_CASE_RESULT;
-
-typedef enum {
-  IDE_COMMON_TEST_CONFIG_RESULT_NA = 0,
-  IDE_COMMON_TEST_CONFIG_RESULT_SUCCESS = 1,
-  IDE_COMMON_TEST_CONFIG_RESULT_FAILED = 2  
-} IDE_COMMON_TEST_CONFIG_RESULT;
-
 typedef struct {
   IDE_PORT *port;
 
@@ -340,32 +328,88 @@ struct _ide_common_test_switch_internal_conn_context_t {
   ide_common_test_port_context_t dps;
 };
 
+typedef enum {
+  TEEIO_TEST_RESULT_NOT_TESTED = 0,
+  TEEIO_TEST_RESULT_PASS = 1,
+  TEEIO_TEST_RESULT_FAILED = 2
+} teeio_test_result_t;
+
+typedef enum {
+  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_NA = 0,
+  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_SEPARATOR
+} ide_common_test_case_assertion_type_t;
+
+typedef struct _ide_run_test_case_assertion_result_t ide_run_test_case_assertion_result_t;
+struct _ide_run_test_case_assertion_result_t{
+  ide_run_test_case_assertion_result_t* next;
+
+  ide_common_test_case_assertion_type_t type;
+
+  int class_id;
+  int case_id;
+  int assertion_id;
+
+  teeio_test_result_t result;
+  char extra_data[MAX_LINE_LENGTH];
+};
+
+typedef enum {
+  TEEIO_TEST_CONFIG_FUNC_SUPPORT = 0,
+  TEEIO_TEST_CONFIG_FUNC_ENABLE,
+  TEEIO_TEST_CONFIG_FUNC_DISABLE,
+  TEEIO_TEST_CONFIG_FUNC_CHECK,
+  TEEIO_TEST_CONFIG_FUNC_MAX
+} teeio_test_config_func_t;
+
+typedef struct _ide_run_test_config_item_result_t ide_run_test_config_item_result_t;
+struct _ide_run_test_config_item_result_t {
+  ide_run_test_config_item_result_t* next;
+
+  int config_item_id;
+
+  teeio_test_result_t results[TEEIO_TEST_CONFIG_FUNC_MAX];
+};
+
 typedef struct _ide_run_test_case_result_t ide_run_test_case_result_t;
 struct _ide_run_test_case_result_t {
   ide_run_test_case_result_t* next;
 
   char class[MAX_NAME_LENGTH];
   char name[MAX_NAME_LENGTH];
-  IDE_COMMON_TEST_CASE_RESULT case_result;
-  IDE_COMMON_TEST_CONFIG_RESULT config_result;
+  int class_id;
+  int case_id;
+
+  int total_passed;
+  int total_failed;
+
+  ide_run_test_config_item_result_t *config_item_result;
+  ide_run_test_case_assertion_result_t *assertion_result;
 };
+
+typedef struct {
+  teeio_test_result_t result;
+  char extra_data[MAX_LINE_LENGTH];
+} teeio_test_group_func_result_t;
+
+typedef enum {
+  TEEIO_TEST_GROUP_FUNC_SETUP = 0,
+  TEEIO_TEST_GROUP_FUNC_TEARDOWN,
+  TEEIO_TEST_GROUP_FUNC_MAX
+} teeio_test_group_func_t;
 
 typedef struct _ide_run_test_group_result_t ide_run_test_group_result_t;
 struct _ide_run_test_group_result_t {
   ide_run_test_group_result_t* next;
 
   char name[MAX_NAME_LENGTH];
-  IDE_COMMON_TEST_CONFIG_RESULT config_result;
+
+  int total_passed;
+  int total_failed;
+
+  teeio_test_group_func_result_t func_results[TEEIO_TEST_GROUP_FUNC_MAX];
+
   ide_run_test_case_result_t* case_result;
-};
-
-typedef struct _ide_run_test_config_item_result_t ide_run_test_config_item_result_t;
-struct _ide_run_test_config_item_result_t {
-  ide_run_test_config_item_result_t* next;
-  char name[MAX_NAME_LENGTH];
-  uint8_t type;
-
-  IDE_COMMON_TEST_CONFIG_RESULT result;
 };
 
 typedef struct _ide_run_test_config_result_t ide_run_test_config_result_t;
@@ -374,9 +418,9 @@ struct _ide_run_test_config_result_t {
   char name[MAX_NAME_LENGTH];
   int config_id;
 
-  // IDE_COMMON_TEST_CONFIG_RESULT result;
+  int total_passed;
+  int total_failed;
 
-  // ide_run_test_config_item_result_t* config_item_result;
   ide_run_test_group_result_t* group_result;
 };
 
@@ -447,13 +491,6 @@ typedef struct {
   IDE_TEST_TOPOLOGY_TYPE top_type;
 } ide_common_test_config_context_t;
 
-typedef struct {
-  uint32_t signature;
-  void *group_context;
-  IDE_COMMON_TEST_ACTION action;
-  IDE_COMMON_TEST_CASE_RESULT result;
-} ide_common_test_case_context_t;
-
 // test config enable function which is to enable some function
 typedef bool(*ide_common_test_config_enable_func_t) (void *test_context);
 // test config disable function which is to disable some function
@@ -506,7 +543,10 @@ struct _ide_run_test_case {
   ide_run_test_case_t *next;
   char class[MAX_NAME_LENGTH];
   char name[MAX_NAME_LENGTH];
-  // IDE_COMMON_TEST_ACTION action;
+
+  int class_id;
+  int case_id;
+
   void *test_context;
   // indicates if the config_check is required in the test case
   bool config_check_required;
@@ -515,6 +555,15 @@ struct _ide_run_test_case {
   ide_common_test_case_setup_func_t setup_func;
   ide_common_test_case_teardown_func_t teardown_func;
 };
+
+typedef struct {
+  uint32_t signature;
+  void *group_context;
+
+  ide_run_test_case_t* test_case;
+
+  IDE_COMMON_TEST_ACTION action;
+} ide_common_test_case_context_t;
 
 typedef struct {
   ide_common_test_case_setup_func_t setup;
