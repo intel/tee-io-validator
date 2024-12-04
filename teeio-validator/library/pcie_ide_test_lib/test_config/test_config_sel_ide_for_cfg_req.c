@@ -54,6 +54,11 @@ static bool test_config_set_sel_ide_for_cfg_req(void* test_context, bool enable)
                           port_context->ecap_offset,
                           enable);
 
+  teeio_record_config_item_result(
+    IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG,
+    enable ? TEEIO_TEST_CONFIG_FUNC_ENABLE : TEEIO_TEST_CONFIG_FUNC_DISABLE,
+    TEEIO_TEST_RESULT_PASS);
+
   return true;
 }
 
@@ -71,13 +76,25 @@ static bool test_config_check_sel_ide_for_cfg_req_support(void* test_context)
   TEST_IDE_TYPE ide_type = map_top_type_to_ide_type(group_context->common.top->type);
   if(ide_type != TEST_IDE_TYPE_SEL_IDE) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "\"%s\" is not avaible in %s\n", m_config_name, m_ide_type_name[ide_type]));
-    return false;    
+
+    teeio_record_config_item_result(
+      IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG,
+      TEEIO_TEST_CONFIG_FUNC_SUPPORT,
+      TEEIO_TEST_RESULT_FAILED);
+
+    return false;
   }
 
   PCIE_IDE_CAP *upper_cap = &group_context->common.upper_port.ide_cap;
   PCIE_IDE_CAP *lower_cap = &group_context->common.lower_port.ide_cap;
   bool supported = upper_cap->sel_ide_cfg_req_supported && lower_cap->sel_ide_cfg_req_supported;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s is %s.\n", m_config_name, supported ? "supported" : "NOT supported"));
+
+  teeio_record_config_item_result(
+    IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG,
+    TEEIO_TEST_CONFIG_FUNC_SUPPORT,
+    supported ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED);
+
   return supported;
 }
 
@@ -130,6 +147,11 @@ bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context)
   } else {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check %s failed\n", m_config_name));
   }
+
+  teeio_record_config_item_result(
+    IDE_TEST_CONFIGURATION_TYPE_SELECTIVE_IDE_FOR_CONFIG,
+    TEEIO_TEST_CONFIG_FUNC_CHECK,
+    pass ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED);
 
   return pass;
 }

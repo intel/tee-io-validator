@@ -22,29 +22,23 @@
 #include "pcie_ide_test_lib.h"
 #include "pcie_ide_test_internal.h"
 
-static const char* mKeyProgAssersion[] = {
-    "ide_km_key_prog send receive_data",        // .0
-    "sizeof(IdeKmMessage) == sizeof(KP_ACK)",   // .1
-    "IdeKmMessage.ObjectID == KP_ACK",          // .2
-    "IdeKmMessage.Status == Incorrect Length",  // .3
-    "IdeKmMessage.PortIndex == KEY_PROG.PortIndex", // .4
-    "IdeKmMessage.StreamID == KEY_PROG.StreamID",   // .5
-    "IdeKmMessage.KeySet == KEY_PROG.KeySet && IdeKmMessage.RxTx == KEY_PROG.RxTx && IdeKmMessage.SubStream == KEY_PROG.SubStream" // .6
-};
-
 // KeyProg Case 2.2
 bool test_ide_km_key_prog_case2(const void *pci_doe_context,
                                      void *spdm_context, const uint32_t *session_id,
                                      uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
                                      const pci_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
-                                     uint8_t *kp_ack_status, int request_size)
+                                     uint8_t *kp_ack_status, int request_size, const char* case_info,
+                                     int case_class, int case_id)
 {
     libspdm_return_t status;
     test_pci_ide_km_key_prog_t request;
     pci_ide_km_kp_ack_t response;
     size_t response_size;
     bool res = false;
-    const char* case_msg = "  Assertion 2.2";
+
+    teeio_test_result_t assertion_result = TEEIO_TEST_RESULT_NOT_TESTED;
+
+    teeio_record_assertion_result(case_class, case_id, 0, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_SEPARATOR, TEEIO_TEST_RESULT_NOT_TESTED, case_info);
 
     libspdm_zero_mem (&request, sizeof(request));
     request.header.object_id = PCI_IDE_KM_OBJECT_ID_KEY_PROG;
@@ -59,57 +53,48 @@ bool test_ide_km_key_prog_case2(const void *pci_doe_context,
                                           &request, request_size,
                                           &response, &response_size);
     
-    // Assertion.0
-    TEEIO_PRINT(("         %s.0: %s(0x%x) %s.\n", case_msg, mKeyProgAssersion[0], status, !LIBSPDM_STATUS_IS_ERROR(status) ? "Pass" : "failed"));
-    if (LIBSPDM_STATUS_IS_ERROR(status))
-    {
-        return false;
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ide_km_key_prog send receive_data failed with status 0x%x\n", status));
+        teeio_record_assertion_result(case_class, case_id, 0, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED, "pci_ide_km_send_receive_data failed with 0x%x", status);
+        return true;
     }
 
     // Assertion.1
     res = response_size == sizeof(pci_ide_km_kp_ack_t);
-    TEEIO_PRINT(("         %s.1: %s %s\n", case_msg, mKeyProgAssersion[1], res ? "Pass" : "Fail"));
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "sizeof(IdeKmMessage) = 0x%lx", response_size);
     if(!res) {
-        return false;
+        return true;
     }
 
     // Assertion.2
     res = response.header.object_id == PCI_IDE_KM_OBJECT_ID_KP_ACK;
-    TEEIO_PRINT(("         %s.2: %s %s\n", case_msg, mKeyProgAssersion[2], res ? "Pass" : "Fail"));
-    if(!res) {
-        return false;
-    }
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 2, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "IdeKmMessage.ObjectID = 0x%x", response.header.object_id);
 
     // Assertion.3
     res = response.status == PCI_IDE_KM_KP_ACK_STATUS_INCORRECT_LENGTH;
-    TEEIO_PRINT(("         %s.3: %s(0x%x) %s\n", case_msg, mKeyProgAssersion[3], status, res ? "Pass" : "Fail"));
-    if(!res) {
-        return false;
-    }
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 3, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "IdeKmMessage.Status = 0x%02x", response.status);
 
     // Assertion.4
     res = (response.port_index == request.port_index);
-    TEEIO_PRINT(("         %s.3: %s %s\n", case_msg, mKeyProgAssersion[4], res ? "Pass" : "Fail"));
-    if(!res) {
-        return false;
-    }
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 4, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "IdeKmMessage.PortIndex = 0x%x", response.port_index);
 
     // Assertion.5
     res = (response.stream_id == request.stream_id);
-    TEEIO_PRINT(("         %s.2: %s %s\n", case_msg, mKeyProgAssersion[5], res ? "Pass" : "Fail"));
-    if(!res) {
-        return false;
-    }
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "IdeKmMessage.StreamID = 0x%x", response.stream_id);
 
     // Assertion.6
     res = (response.key_sub_stream == request.key_sub_stream);
-    TEEIO_PRINT(("         %s.2: %s %s\n", case_msg, mKeyProgAssersion[6], res ? "Pass" : "Fail"));
-    if(!res) {
-        return false;
-    }
-    
-    *kp_ack_status = response.status;
-
+    assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
+    teeio_record_assertion_result(case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, 
+                                  "IdeKmMessage.KeySet = 0x%02x && IdeKmMessage.RxTx = 0x%02x && IdeKmMessage.SubStream = 0x%02x",
+                                  response.key_sub_stream & PCI_IDE_KM_KEY_SET_MASK,
+                                  response.key_sub_stream & PCI_IDE_KM_KEY_DIRECTION_MASK,
+                                  response.key_sub_stream & PCI_IDE_KM_KEY_SUB_STREAM_MASK);
     return true;
 }
 
@@ -120,11 +105,14 @@ bool pcie_ide_test_keyprog_2_setup(void *test_context)
 
 bool pcie_ide_test_keyprog_2_run(void *test_context)
 {
-  bool status;
-  bool pass = true;
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+
+  ide_run_test_case_t* test_case = case_context->test_case;
+  TEEIO_ASSERT(test_case);
+  int case_class = test_case->class_id;
+  int case_id = test_case->case_id;
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
@@ -159,10 +147,9 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   request_size = sizeof(test_pci_ide_km_key_prog_t) - 4;
   TEEIO_ASSERT(result);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with request_size=%d\n", request_size));
-  status = test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
+  test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|NPR
@@ -173,10 +160,9 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   request_size = sizeof(test_pci_ide_km_key_prog_t) - 8;
   TEEIO_ASSERT(result);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with request_size=%d\n", request_size));
-  status = test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
+  test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|CPL
@@ -187,10 +173,9 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   request_size = sizeof(test_pci_ide_km_key_prog_t) - 12;
   TEEIO_ASSERT(result);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with request_size=%d\n", request_size));
-  status = test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
+  test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|PR
@@ -201,10 +186,9 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   request_size = sizeof(test_pci_ide_km_key_prog_t) - 16;
   TEEIO_ASSERT(result);
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with request_size=%d\n", request_size));
-  status = test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
+  test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|NPR
@@ -217,8 +201,7 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|CPL
@@ -231,11 +214,8 @@ bool pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size);
-  pass = pass & status;
+                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
-
-  case_context->result = pass ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;
 
   return true;
 }

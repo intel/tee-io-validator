@@ -21,7 +21,8 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 SET(src_pcie_ide_test_lib
   pcie_ide_common.c
   # test_case
-  test_case/test_case_query.c
+  test_case/test_case_query_1.c
+  test_case/test_case_query_2.c
   test_case/test_case_ksetgo_1.c
   test_case/test_case_ksetgo_2.c
   test_case/test_case_ksetgo_3.c

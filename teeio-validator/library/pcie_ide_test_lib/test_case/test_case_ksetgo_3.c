@@ -59,70 +59,47 @@ bool test_ksetgo_3_run_phase1(void* doe_context, void* spdm_context, uint32_t* s
                               uint8_t stream_id, uint8_t rp_stream_index,
                               uint8_t* kcbar_addr, IDE_TEST_TOPOLOGY_TYPE top_type,
                               ide_common_test_port_context_t* upper_port,
-                              ide_common_test_port_context_t* lower_port)
+                              ide_common_test_port_context_t* lower_port,
+                              int case_class, int case_id)
 {
-  libspdm_return_t status;
-
   // Now KSetGo
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|PR\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0, true, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|RX|PR failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
-    return false;
-  }
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0, true,
+                             "K0|RX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|NPR\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0, true, "  Assertion 3.3");
-
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|RX|NPR failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
-    return false;
-  }
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0, true,
+                             "K0|RX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|RX|CPL\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0, true, "  Assertion 3.3");
-
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|RX|CPL failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
-    return false;
-  }
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0, true,
+                             "K0|RX|CPL", case_class, case_id);
 
   // set key_set_select in host ide
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  set_rp_ide_key_set_select(kcbar, rp_stream_index, PCI_IDE_KM_KEY_SET_K0);
+  if(teeio_test_case_result(case_class, case_id) == TEEIO_TEST_RESULT_PASS) {
+    set_rp_ide_key_set_select(kcbar, rp_stream_index, PCI_IDE_KM_KEY_SET_K0);
+  }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|PR\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0, true, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|PR failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
-    return false;
-  }
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0, true,
+                             "K0|TX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|NPR\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0, true, "  Assertion 3.3");
-
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|NPR failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
-    return false;
-  }
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0, true,
+                             "K0|TX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetGo %s|TX|CPL\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0, true, "  Assertion 3.3");
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+                             PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0, true,
+                             "K0|TX|CPL", case_class, case_id);
 
-  if (LIBSPDM_STATUS_IS_ERROR(status))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|CPL failed with 0x%x\n", k_set_names[PCI_IDE_KM_KEY_SET_K0], status));
+  if(teeio_test_case_result(case_class, case_id) != TEEIO_TEST_RESULT_PASS) {
     return false;
   }
 
@@ -140,10 +117,10 @@ bool test_ksetgo_3_run_phase1(void* doe_context, void* spdm_context, uint32_t* s
 
   // enable host ide stream
   enable_rootport_ide_stream(upper_port->cfg_space_fd,
-                         upper_port->ecap_offset,
-                         ide_type, upper_port->ide_id,
-                         kcbar_addr,
-                         rp_stream_index, true);
+                        upper_port->ecap_offset,
+                        ide_type, upper_port->ide_id,
+                        kcbar_addr,
+                        rp_stream_index, true);
 
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
@@ -162,71 +139,51 @@ bool test_ksetgo_3_run_phase1(void* doe_context, void* spdm_context, uint32_t* s
 
 bool test_ksetgo_3_run_phase2(void* doe_context, void* spdm_context, uint32_t* session_id,
                               uint8_t stream_id, uint8_t rp_stream_index, uint8_t ide_id,
-                              uint8_t* kcbar_addr, IDE_TEST_TOPOLOGY_TYPE top_type)
+                              uint8_t* kcbar_addr, IDE_TEST_TOPOLOGY_TYPE top_type,
+                              int case_class, int case_id)
 {
-  libspdm_return_t status;
-  bool res = false;
-
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|PR\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0,
-                             false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
-  }
+                             false, "K1|RX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|NPR\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                               PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0,
-                              false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
-  }
+                              false, "K1|RX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|CPL\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0,
-                             false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
-  }
+                             false, "K1|RX|CPL", case_class, case_id);
 
   // set key_set_select in host ide
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr;
-  set_rp_ide_key_set_select(kcbar, rp_stream_index, PCIE_IDE_STREAM_KS1);
+  if(teeio_test_case_result(case_class, case_id) == TEEIO_TEST_RESULT_PASS) {
+    set_rp_ide_key_set_select(kcbar, rp_stream_index, PCIE_IDE_STREAM_KS1);
+  }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|PR\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0,
-                             false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
-  }
+                             false, "K1|TX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|NPR\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                               PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0,
-                              false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
-  }
+                              false, "K1|TX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|CPL\n"));
-  status = test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
+  test_ide_km_key_set_go(doe_context, spdm_context, session_id, stream_id,
                               PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0,
-                              false, "  Assertion 3.3");
-  if (LIBSPDM_STATUS_IS_ERROR(status)) {
-    goto Done;
+                              false, "K1|TX|CPL", case_class, case_id);
+
+  if(teeio_test_case_result(case_class, case_id) == TEEIO_TEST_RESULT_PASS) {
+    // wait for 10 ms for device to get ide ready
+    libspdm_sleep(10 * 1000);
   }
 
-  res = true;
-
-  // wait for 10 ms for device to get ide ready
-  libspdm_sleep(10 * 1000);
-
-Done:
-
-  return res;
+  return true;
 }
 
 bool pcie_ide_test_ksetgo_3_run(void *test_context)
@@ -236,6 +193,11 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+
+  ide_run_test_case_t* test_case = case_context->test_case;
+  TEEIO_ASSERT(test_case);
+  int case_class = test_case->class_id;
+  int case_id = test_case->case_id;
 
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
@@ -253,7 +215,8 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
   res = test_ksetgo_3_run_phase1(doe_context, spdm_context, &session_id,
                                 stream_id, group_context->rp_stream_index,
                                 upper_port->mapped_kcbar_addr, group_context->common.top->type,
-                                upper_port, lower_port);
+                                upper_port, lower_port,
+                                case_class, case_id);
   if(!res) {
     goto Done;
   }
@@ -270,11 +233,10 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
   // phase 2
   res = test_ksetgo_3_run_phase2(doe_context, spdm_context, &session_id,
                                 stream_id, group_context->rp_stream_index, upper_port->ide_id,
-                                upper_port->mapped_kcbar_addr, group_context->common.top->type);
+                                upper_port->mapped_kcbar_addr, group_context->common.top->type,
+                                case_class, case_id);
 
 Done:
-  case_context->result = res ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;
-
   return true;
 }
 

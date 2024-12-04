@@ -52,6 +52,11 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
+  ide_run_test_case_t* test_case = case_context->test_case;
+  TEEIO_ASSERT(test_case);
+  int case_class = test_case->class_id;
+  int case_id = test_case->case_id;
+
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
@@ -114,9 +119,11 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
     }
   }
 
-  case_context->result = res ? IDE_COMMON_TEST_CASE_RESULT_SUCCESS : IDE_COMMON_TEST_CASE_RESULT_FAILED;
+  teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                res ? "PCIE-IDE KeyRefresh succeeded." : "PCIE-IDE KeyRefresh failed.");
 
-  return res;
+  return true;
 }
 
 bool pcie_ide_test_full_keyrefresh_teardown(void *test_context)

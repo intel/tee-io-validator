@@ -78,7 +78,9 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
       IDE_STREAM_STATUS_NAME[status],
       state));
 
-  return status == IDE_STREAM_STATUS_TYPE_SECURE;
+  bool res = status == IDE_STREAM_STATUS_TYPE_SECURE;
+  teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_CHECK, res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED); 
+  return res;
 }
 
 // set ft_supported
@@ -179,6 +181,7 @@ bool test_config_enable_common(void *test_context)
     }
   }
   if(!res) {
+    teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_ENABLE, TEEIO_TEST_RESULT_FAILED); 
     return false;
   }
 
@@ -193,11 +196,13 @@ bool test_config_enable_common(void *test_context)
   }
 
   if(!res) {
+    teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_ENABLE, TEEIO_TEST_RESULT_FAILED); 
     return res;
   }
 
   // then reset registers
   res = test_config_reset_ide_registers(group_context);
+  teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_ENABLE, res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED); 
 
   return res;
 }
@@ -275,6 +280,7 @@ bool test_config_support_common(void *test_context)
               host_cap->sel_ide_supported, dev_cap->sel_ide_supported));
 
   if(!supported) {
+    teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_SUPPORT, TEEIO_TEST_RESULT_FAILED); 
     return false;
   }
 
@@ -300,6 +306,7 @@ bool test_config_support_common(void *test_context)
     }
   }
   if(!supported) {
+    teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_SUPPORT, TEEIO_TEST_RESULT_FAILED); 
     return false;
   }
 
@@ -323,5 +330,6 @@ bool test_config_support_common(void *test_context)
     }
   }
 
+  teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_SUPPORT, supported ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED); 
   return supported;
 }

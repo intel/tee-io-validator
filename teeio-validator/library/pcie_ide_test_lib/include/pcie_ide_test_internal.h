@@ -78,11 +78,12 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
 
 bool test_keyprog_setup_common(void *test_context);
 
-libspdm_return_t test_ide_km_key_set_go(const void *pci_doe_context,
-                                   void *spdm_context, const uint32_t *session_id,
-                                   uint8_t stream_id, uint8_t key_sub_stream,
-                                   uint8_t port_index,
-                                   bool phase1, const char *assertion_msg);
+bool test_ide_km_key_set_go(const void *pci_doe_context,
+                            void *spdm_context, const uint32_t *session_id,
+                            uint8_t stream_id, uint8_t key_sub_stream,
+                            uint8_t port_index,
+                            bool phase1, const char *case_info,
+                            int case_class, int case_id);
 
 bool test_ksetgo_setup_common(
   void *doe_context, void* spdm_context,
@@ -93,7 +94,8 @@ bool test_ksetgo_setup_common(
 bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
                             void *spdm_context, const uint32_t *session_id,
                             uint8_t stream_id, uint8_t key_sub_stream,
-                            uint8_t port_index, const char* case_msg);
+                            uint8_t port_index, const char* case_info,
+                            int case_class, int case_id);
 
 /**
  * Dump key_iv in rootport registers

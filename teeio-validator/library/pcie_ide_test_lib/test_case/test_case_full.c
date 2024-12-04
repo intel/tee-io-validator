@@ -50,6 +50,11 @@ bool pcie_ide_test_full_1_run(void *test_context)
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
 
+  ide_run_test_case_t* test_case = case_context->test_case;
+  TEEIO_ASSERT(test_case);
+  int case_class = test_case->class_id;
+  int case_id = test_case->case_id;
+
   pcie_ide_test_group_context_t *group_context = (pcie_ide_test_group_context_t *)case_context->group_context;
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
@@ -84,7 +89,7 @@ bool pcie_ide_test_full_1_run(void *test_context)
   TEEIO_PRINT(("ide_stream is setup. Press any key to continue.\n"));
   getchar();
 
-  case_context->result = IDE_COMMON_TEST_CASE_RESULT_SUCCESS;
+  teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_PASS, "PCIE-IDE Stream is setup.");
   return true;
 }
 
