@@ -103,4 +103,6 @@ bool test_pci_ide_km_key_set_stop(const void *pci_doe_context,
  */
 void pcie_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, uint8_t* iv, int iv_size);
 
+bool pcie_ide_teardown_common(void *test_context, uint8_t ks);
+
 #endif

@@ -154,7 +154,7 @@ static bool test_full_ide_km_key_set_stop(const void *pci_doe_context,
     return true;
 }
 
-bool test_full_teardown_common(void *test_context, uint8_t ks)
+bool pcie_ide_teardown_common(void *test_context, uint8_t ks)
 {
   // first diable dev_ide and host_ide
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
@@ -244,5 +244,5 @@ TestFullTeardownDone:
 
 bool pcie_ide_test_full_1_teardown(void *test_context)
 {
-  return test_full_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
+  return pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
 }

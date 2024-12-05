@@ -280,5 +280,5 @@ Done:
 
 bool pcie_ide_test_ksetgo_4_teardown(void *test_context)
 {
-  return true;
+  return pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
 }
