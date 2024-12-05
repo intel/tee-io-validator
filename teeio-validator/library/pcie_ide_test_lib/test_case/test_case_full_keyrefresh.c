@@ -24,8 +24,6 @@
 
 static uint8_t mKeySet = 0;
 
-bool test_full_teardown_common(void *test_context, uint8_t ks);
-
 bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
@@ -123,5 +121,5 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
 
 bool pcie_ide_test_full_keyrefresh_teardown(void *test_context)
 {
-  return test_full_teardown_common(test_context, mKeySet);
+  return pcie_ide_teardown_common(test_context, mKeySet);
 }
