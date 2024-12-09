@@ -150,17 +150,6 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
-static void dump_cxl_ide_status(ide_common_test_port_context_t* upper_port, ide_common_test_port_context_t* lower_port)
-{
-  TEEIO_PRINT(("\n"));
-  TEEIO_PRINT(("Print host cxl ide status\n"));
-  cxl_dump_ide_status(upper_port->cxl_data.memcache.cap_headers, upper_port->cxl_data.memcache.cap_headers_cnt, upper_port->cxl_data.memcache.mapped_memcache_reg_block);
-
-  TEEIO_PRINT(("\n"));
-  TEEIO_PRINT(("Print device cxl ide status.\n"));
-  cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
-}
-
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
@@ -168,7 +157,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap)
+                          bool skip_ksetgo, uint32_t config_bitmap,
+                          bool set_link_enc_enable, bool program_iv)
 {
   bool result;
   uint8_t kp_ack_status;
@@ -236,6 +226,11 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     return false;
   }
 
+  if(!program_iv) {
+    cxl_ide_km_iv_tx = CXL_IDE_KM_KEY_IV_DEFAULT;
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IV (TX) is not to be programmed.\n"));
+  }
+
   // ide_km_key_prog in RX
   status = cxl_ide_km_key_prog(
       doe_context, spdm_context,
@@ -273,12 +268,12 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // Program TX/RX IV values
   cxl_construct_rp_keys(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   cxl_construct_rp_iv(tx_key_buffer.iv, sizeof(tx_key_buffer.iv), rp_iv, sizeof(rp_iv));
-  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, program_iv, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
   cxl_dump_key_iv_in_rp("Rx", keys.bytes, 32, (uint8_t *)rp_iv, 8);
 
   cxl_construct_rp_keys(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
   cxl_construct_rp_iv(rx_key_buffer.iv, sizeof(rx_key_buffer.iv), rp_iv, sizeof(rp_iv));
-  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, program_iv, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
   cxl_dump_key_iv_in_rp("Tx", keys.bytes, 32, (uint8_t *)rp_iv, 8);
 
   // Set TxKeyValid and RxKeyValid bit
@@ -304,7 +299,9 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go RX\n"));
 
   // Set LinkEncEnable bit
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  if(set_link_enc_enable) {
+    cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  }
 
   // Set StartTrigger bit
   cxl_cfg_rp_start_trigger(kcbar_ptr, true);
@@ -325,9 +322,5 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
 
-  dump_cxl_ide_status(upper_port, lower_port);
-
-  printf("cxl_setup_ide_stream is done. Press any key to continue.\n");
-  getchar();
   return true;
 }
