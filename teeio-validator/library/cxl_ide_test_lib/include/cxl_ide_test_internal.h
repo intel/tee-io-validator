@@ -45,7 +45,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
                           bool skip_ksetgo, uint32_t config_bitmap,
-                          CXL_IDE_MODE ide_mode);
+                          CXL_IDE_MODE ide_mode,
+                          bool set_link_enc_enable, bool program_iv);
 // stop cxl ide stream
 bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
                          uint32_t *session_id, uint8_t *kcbar_addr,

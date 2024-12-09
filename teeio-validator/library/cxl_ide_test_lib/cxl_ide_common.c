@@ -66,7 +66,7 @@ ide_test_group_funcs_t m_cxl_ide_group_funcs = {
   cxl_ide_test_group_teardown
 };
 
-#define CXL_IDE_TEST_CLASS_CASE_NAMES "IdeStream"
+#define CXL_IDE_TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh"
 ide_test_case_name_t m_cxl_ide_test_case_names[] = {
   {"Query",       "1,2",                        CXL_MEM_IDE_TEST_CASE_QUERY     },
   {"KeyProg",     "1,2,3,4,5,6,7,8,9",          CXL_MEM_IDE_TEST_CASE_KEYPROG   },
@@ -107,7 +107,8 @@ ide_test_case_funcs_t m_cxl_ide_get_key_cases[MAX_CXL_GETKEY_CASE_ID] = {
 };
 
 ide_test_case_funcs_t m_cxl_ide_test_full_cases[MAX_CXL_FULL_CASE_ID] = {
-  { cxl_ide_test_full_ide_stream_setup, cxl_ide_test_full_ide_stream_run, cxl_ide_test_full_ide_stream_teardown, true },  // IdeStream
+  { cxl_ide_test_full_ide_stream_setup, cxl_ide_test_full_ide_stream_run, cxl_ide_test_full_ide_stream_teardown, false },  // IdeStream
+  { cxl_ide_test_keyrefresh_setup,     cxl_ide_test_keyrefresh_run,     cxl_ide_test_keyrefresh_teardown,     false },  // KeyRefresh
 };
 
 TEEIO_TEST_CASES m_cxl_ide_test_case_funcs[CXL_MEM_IDE_TEST_CASE_NUM] = {
