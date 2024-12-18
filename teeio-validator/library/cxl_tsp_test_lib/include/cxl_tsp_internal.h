@@ -21,6 +21,13 @@ typedef struct {
     cxl_tsp_version_number_t version_number_entry[1];
 } teeio_cxl_tsp_get_target_tsp_version_rsp_mine_t;
 
+typedef struct {
+    cxl_tsp_header_t header;
+    uint16_t reserved;
+    uint16_t portion_length;
+    uint16_t remainder_length;
+    uint8_t report[LIBCXLTSP_CONFIGURATION_REPORT_PORTION_LEN];
+} teeio_cxl_tsp_get_target_configuration_report_rsp_mine_t;
 
 #pragma pack()
 
