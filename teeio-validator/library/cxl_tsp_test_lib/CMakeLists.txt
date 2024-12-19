@@ -25,7 +25,8 @@ SET(src_cxl_tsp_test_lib
   test_case/test_case_set_configuration.c
   test_case/test_case_get_configuration.c
   test_case/test_case_get_configuration_report.c
-  test_case/test_case_lock_configuration.c
+  test_case/test_case_lock_configuration_1.c
+  test_case/test_case_lock_configuration_2.c
   ## test configs
   test_config/test_config.c
   ## test groups
