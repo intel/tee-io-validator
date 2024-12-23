@@ -20,11 +20,11 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 
 SET(src_cxl_tsp_test_lib
   # test_case
-  test_case/test_case_get_version.c
-  test_case/test_case_get_caps.c
-  test_case/test_case_set_configuration.c
-  test_case/test_case_get_configuration.c
-  test_case/test_case_get_configuration_report.c
+  test_case/test_case_get_version_1.c
+  test_case/test_case_get_caps_1.c
+  test_case/test_case_set_configuration_1.c
+  test_case/test_case_get_configuration_1.c
+  test_case/test_case_get_configuration_report_1.c
   test_case/test_case_lock_configuration_1.c
   test_case/test_case_lock_configuration_2.c
   ## test configs
