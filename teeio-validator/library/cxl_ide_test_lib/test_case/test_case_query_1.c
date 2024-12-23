@@ -27,21 +27,3 @@ bool cxl_ide_test_query_1_teardown(void *test_context)
   NOT_IMPLEMENTED(__func__);
   return false;
 }
-
-bool cxl_ide_test_query_2_setup(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
-
-bool cxl_ide_test_query_2_run(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
-
-bool cxl_ide_test_query_2_teardown(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
