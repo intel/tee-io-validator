@@ -27,21 +27,3 @@ bool pcie_ide_test_spdm_session_1_teardown(void *test_context)
   NOT_IMPLEMENTED(__func__);
   return false;
 }
-
-bool pcie_ide_test_spdm_session_2_setup(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
-
-bool pcie_ide_test_spdm_session_2_run(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
-
-bool pcie_ide_test_spdm_session_2_teardown(void *test_context)
-{
-  NOT_IMPLEMENTED(__func__);
-  return false;
-}
