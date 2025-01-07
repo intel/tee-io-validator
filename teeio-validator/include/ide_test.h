@@ -444,6 +444,7 @@ typedef struct {
   ide_common_test_suite_context_t *suite_context;
   IDE_TEST_TOPOLOGY *top;
   int config_id;
+  int case_class;
 
   ide_common_test_port_context_t root_port;
   ide_common_test_port_context_t upper_port;
