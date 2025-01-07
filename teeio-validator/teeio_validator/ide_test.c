@@ -382,6 +382,7 @@ ide_run_test_group_t *alloc_run_test_group(TEEIO_TEST_CATEGORY test_category, id
   context->upper_port.port = upper_port;
   context->lower_port.port = lower_port;
   context->root_port.port = root_port;
+  context->case_class = case_class;
 
   // via switch
   if(top->connection == IDE_TEST_CONNECT_SWITCH || top->connection == IDE_TEST_CONNECT_P2P) {
