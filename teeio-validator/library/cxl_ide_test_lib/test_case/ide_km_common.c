@@ -212,14 +212,15 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
     }
   }
 
-  uint8_t cxl_ide_km_iv = 0;
+  uint8_t cxl_ide_km_iv_rx = 0;
+  uint8_t cxl_ide_km_iv_tx = 0;
 
   // generate cxl-ide key/iv for RX direction
   result = cxl_ide_generate_key(doe_context, spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
                                &rx_key_buffer, key_iv_gen_capable,
-                               CXL_IDE_KM_KEY_DIRECTION_RX, &cxl_ide_km_iv
+                               CXL_IDE_KM_KEY_DIRECTION_RX, &cxl_ide_km_iv_rx
                                );
   if (!result) {
     return false;
@@ -229,7 +230,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                                session_id, stream_id,
                                CXL_IDE_KM_KEY_SUB_STREAM_CXL, port_index,
                                &tx_key_buffer, key_iv_gen_capable,
-                               CXL_IDE_KM_KEY_DIRECTION_TX, &cxl_ide_km_iv
+                               CXL_IDE_KM_KEY_DIRECTION_TX, &cxl_ide_km_iv_tx
                                );
   if (!result) {
     return false;
@@ -239,7 +240,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   status = cxl_ide_km_key_prog(
       doe_context, spdm_context,
       session_id, stream_id,
-      CXL_IDE_KM_KEY_DIRECTION_RX | cxl_ide_km_iv | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+      CXL_IDE_KM_KEY_DIRECTION_RX | cxl_ide_km_iv_rx | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
       port_index, // port_index
       &rx_key_buffer, &kp_ack_status);
 
@@ -256,7 +257,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   status = cxl_ide_km_key_prog(
       doe_context, spdm_context,
       session_id, stream_id,
-      CXL_IDE_KM_KEY_DIRECTION_TX | cxl_ide_km_iv | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
+      CXL_IDE_KM_KEY_DIRECTION_TX | cxl_ide_km_iv_tx | CXL_IDE_KM_KEY_SUB_STREAM_CXL,
       port_index,
       &tx_key_buffer, &kp_ack_status);
   if (LIBSPDM_STATUS_IS_ERROR(status))
