@@ -183,7 +183,9 @@ static bool common_test_group_setup(void *test_context)
   context->spdm_doe.session_id = session_id;
 
   // cxl query is called in group_setup
-  if(!cxl_ide_query(context)) {
+  // For test case of CXL_MEM_IDE_TEST_CASE_QUERY, cxl query is not called because
+  // it is to test CXL Query itself  
+  if(context->common.case_class != CXL_MEM_IDE_TEST_CASE_QUERY && !cxl_ide_query(context)) {
     teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "CXL Query failed.");
     return false;
   }
