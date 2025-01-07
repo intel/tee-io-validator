@@ -20,20 +20,7 @@
 #include "teeio_debug.h"
 #include "cxl_ide_lib.h"
 #include "cxl_ide_test_common.h"
-
-// setup cxl ide stream
-bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
-                          uint32_t *session_id, uint8_t *kcbar_addr,
-                          uint8_t stream_id, uint8_t port_index,
-                          ide_common_test_port_context_t *upper_port,
-                          ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap);
-bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
-                         uint32_t *session_id, uint8_t *kcbar_addr,
-                         uint8_t stream_id,
-                         uint8_t port_index,
-                         ide_common_test_port_context_t *upper_port,
-                         ide_common_test_port_context_t *lower_port);
+#include "cxl_ide_test_internal.h"
 
 bool cxl_reset_ecap_registers(ide_common_test_port_context_t *port_context);
 bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context);
