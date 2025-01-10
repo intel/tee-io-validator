@@ -90,8 +90,8 @@ void cxl_clear_rootport_key_ivs(ide_common_test_port_context_t* port_context)
   // clear the keys & ivs in rootport
   cxl_ide_km_aes_256_gcm_key_buffer_t keys;
   memset(&keys, 0, sizeof(cxl_ide_km_aes_256_gcm_key_buffer_t));
-  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
-  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_TX, true, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_RX, true, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
 }
 
 /**
@@ -733,6 +733,7 @@ bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_T
 void cxl_cfg_rp_link_enc_key_iv(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     CXL_IDE_STREAM_DIRECTION direction, // RX TX
+    bool program_iv,
     const uint8_t key_slot,             // key 0, 1, 2, 3
     uint8_t* key, uint32_t key_size,    // key
     uint8_t* iv, uint32_t iv_size       // iv vals
@@ -758,7 +759,11 @@ void cxl_cfg_rp_link_enc_key_iv(
   TEEIO_ASSERT(iv_size == 8);
 
   reg_memcpy_dw(enc_keys, key_size, key, key_size);
-  reg_memcpy_dw(txrx_iv, iv_size, iv, iv_size);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Encryption keys are programmed.\n"));
+  if(program_iv) {
+    reg_memcpy_dw(txrx_iv, iv_size, iv, iv_size);
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Encryption IV is programmed.\n"));
+  }
 }
 
 void cxl_cfg_cache_enable(int fd, uint32_t ecap_offset, bool enable)

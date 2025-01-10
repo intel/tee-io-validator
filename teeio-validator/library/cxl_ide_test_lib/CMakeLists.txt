@@ -22,6 +22,7 @@ SET(src_cxl_ide_test_lib
   # test_case
   test_case/ide_km_common.c
   test_case/test_case_full.c
+  test_case/test_case_keyrefresh.c
   test_case/test_case_query_1.c
   test_case/test_case_query_2.c
   test_case/test_case_key_prog_1.c
