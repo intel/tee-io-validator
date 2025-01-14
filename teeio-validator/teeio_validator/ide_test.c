@@ -13,6 +13,7 @@
 #include "pcie_ide_test_lib.h"
 #include "cxl_ide_test_lib.h"
 #include "cxl_tsp_test_lib.h"
+#include "tdisp_test_lib.h"
 
 const char *m_ide_test_topology_name[] = {
   "SelectiveIDE",
@@ -47,6 +48,8 @@ teeio_test_funcs_t m_teeio_test_funcs[TEEIO_TEST_CATEGORY_MAX] = {
   // CXL-IDE
   { 0 },
   // CXL-TSP
+  { 0 },
+  // TDISP
   { 0 }
 };
 
@@ -55,6 +58,7 @@ void teeio_init_test_funcs()
   pcie_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_PCIE_IDE]);
   cxl_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_IDE]);
   cxl_tsp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_TSP]);
+  tdisp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_TDISP]);
 }
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)

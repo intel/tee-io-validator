@@ -33,12 +33,14 @@
 #include "hal/library/debuglib.h"
 
 #include <library/spdm_return_status.h>
+#include <industry_standard/pci_tdisp.h>
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "ide_test.h"
 
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
+extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
 const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEGORY test_category);
@@ -66,7 +68,8 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
 const char *TEEIO_TEST_CATEGORY_NAMES[] = {
     "pcie-ide",
     "cxl-ide",
-    "cxl-tsp"
+    "cxl-tsp",
+    "tdisp"
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -2107,6 +2110,14 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] stream_id(%d) shall be in [0, 255].\n", section_name, data32));
   }
   topology->stream_id = data32;
+
+  // optional tdisp_function_id
+  sprintf(entry_name, "tdisp_function_id");
+  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "[%d] tdisp_function_id(%d) is available", section_name, data32));
+    g_tdisp_interface_id.function_id = data32;
+  }
 
   // bus
   if(g_scan_bus != INVALID_SCAN_BUS) {

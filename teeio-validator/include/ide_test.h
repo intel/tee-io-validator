@@ -14,6 +14,7 @@
 #include "cxl_ide.h"
 #include "cxl_tsp.h"
 #include "intel_keyp.h"
+#include "teeio_debug.h"
 
 #define NOT_IMPLEMENTED(msg) \
   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not implemented - %s\n", msg)); \
@@ -75,6 +76,7 @@ typedef enum {
   TEEIO_TEST_CATEGORY_PCIE_IDE = 0,
   TEEIO_TEST_CATEGORY_CXL_IDE,
   TEEIO_TEST_CATEGORY_CXL_TSP,
+  TEEIO_TEST_CATEGORY_TDISP,
   TEEIO_TEST_CATEGORY_MAX
 } TEEIO_TEST_CATEGORY;
 
