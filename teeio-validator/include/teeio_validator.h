@@ -24,7 +24,7 @@
 #include "helperlib.h"
 
 #define TEEIO_VALIDATOR_NAME "teeio_validator"
-#define TEEIO_VALIDATOR_VERSION "0.2.0"
+#define TEEIO_VALIDATOR_VERSION "0.3.0"
 
 #define LOGFILE "./teeio_log"
 #define PCAPFILE "./teeio_pcap"

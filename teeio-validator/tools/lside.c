@@ -17,6 +17,7 @@
 #include "teeio_debug.h"
 #include "ide_tools.h"
 #include "pcie_ide_lib.h"
+#include <industry_standard/pci_tdisp.h>
 
 bool g_pci_log = false;
 int g_top_id = 0;
@@ -25,6 +26,7 @@ IDE_OPERATION g_ide_operation = IDE_OPERATION_LIST;
 IDE_TEST_CONFIG lside_test_config = {0};
 DEVCIES_CONTEXT devices_context = {0};
 bool g_run_test_suite = false;
+pci_tdisp_interface_id_t g_tdisp_interface_id = {0};
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 bool g_libspdm_log = false;
