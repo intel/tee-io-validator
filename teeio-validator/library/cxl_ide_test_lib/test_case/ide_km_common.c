@@ -45,13 +45,13 @@ void cxl_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, ui
 /**
  * Generate CXL-IDE Key/IV.
  */
-static bool cxl_ide_generate_key(const void *pci_doe_context,
-                                  void *spdm_context, const uint32_t *session_id,
-                                  uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
-                                  cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
-                                  bool key_iv_gen_capable, uint8_t direction,
-                                  uint8_t *cxl_ide_km_iv
-                                  )
+bool cxl_ide_generate_key(const void *pci_doe_context,
+                          void *spdm_context, const uint32_t *session_id,
+                          uint8_t stream_id, uint8_t key_sub_stream, uint8_t port_index,
+                          cxl_ide_km_aes_256_gcm_key_buffer_t *key_buffer,
+                          bool key_iv_gen_capable, uint8_t direction,
+                          uint8_t *cxl_ide_km_iv
+                          )
 {
   bool result = true;
   libspdm_return_t status;
