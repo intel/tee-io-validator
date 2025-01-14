@@ -25,6 +25,10 @@ bool cxl_ide_test_config_skid_enable(void *test_context)
   cxl_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
+  if(group_context->common.case_class == CXL_MEM_IDE_TEST_CASE_QUERY) {
+    return true;
+  }
+
   INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
   cxl_cfg_rp_mode(kcbar_ptr, INTEL_CXL_IDE_MODE_SKID);
 
@@ -48,6 +52,10 @@ bool cxl_ide_test_config_skid_support(void *test_context)
 
   cxl_ide_test_group_context_t *group_context = config_context->group_context;
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+
+  if(group_context->common.case_class == CXL_MEM_IDE_TEST_CASE_QUERY) {
+    return true;
+  }
 
   CXL_PRIV_DATA* rp_cxl_data = &group_context->common.upper_port.cxl_data;
   CXL_PRIV_DATA* ep_cxl_data = &group_context->common.lower_port.cxl_data;
