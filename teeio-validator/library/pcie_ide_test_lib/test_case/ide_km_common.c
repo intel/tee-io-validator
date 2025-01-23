@@ -52,7 +52,7 @@ void pcie_dump_key_iv_in_rp(const char* direction, uint8_t *key, int key_size, u
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "PCIe IDE IV in rootport registers (%s IV Slots):\n", direction));
-  for(i = 0; i < 8; i++) {
+  for(i = 0; i < 2; i++) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  IFV_DW%d: 0x%08x\n", i, *(uint32_t *)(iv + i*4)));
   }
 }
