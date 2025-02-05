@@ -230,6 +230,16 @@ const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEG
   return NULL;
 }
 
+bool parse_test_configuration_priv_names(const char* key, const char* value, TEEIO_TEST_CATEGORY test_category, IDE_TEST_CONFIGURATION* config)
+{
+    return false;
+}
+
+const char** get_test_configuration_priv_names(TEEIO_TEST_CATEGORY test_category)
+{
+    return NULL;
+}
+
 ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category)
 {
     return NULL;

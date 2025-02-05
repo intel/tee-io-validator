@@ -37,9 +37,7 @@ SET(src_cxl_ide_test_lib
   test_case/test_case_kset_stop_1.c
   test_case/test_case_get_key_1.c
   ## test configs
-  test_config/test_config_containment.c
   test_config/test_config_default.c
-  test_config/test_config_skid.c
   test_config/test_config_pcrc.c
   test_config/test_config_ide_stop.c
   test_config/test_config_get_key.c

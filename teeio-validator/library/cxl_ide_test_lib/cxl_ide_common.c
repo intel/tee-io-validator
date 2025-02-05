@@ -23,7 +23,12 @@ const char* m_cxl_ide_test_configuration_name[] = {
   NULL
 };
 
-uint32_t m_cxl_ide_config_bitmask = (uint32_t)CXL_LINK_IDE_CONFIGURATION_BITMASK;
+const char* m_cxl_ide_test_configuration_priv_name[] = {
+  "cxl_ide_mode",
+  NULL
+};
+
+uint32_t m_cxl_ide_config_bitmask = 0;
 
 ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] = {
   {
@@ -46,20 +51,6 @@ ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] =
     cxl_ide_test_config_ide_stop_disable,
     cxl_ide_test_config_ide_stop_support,
     cxl_ide_test_config_ide_stop_check
-  },
-  {
-    // skid mode
-    cxl_ide_test_config_skid_enable,
-    cxl_ide_test_config_skid_disable,
-    cxl_ide_test_config_skid_support,
-    cxl_ide_test_config_skid_check
-  },
-  {
-    // containment mode
-    cxl_ide_test_config_containment_enable,
-    cxl_ide_test_config_containment_disable,
-    cxl_ide_test_config_containment_support,
-    cxl_ide_test_config_containment_check
   },
   {
     // get_key
@@ -137,6 +128,35 @@ static const char* get_test_configuration_name (int configuration_type)
   return m_cxl_ide_test_configuration_name[configuration_type];
 }
 
+static const char** get_test_configuration_priv_names ()
+{
+  return m_cxl_ide_test_configuration_priv_name;
+}
+
+static bool parse_test_configuration_priv_name (const char* key, const char* value, IDE_TEST_CONFIGURATION* config)
+{
+  if(key == NULL || value == NULL || config == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid input\n"));
+    return false;
+  }
+
+  if(strcmp(key, "cxl_ide_mode") == 0) {
+    if(strcmp(value, "skid") == 0) {
+      config->priv_data.cxl_ide.ide_mode = CXL_IDE_MODE_SKID;
+    } else if(strcmp(value, "containment") == 0) {
+      config->priv_data.cxl_ide.ide_mode = CXL_IDE_MODE_CONTAINMENT;
+    } else {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid cxl_ide_mode value: %s\n", value));
+      return false;
+    }
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid key: %s\n", key));
+    return false;
+  }
+
+  return true;
+}
+
 static uint32_t get_test_configuration_bitmask (int top_tpye)
 {
   // CXL.memcache only supports LinkIde
@@ -186,16 +206,6 @@ static bool cxl_ide_check_configuration_bitmap(uint32_t* bitmap)
   // default config is always set
   *bitmap |= CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_DEFAULT);
 
-  // either skid mode or containment mode shall be set
-  // by default skid mode is set
-  if(*bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE)) {
-    *bitmap &= ~CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE);
-  } else if(*bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE)) {
-    *bitmap &= ~CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE);
-  } else {
-    *bitmap |= CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_SKID_MODE);
-  }
-
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl-ide configuration bitmap=0x%08x\n", *bitmap));
 
   return true;
@@ -210,6 +220,8 @@ bool cxl_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_bitmask_func = get_test_configuration_bitmask;
   funcs->get_configuration_funcs_func = get_test_configuration_funcs;
   funcs->get_configuration_name_func = get_test_configuration_name;
+  funcs->get_configuration_priv_names_func = get_test_configuration_priv_names;
+  funcs->parse_configuration_priv_name_func = parse_test_configuration_priv_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
   funcs->alloc_test_group_context_func = alloc_cxl_ide_test_group_context;
   funcs->check_configuration_bitmap_func = cxl_ide_check_configuration_bitmap;

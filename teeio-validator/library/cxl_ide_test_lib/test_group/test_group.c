@@ -113,6 +113,47 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
 
 // link_ide test group
 
+static bool check_and_enable_ide_mode(cxl_ide_test_group_context_t *group_context)
+{
+  CXL_PRIV_DATA* rp_cxl_data = &group_context->common.upper_port.cxl_data;
+  CXL_PRIV_DATA* ep_cxl_data = &group_context->common.lower_port.cxl_data;
+
+  CXL_IDE_CAPABILITY ep_ide_cap = {.raw = ep_cxl_data->memcache.ide_cap.raw};
+
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->common.suite_context->test_config, group_context->common.config_id);
+  TEEIO_ASSERT(configuration);
+
+  CXL_IDE_MODE ide_mode = configuration->priv_data.cxl_ide.ide_mode;
+  TEEIO_ASSERT(ide_mode == CXL_IDE_MODE_CONTAINMENT || ide_mode == CXL_IDE_MODE_SKID);
+  bool supported;
+
+  if(ide_mode == CXL_IDE_MODE_SKID) {
+    supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1
+                && (rp_cxl_data->memcache.ide_cap.raw & (uint32_t)CXL_IDE_MODE_SKID_MASK) != 0
+                && ep_ide_cap.cxl_ide_capable == 1
+                && (ep_ide_cap.raw & (uint32_t)CXL_IDE_MODE_SKID_MASK) != 0;
+  } else {
+    supported = rp_cxl_data->memcache.ide_cap.cxl_ide_capable == 1
+                && (rp_cxl_data->memcache.ide_cap.raw & (uint32_t)CXL_IDE_MODE_CONTAINMENT_MASK) != 0
+                && ep_ide_cap.cxl_ide_capable == 1
+                && (ep_ide_cap.raw & (uint32_t)CXL_IDE_MODE_CONTAINMENT_MASK) != 0;
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rootport cxl_ide_cap=0x%08x\n", rp_cxl_data->memcache.ide_cap.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "endpoint cxl_ide_cap=0x%08x\n", ep_ide_cap.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_mode(%s) supported=%d\n", ide_mode == CXL_IDE_MODE_SKID ? "skid" : "containment", supported));
+
+  if(!supported) {
+    return false;
+  }
+
+  // then enable it in rootport side
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)group_context->common.upper_port.mapped_kcbar_addr;
+  cxl_cfg_rp_mode(kcbar_ptr, ide_mode == CXL_IDE_MODE_CONTAINMENT ? INTEL_CXL_IDE_MODE_CONTAINMENT : INTEL_CXL_IDE_MODE_SKID);
+
+  return true;
+}
+
 /**
  * This function works to setup link_ide
  *
@@ -185,9 +226,16 @@ static bool common_test_group_setup(void *test_context)
   // cxl query is called in group_setup
   // For test case of CXL_MEM_IDE_TEST_CASE_QUERY, cxl query is not called because
   // it is to test CXL Query itself  
-  if(context->common.case_class != CXL_MEM_IDE_TEST_CASE_QUERY && !cxl_ide_query(context)) {
-    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "CXL Query failed.");
-    return false;
+  if(context->common.case_class != CXL_MEM_IDE_TEST_CASE_QUERY) {
+    if(!cxl_ide_query(context)) {
+      teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "CXL Query failed.");
+      return false;
+    }
+
+    if(!check_and_enable_ide_mode(context)) {
+      teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Check and enable IDE mode failed.");
+      return false;
+    }
   }
 
   // stream id in cxl-ide is always 0 according to cxl-spec

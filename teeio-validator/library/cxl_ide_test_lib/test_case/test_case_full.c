@@ -44,7 +44,7 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context)
   return cxl_setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                               &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
                               group_context->stream_id, 0,
-                              upper_port, lower_port, false, configuration->bit_map);
+                              upper_port, lower_port, false, configuration->bit_map, configuration->priv_data.cxl_ide.ide_mode);
 }
 
 bool cxl_ide_test_full_ide_stream_run(void *test_context)
