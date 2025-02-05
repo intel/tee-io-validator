@@ -86,6 +86,28 @@ const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEG
   return test_funcs->get_configuration_name_func(configuration_type);
 }
 
+bool parse_test_configuration_priv_names(const char* key, const char* value, TEEIO_TEST_CATEGORY test_category, IDE_TEST_CONFIGURATION* config)
+{
+  teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
+  if(test_funcs->parse_configuration_priv_name_func == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s is not supported in %s yet.\n", __func__, TEEIO_TEST_CATEGORY_NAMES[(int)test_category]));
+    return true;
+  }
+
+  return test_funcs->parse_configuration_priv_name_func(key, value, config);
+}
+
+const char** get_test_configuration_priv_names(TEEIO_TEST_CATEGORY test_category)
+{
+  teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
+  if(test_funcs->get_configuration_priv_names_func == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s is not supported in %s yet.\n", __func__, TEEIO_TEST_CATEGORY_NAMES[(int)test_category]));
+    return NULL;
+  }
+
+  return test_funcs->get_configuration_priv_names_func();
+}
+
 bool teeio_check_configuration_bitmap(uint32_t* bitmap, TEEIO_TEST_CATEGORY test_category)
 {
   teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];

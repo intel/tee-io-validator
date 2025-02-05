@@ -199,12 +199,17 @@ typedef struct {
   IDE_TEST_TOPOLOGY topologies[MAX_TOPOLOGY_NUM];
 } IDE_TEST_TOPOLOGYS;
 
+typedef union {
+  CXL_IDE_PRIV_CONFIG_DATA cxl_ide;
+} IDE_TEST_CONFIGURATION_PRIV_DATA;
+
 typedef struct {
   int id;
   bool enabled;
   IDE_TEST_TOPOLOGY_TYPE type;
   TEEIO_TEST_CATEGORY test_category;
   uint32_t bit_map;
+  IDE_TEST_CONFIGURATION_PRIV_DATA priv_data;
 } IDE_TEST_CONFIGURATION;
 
 typedef struct {
@@ -601,6 +606,8 @@ typedef struct {
 } ide_test_group_funcs_t;
 
 typedef const char*(*teeio_get_test_configuration_name_func_t) (int configuration_type);
+typedef const char**(*teeio_get_test_configuration_priv_names_func_t) ();
+typedef bool(*teeio_parse_test_configuration_priv_name_func_t) (const char* key, const char* value, IDE_TEST_CONFIGURATION* config);
 typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_tpye);
 typedef ide_test_config_funcs_t*(*teeio_get_test_configuration_funcs_func_t) (int top_type, int configuration_type);
 typedef ide_test_group_funcs_t*(*teeio_get_test_group_funcs_func_t) (int top_type);
@@ -611,6 +618,8 @@ typedef bool(*teeio_check_configuration_bitmap_func_t) (uint32_t* bitmask);
 
 typedef struct {
   teeio_get_test_configuration_name_func_t get_configuration_name_func;
+  teeio_get_test_configuration_priv_names_func_t get_configuration_priv_names_func;
+  teeio_parse_test_configuration_priv_name_func_t parse_configuration_priv_name_func;
   teeio_get_test_configuration_bitmask_func_t get_configuration_bitmask_func;
   teeio_get_test_configuration_funcs_func_t get_configuration_funcs_func;
   teeio_get_test_group_funcs_func_t get_group_funcs_func;

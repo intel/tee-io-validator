@@ -168,7 +168,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint8_t port_index,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap)
+                          bool skip_ksetgo, uint32_t config_bitmap,
+                          CXL_IDE_MODE ide_mode)
 {
   bool result;
   uint8_t kp_ack_status;
@@ -286,7 +287,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
 
   uint8_t ide_km_mode = CXL_IDE_KM_KEY_MODE_SKID;
-  if(config_bitmap & CXL_BIT_MASK(CXL_IDE_CONFIGURATION_TYPE_CONTAINMENT_MODE)) {
+  if(ide_mode == CXL_IDE_MODE_CONTAINMENT) {
     ide_km_mode = CXL_IDE_KM_KEY_MODE_CONTAINMENT;
   }
 

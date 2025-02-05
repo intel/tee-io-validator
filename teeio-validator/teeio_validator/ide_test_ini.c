@@ -44,6 +44,8 @@ extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int* index, TEEIO_TEST_CATEGORY test_category);
 const char* get_test_configuration_name(int configuration_type, TEEIO_TEST_CATEGORY test_category);
+const char** get_test_configuration_priv_names(TEEIO_TEST_CATEGORY test_category);
+bool parse_test_configuration_priv_names(const char* key, const char* value, TEEIO_TEST_CATEGORY test_category, IDE_TEST_CONFIGURATION* config);
 ide_test_case_name_t* get_test_case_name(int case_class, TEEIO_TEST_CATEGORY test_category);
 bool teeio_check_configuration_bitmap(uint32_t* bitmap, TEEIO_TEST_CATEGORY test_category);
 
@@ -1758,6 +1760,16 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
     config.test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
   }
 
+  const char** configuration_priv_names = get_test_configuration_priv_names(config.test_category);
+  if(configuration_priv_names != NULL) {
+    while(configuration_priv_names[i]) {
+      sprintf(entry_name, "%s", configuration_priv_names[i]);
+      if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value)) {
+        parse_test_configuration_priv_names(entry_name, (const char*)entry_value, config.test_category, &config);
+      }
+      i++;
+    }
+  }
 
   const char* configuration_name;
   while(true) {
@@ -1795,6 +1807,7 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   cfg->type = config.type;
   cfg->bit_map = config.bit_map;
   cfg->test_category = config.test_category;
+  memcpy(&cfg->priv_data, &config.priv_data, sizeof(config.priv_data));
 
   test_config->configurations.cnt += 1;
 
