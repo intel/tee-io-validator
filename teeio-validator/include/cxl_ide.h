@@ -23,6 +23,7 @@
   (MAX(MAX_CXL_QUERY_CASE_ID, MAX(MAX_CXL_KEYPROG_CASE_ID, MAX(MAX_CXL_KSETGO_CASE_ID, MAX(MAX_CXL_KSETSTOP_CASE_ID, MAX(MAX_CXL_GETKEY_CASE_ID, MAX_CXL_FULL_CASE_ID))))))
 
 #define MAX_IDE_TEST_DVSEC_COUNT  16
+#define CXL_IDE_REG_BLOCK_MAX_COUNT 9
 
 typedef enum {
   CXL_MEM_IDE_TEST_CASE_QUERY = 0,
@@ -88,6 +89,8 @@ typedef struct {
   uint8_t bus_num;
   uint8_t segment;
   uint8_t caps;
+  uint32_t ide_reg_block[CXL_IDE_REG_BLOCK_MAX_COUNT];
+  uint32_t ide_reg_block_count;
 } CXL_PRIV_DATA_QUERY_RESP_DATA;
 
 typedef struct {

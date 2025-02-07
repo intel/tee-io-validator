@@ -44,11 +44,16 @@ bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_bl
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    supported_algo=0x%02x, ide_stop_capable=%d, lopt_ide_capable=%d\n",
                                   ide_cap.supported_algo, ide_cap.ide_stop_capable,
                                   ide_cap.lopt_ide_capable));
-
   if(ide_cap.cxl_ide_capable == 0) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "CXL IDE is not supported by device.\n"));
     return false;
   }
+
+  // Print CXL IDE Control at offset 01h
+  CXL_IDE_CONTROL ide_control = {.raw = ide_reg_block[1]};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "CXL IDE Control : 0x%08x\n", ide_control.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    pcrc_disable=%d, ide_stop_enable=%d\n",
+                                  ide_control.pcrc_disable, ide_control.ide_stop_enable));
 
   return true;
 }
@@ -108,6 +113,13 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   cxl_data->query_resp.segment = segment;
   cxl_data->query_resp.max_port_index = max_port_index;
   cxl_data->query_resp.caps = caps.raw;
+  cxl_data->query_resp.ide_reg_block_count = ide_reg_block_count;
+  if(ide_reg_block_count > CXL_IDE_REG_BLOCK_MAX_COUNT) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ide_reg_block_count(%d) is too large.\n", ide_reg_block_count));
+    TEEIO_ASSERT(false);
+    return false;
+  }
+  memcpy(cxl_data->query_resp.ide_reg_block, ide_reg_block, sizeof(uint32_t) * ide_reg_block_count);
   return true;
 }
 
