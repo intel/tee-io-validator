@@ -28,7 +28,7 @@ const char* m_cxl_ide_test_configuration_priv_name[] = {
   NULL
 };
 
-uint32_t m_cxl_ide_config_bitmask = 0;
+uint32_t m_cxl_ide_config_bitmask = (uint32_t)CXL_LINK_IDE_CONFIGURATION_BITMASK;
 
 ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] = {
   {

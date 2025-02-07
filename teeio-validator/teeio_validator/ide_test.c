@@ -301,7 +301,7 @@ bool alloc_run_test_config(ide_run_test_suite_t *rts, IDE_TEST_CONFIG *test_conf
   char name_buf[MAX_NAME_LENGTH] = {0};
   const char* configuration_name = NULL;
   int offset = 0;
-  for(int i = 0; i < IDE_TEST_CONFIGURATION_TYPE_NUM; i++) {
+  for(int i = 0; i < 32; i++) {
     if(config_bits & BIT_MASK(i)) {
       alloc_run_test_config_item(run_test_config, i, top->type, test_category);
       configuration_name = test_funcs->get_configuration_name_func(i);
