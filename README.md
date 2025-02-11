@@ -54,7 +54,7 @@ DMTF [DSP0277](https://www.dmtf.org/dsp/DSP0277) Secured Messages using SPDM Spe
 
 #### PCI-SIG
 
-PCIe Base Specification Version [6.0.1](https://members.pcisig.com/wg/PCI-SIG/document/18363), [6.1](https://members.pcisig.com/wg/PCI-SIG/document/19849), [6.2](https://members.pcisig.com/wg/PCI-SIG/document/20590).
+PCIe Base Specification Version [6.0.1](https://members.pcisig.com/wg/PCI-SIG/document/18363), [6.1](https://members.pcisig.com/wg/PCI-SIG/document/19849), [6.2](https://members.pcisig.com/wg/PCI-SIG/document/20590), [6.3](https://members.pcisig.com/wg/PCI-SIG/document/21847).
 
 PCIe [DOE 1.0 ECN](https://members.pcisig.com/wg/PCI-SIG/document/14143) for PCIe 4.0, 5.0 (integrated in 6.0), [DOE 1.1 ECN](https://members.pcisig.com/wg/PCI-SIG/document/18483) for PCIe 5.0, 6.0 (integrated in 6.1).
 
@@ -66,7 +66,7 @@ PCIe [TDISP ECN](https://members.pcisig.com/wg/PCI-SIG/document/18268) for PCIe 
 
 #### CXL
 
-Compute Express Link Specification Revision [3.0](https://computeexpresslink.org/past-cxl-specifications/), [3.1](https://computeexpresslink.org/cxl-specification)
+Compute Express Link Specification Revision [3.0](https://computeexpresslink.org/past-cxl-specifications/), [3.1](https://computeexpresslink.org/past-cxl-specifications/), [3.2](https://computeexpresslink.org/cxl-specification)
 
 #### Intel
 
