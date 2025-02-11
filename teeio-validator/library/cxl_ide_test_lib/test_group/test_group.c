@@ -22,6 +22,8 @@
 #include "pcie_ide_lib.h"
 #include "teeio_spdmlib.h"
 
+extern const char* m_cxl_ide_mode_names[];
+
 // CXL Spec 3.1 Section 8.2.4.22
 // CXL IDE Capability Structure
 bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_block_count)
@@ -153,7 +155,7 @@ static bool check_and_enable_ide_mode(cxl_ide_test_group_context_t *group_contex
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rootport cxl_ide_cap=0x%08x\n", rp_cxl_data->memcache.ide_cap.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "endpoint cxl_ide_cap=0x%08x\n", ep_ide_cap.raw));
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_mode(%s) supported=%d\n", ide_mode == CXL_IDE_MODE_SKID ? "skid" : "containment", supported));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_mode(%s) supported=%d\n", m_cxl_ide_mode_names[ide_mode], supported));
 
   if(!supported) {
     return false;

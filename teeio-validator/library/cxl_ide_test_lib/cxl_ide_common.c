@@ -17,14 +17,18 @@ const char* m_cxl_ide_test_configuration_name[] = {
   "default",
   "pcrc",
   "ide_stop",
-  "skid",
-  "containment",
   "cxl_get_key",
   NULL
 };
 
 const char* m_cxl_ide_test_configuration_priv_name[] = {
   "cxl_ide_mode",
+  NULL
+};
+
+const char* m_cxl_ide_mode_names[] = {
+  "containment",
+  "skid",
   NULL
 };
 
@@ -133,6 +137,22 @@ static const char** get_test_configuration_priv_names ()
   return m_cxl_ide_test_configuration_priv_name;
 }
 
+static bool parse_cxl_ide_mode_from_string(const char* string, int* value)
+{
+  if(string == NULL || value == NULL) {
+    return false;
+  }
+
+  for(int i = 0; m_cxl_ide_mode_names[i] != NULL; i++) {
+    if(strcmp(string, m_cxl_ide_mode_names[i]) == 0) {
+      *value = i;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 static bool parse_test_configuration_priv_name (const char* key, const char* value, IDE_TEST_CONFIGURATION* config)
 {
   if(key == NULL || value == NULL || config == NULL) {
@@ -141,14 +161,12 @@ static bool parse_test_configuration_priv_name (const char* key, const char* val
   }
 
   if(strcmp(key, "cxl_ide_mode") == 0) {
-    if(strcmp(value, "skid") == 0) {
-      config->priv_data.cxl_ide.ide_mode = CXL_IDE_MODE_SKID;
-    } else if(strcmp(value, "containment") == 0) {
-      config->priv_data.cxl_ide.ide_mode = CXL_IDE_MODE_CONTAINMENT;
-    } else {
+    int ide_mode = 0;
+    if(!parse_cxl_ide_mode_from_string(value, &ide_mode)) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid cxl_ide_mode value: %s\n", value));
       return false;
     }
+    config->priv_data.cxl_ide.ide_mode = ide_mode;
   } else {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid key: %s\n", key));
     return false;
