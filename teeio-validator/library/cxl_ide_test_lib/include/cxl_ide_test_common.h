@@ -15,6 +15,11 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context);
 bool cxl_ide_test_full_ide_stream_run(void *test_context);
 bool cxl_ide_test_full_ide_stream_teardown(void *test_context);
 
+// Key Refresh
+bool cxl_ide_test_keyrefresh_setup(void *test_context);
+bool cxl_ide_test_keyrefresh_run(void *test_context);
+bool cxl_ide_test_keyrefresh_teardown(void *test_context);
+
 // Query
 bool cxl_ide_test_query_1_setup(void *test_context);
 bool cxl_ide_test_query_1_run(void *test_context);

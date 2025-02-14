@@ -158,7 +158,7 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           ide_common_test_port_context_t *upper_port,
                           ide_common_test_port_context_t *lower_port,
                           bool skip_ksetgo, uint32_t config_bitmap,
-                          CXL_IDE_MODE ide_mode)
+                          CXL_IDE_MODE ide_mode, bool key_refresh)
 {
   bool result;
   uint8_t kp_ack_status;
@@ -167,7 +167,8 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   cxl_ide_km_aes_256_gcm_key_buffer_t rx_key_buffer = {0};
   cxl_ide_km_aes_256_gcm_key_buffer_t tx_key_buffer = {0};
   INTEL_KEYP_KEY_SLOT keys = {0};
-  uint32_t rp_iv[2] = {0};
+  uint32_t tx_iv[2] = {0};
+  uint32_t rx_iv[2] = {0};
   CXL_QUERY_RESP_CAPS dev_caps = {0};
 
   kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
@@ -262,14 +263,14 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   // Program TX/RX pending keys into Link_Enc_Key_Tx and Link_Enc_Key_Rx registers
   // Program TX/RX IV values
   cxl_construct_rp_keys(tx_key_buffer.key, sizeof(tx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  cxl_construct_rp_iv(tx_key_buffer.iv, sizeof(tx_key_buffer.iv), rp_iv, sizeof(rp_iv));
-  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
-  cxl_dump_key_iv_in_rp("Rx", keys.bytes, 32, (uint8_t *)rp_iv, 8);
+  cxl_construct_rp_iv(tx_key_buffer.iv, sizeof(tx_key_buffer.iv), tx_iv, sizeof(tx_iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)tx_iv, sizeof(tx_iv));
+  cxl_dump_key_iv_in_rp("Rx", keys.bytes, 32, (uint8_t *)tx_iv, 8);
 
   cxl_construct_rp_keys(rx_key_buffer.key, sizeof(rx_key_buffer.key), keys.bytes, sizeof(keys.bytes));
-  cxl_construct_rp_iv(rx_key_buffer.iv, sizeof(rx_key_buffer.iv), rp_iv, sizeof(rp_iv));
-  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rp_iv, sizeof(rp_iv));
-  cxl_dump_key_iv_in_rp("Tx", keys.bytes, 32, (uint8_t *)rp_iv, 8);
+  cxl_construct_rp_iv(rx_key_buffer.iv, sizeof(rx_key_buffer.iv), rx_iv, sizeof(rx_iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, keys.bytes, sizeof(keys.bytes), (uint8_t *)rx_iv, sizeof(rx_iv));
+  cxl_dump_key_iv_in_rp("Tx", keys.bytes, 32, (uint8_t *)rx_iv, 8);
 
   // Set TxKeyValid and RxKeyValid bit
   cxl_cfg_rp_txrx_key_valid(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_TX, true);
@@ -293,8 +294,10 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   }
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key_set_go RX\n"));
 
-  // Set LinkEncEnable bit
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  // Skip set link_enc_enable if key_refresh is true
+  if(!key_refresh) {
+    cxl_cfg_rp_linkenc_enable(kcbar_ptr, true);
+  }
 
   // Set StartTrigger bit
   cxl_cfg_rp_start_trigger(kcbar_ptr, true);
