@@ -246,9 +246,14 @@ static bool common_test_group_setup(void *test_context)
       return false;
     }
 
-    if(!check_and_enable_ide_mode(context)) {
-      teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Check and enable IDE mode failed.");
-      return false;
+    if(context->common.case_class == CXL_MEM_IDE_TEST_CASE_KSETGO) {
+      // IDE_MODE will be checked and set in case.run() of K_SET_GO.
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Skip Check and enable IDE mode in case of K_SET_GO.It will be done in case.run()\n"));
+    } else {
+      if (!check_and_enable_ide_mode(context)) {
+        teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED, "Check and enable IDE mode failed.");
+        return false;
+      }
     }
   }
 
