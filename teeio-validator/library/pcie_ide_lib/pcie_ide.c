@@ -570,6 +570,71 @@ bool populate_addr_assoc_reg_block(
 }
 
 /**
+ * To check if the stream_id is used in rootport.
+ */
+static bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_context_t* root_port_context)
+{
+  TEEIO_ASSERT(root_port_context != NULL);
+
+  int i = 0;
+
+  // First walk thru Key Configuration Unit Register Block
+  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)root_port_context->mapped_kcbar_addr;
+  int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to check if stream_id(%d) is used.\n", stream_id));
+  for(i = 0; i < num_stream_supported; i++) {
+    INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
+    if(stream_config_reg_block->control.en == 1 && stream_config_reg_block->control.stream_id == stream_id) {
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_id (%d) is used in stream_%c\n", stream_id, 'a' + i));
+      return true;
+    }
+  }
+
+  // Then walk thru IDE ECap
+  uint32_t offset = root_port_context->ecap_offset;
+  int fd = root_port_context->cfg_space_fd;
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport IDE Extended Cap to check if stream_id(%d) is used.\n", stream_id));
+
+  offset += 4;  // refer to PCIE_IDE_ECAP
+  PCIE_IDE_CAP ide_cap = {.raw = device_pci_read_32(offset, fd)};
+  int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
+  int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
+
+  offset += 4;  // refer to PCIE_IDE_CTRL
+
+  if(num_lnk_ide > 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    Check Link IDE Stream Control Register block ...\n"));
+    offset += 4;  // refer to PCIE_SEL_IDE_STREAM_CAP
+
+    for(i = 0; i < num_lnk_ide; i++) {
+      PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
+      if(lnk_ide_stream_ctrl.enabled == 1 && lnk_ide_stream_ctrl.stream_id == stream_id) {
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_id (%d) is used in Link IDE Stream Register Block (%d)\n", stream_id, i));
+        return true;
+      }
+      offset += LINK_IDE_REGISTER_BLOCK_SIZE;
+    }
+  }
+
+  if(num_sel_ide > 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    Check Selective IDE Stream Control Register block ...\n"));
+    for(i = 0; i < num_sel_ide; i++) {
+      PCIE_SEL_IDE_STREAM_CAP sel_ide_stream_cap = {.raw = device_pci_read_32(offset, fd)};
+      PCIE_SEL_IDE_STREAM_CTRL sel_ide_stream_ctrl = {.raw = device_pci_read_32(offset + 4, fd)};
+      if(sel_ide_stream_ctrl.enabled == 1 && sel_ide_stream_ctrl.stream_id == stream_id) {
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_id (%d) is used in Selective IDE Stream Register Block (%d)\n", stream_id, i));
+        return true;
+      }
+
+      // skip to next Selective IDE Stream Control Register block
+      offset += (3 * 4 + 2 *4 + sel_ide_stream_cap.num_addr_assoc_reg_blocks * 3 * 4);
+    }
+  }
+
+  return false;
+}
+
+/**
  * Initialize rootcomplex port
  * root_port and upper_port is the same port
  */
@@ -590,6 +655,10 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
   }
 
   // then set the rp_stream_index/ide_id/slot_id
+  if(check_stream_id_used_in_rootport(group_context->common.top->stream_id, port_context)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "stream_id (%d) is already used.\n", group_context->common.top->stream_id));
+    goto InitHostFail;
+  }
   group_context->stream_id = group_context->common.top->stream_id;
 
   uint8_t rp_stream_index = 0;
