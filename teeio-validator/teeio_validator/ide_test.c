@@ -739,10 +739,11 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Run TestGroup (%s %s %s)\n", run_test_group->name, run_test_config->name, run_test_group->test_case->class));
 
   // call run_test_group's setup function
+  bool group_setup_result = true;
   TEEIO_ASSERT(run_test_group->setup_func);
   if(!run_test_group->setup_func(group_context)) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s failed at test_group->setup().\n", run_test_config->name));
-    goto OneGroupDone;
+    group_setup_result = false;
   }
 
   ide_run_test_case_t *test_case = run_test_group->test_case;
@@ -752,7 +753,9 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
     g_current_case_result = alloc_run_test_case_result(group_result, test_case);
 
     // run the test_case
-    do_run_test_case(test_case, run_test_config, test_category, top_type);
+    if(group_setup_result) {
+      do_run_test_case(test_case, run_test_config, test_category, top_type);
+    }
 
     // next case
     test_case = test_case->next;
@@ -760,9 +763,10 @@ bool do_run_test_group(ide_run_test_group_t *run_test_group, ide_run_test_config
   }
 
   // call run_test_group's teardown function
-  run_test_group->teardown_func(group_context);
+  if(group_setup_result) {
+    run_test_group->teardown_func(group_context);
+  }
 
-OneGroupDone:
   // config_context is reused between different run_group_test
   // So its group_context must be cleared here.
   config_context->group_context = NULL;
@@ -904,7 +908,9 @@ bool print_test_case_assertion_result(ide_run_test_case_assertion_result_t* asse
 
 bool print_test_config_item_result(TEEIO_TEST_CATEGORY test_category, ide_run_test_config_item_result_t* config_item_result, int config_id, bool phase1)
 {
-  TEEIO_ASSERT(config_item_result != NULL);
+  if(config_item_result == NULL) {
+    return true;
+  }
 
   teeio_test_funcs_t* test_funcs = &m_teeio_test_funcs[test_category];
   if(test_funcs->get_configuration_name_func == NULL) {
