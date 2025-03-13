@@ -26,6 +26,8 @@ char g_test_case[MAX_CASE_NAME_LENGTH] = {0};
 bool g_run_test_suite = true;
 bool g_teeio_fixed_key = false;
 pci_tdisp_interface_id_t g_tdisp_interface_id = {0};
+int g_test_interval = 0;
+int g_test_rounds = 0;
 
 TEEIO_DEBUG_LEVEL g_debug_level = TEEIO_DEBUG_WARN;
 bool g_libspdm_log = false;

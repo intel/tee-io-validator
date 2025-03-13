@@ -22,6 +22,9 @@
 #include "pcie_ide_test_lib.h"
 #include "pcie_ide_test_internal.h"
 
+extern int g_test_interval;
+extern int g_test_rounds;
+
 static uint8_t mKeySet = 0;
 
 bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
@@ -81,6 +84,7 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
 
   int cmd = 0;
   bool res = true;
+  int rounds = 0;
 
   while(true){
     TEEIO_PRINT(("\n"));
@@ -100,11 +104,24 @@ bool pcie_ide_test_full_keyrefresh_run(void *test_context)
                       group_context->common.lower_port.ecap_offset,
                       ide_type);
 
-    TEEIO_PRINT(("Press 'q' to quit test or any other keys to key_refresh. (Current KeySet is %d).\n", mKeySet));
-    cmd = getchar();
+    if(g_test_rounds > 0 && g_test_interval > 0) {
+      if(rounds >= g_test_rounds) {
+        TEEIO_PRINT(("%d rounds of KeyRefresh are done. Quit the test now. (Current KeySet is %d. Current Rounds %d).\n", g_test_rounds, mKeySet, rounds));
+        cmd = 'q';  // to quit
+      } else {
+        TEEIO_PRINT(("Wait %d seconds for next KeyRefresh. (Current KeySet is %d. Current Rounds %d).\n", g_test_interval, mKeySet, rounds));
+        libspdm_sleep(1000 * 1000 * g_test_interval);
+        cmd = 'c';  // Any key to continue
+      }
+    } else {
+      TEEIO_PRINT(("Press 'q' to quit test or any other keys to key_refresh. (Current KeySet is %d. Current Rounds %d).\n", mKeySet, rounds));
+      cmd = getchar();
+    }
+
     if(cmd == 'q' || cmd == 'Q') {
       break;
     } else {
+      rounds++;
       uint8_t ks = mKeySet == PCI_IDE_KM_KEY_SET_K0 ? PCI_IDE_KM_KEY_SET_K1 : PCI_IDE_KM_KEY_SET_K0;
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
