@@ -33,6 +33,8 @@ If you find anything missing or incorrect in the FAQ, feel free to create an iss
 
 - [How to do KeyRefresh stress test?](#how-to-do-keyrefresh-stress-test)
 
+- [How to run traffic in IDE Stream?](#how-to-run-traffic-in-ide-stream)
+
 ### What is TEE-IO Device Validation Utility?
 Intel TDX Connect adds “device” to TEE scope. “Device” need to follow standard protocols (SPDM, IDE, TDISP) to communicate with Intel Root Port and Intel TDX TSM. 
 TEE-IO Device Validation Utility is proposed to validate the interoperability of standard protocols (SPDM/IDE/TDISP) between the device and Intel component.
@@ -107,3 +109,6 @@ TEE-IO Device Validation Utility enables doe log output by setting ide_test.ini.
 
 ### How to do KeyRefresh stress test?
 TEE-IO Device Validation Utility provides the stress test feature for KeyRefresh. Refer to [Issue#254](https://github.com/intel/tee-io-validator/issues/254#issuecomment-2722989688)
+
+### How to run traffic in IDE Stream?
+Refer to [run_traffic](./run_traffic.md)
