@@ -625,6 +625,9 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
   CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
 
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, control);
+  CXL_IDE_CONTROL ide_control = {.raw = mmio_read_reg32(ptr)};
+
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL IDE Status\n"));
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_status = 0x%08x off=0x%04x\n", ide_status.raw, OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status)));
@@ -634,6 +637,10 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  error_status = 0x%08x off=0x%04x\n", error_status.raw, OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status)));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    rx_error_status=0x%02x, tx_error_status=0x%02x, unexpected_ide_stop_received=0x%02x\n",
                                   error_status.rx_error_status, error_status.tx_error_status, error_status.unexpected_ide_stop_received));
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_control : 0x%08x\n", ide_control.raw));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    pcrc_disable=0x%02x, ide_stop_enable=0x%02x\n",
+                                  ide_control.pcrc_disable, ide_control.ide_stop_enable));
 }
 
 
