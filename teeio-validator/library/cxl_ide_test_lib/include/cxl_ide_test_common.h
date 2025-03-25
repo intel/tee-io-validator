@@ -93,10 +93,10 @@ bool cxl_ide_test_config_default_support(void *test_context);
 bool cxl_ide_test_config_default_check(void *test_context);
 
 // pcrc config
-bool cxl_ide_test_config_pcrc_enable(void *test_context);
-bool cxl_ide_test_config_pcrc_disable(void *test_context);
-bool cxl_ide_test_config_pcrc_support(void *test_context);
-bool cxl_ide_test_config_pcrc_check(void *test_context);
+bool cxl_ide_test_config_unset_pcrc_disable(void *test_context);
+bool cxl_ide_test_config_set_pcrc_disable(void *test_context);
+bool cxl_ide_test_config_pcrc_disable_support(void *test_context);
+bool cxl_ide_test_config_pcrc_disable_check(void *test_context);
 
 // ide_stop config
 bool cxl_ide_test_config_ide_stop_enable(void *test_context);
