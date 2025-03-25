@@ -15,7 +15,7 @@
 // CXL-IDE supported config items
 const char* m_cxl_ide_test_configuration_name[] = {
   "default",
-  "pcrc",
+  "pcrc_disable",
   "ide_stop",
   "cxl_get_key",
   NULL
@@ -43,11 +43,11 @@ ide_test_config_funcs_t m_cxl_ide_config_funcs[CXL_IDE_CONFIGURATION_TYPE_NUM] =
     cxl_ide_test_config_default_check
   },
   {
-    // pcrc Config
-    cxl_ide_test_config_pcrc_enable,
-    cxl_ide_test_config_pcrc_disable,
-    cxl_ide_test_config_pcrc_support,
-    cxl_ide_test_config_pcrc_check
+    // pcrc disable Config
+    cxl_ide_test_config_set_pcrc_disable,
+    cxl_ide_test_config_unset_pcrc_disable,
+    cxl_ide_test_config_pcrc_disable_support,
+    cxl_ide_test_config_pcrc_disable_check
   },
   {
     // ide stop Config

@@ -115,7 +115,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |category|string||M|must be **cxl-ide**|
 |cxl_ide_mode|string|containment|O|available values are **containment** or **skid**|
 |default|0/1|1|O||
-|pcrc|0/1|0|O||
+|pcrc_disable|0/1|0|O||
 |ide_stop|0/1|0|O||
 |cxl_get_key|0/1|0|O|Generate keys by IDEKM GET_KEY when setting up CXL.memcache IDE Stream.|
 
