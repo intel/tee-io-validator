@@ -18,10 +18,10 @@ uint8_t g_stream_id = 0;
 bool g_pci_log = false;
 bool g_ide_key_refresh = false;
 TEST_IDE_TYPE g_test_ide_type = TEST_IDE_TYPE_SEL_IDE;
-TEEIO_TEST_CATEGORY g_test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
+TEEIO_TEST_CATEGORY g_test_category = TEEIO_TEST_CATEGORY_MAX;
 IDE_TEST_CONFIG ide_test_config = {0};
-int g_top_id = 0;
-int g_config_id = 0;
+int g_top_id = -1;
+int g_config_id = -1;
 char g_test_case[MAX_CASE_NAME_LENGTH] = {0};
 bool g_run_test_suite = true;
 bool g_teeio_fixed_key = false;
@@ -49,6 +49,20 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
 void print_usage();
 bool run(IDE_TEST_CONFIG *test_config);
 bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case, TEEIO_TEST_CATEGORY test_category);
+bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category);
+
+static TEEIO_TEST_CATEGORY get_test_category_from_configuration(IDE_TEST_CONFIG* test_config, int config_id)
+{
+  TEEIO_ASSERT (test_config != NULL);
+
+  for (int i = 0; i < test_config->configurations.cnt; i++) {
+      if (test_config->configurations.configurations[i].id == config_id) {
+          return test_config->configurations.configurations[i].test_category;
+      }
+  }
+
+  return TEEIO_TEST_CATEGORY_MAX;
+}
 
 int main(int argc, char *argv[])
 {
@@ -92,6 +106,7 @@ int main(int argc, char *argv[])
         TEEIO_PRINT(("Parse %s failed.\n", ide_test_ini_file));
         goto MainDone;
     }
+
     g_pci_log = ide_test_config.main_config.pci_log;
     g_libspdm_log = ide_test_config.main_config.libspdm_log;
     g_doe_log = ide_test_config.main_config.doe_log;
@@ -100,11 +115,37 @@ int main(int argc, char *argv[])
         g_debug_level = ide_test_config.main_config.debug_level;
     }
 
-    // if g_top_ids is valid, then we go into xxx mode
-    if(g_top_id != 0 && g_config_id != 0) {
-        if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case, g_test_category)) {
-            goto MainDone;
-        }
+    // tester wants to run a specific test case instead of run test suite
+    if(!g_run_test_suite) {
+      // g_top_id and g_config_id shall be set in command line
+      if(g_top_id == -1 || g_config_id == -1) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -t or -c parameter.\n"));
+        goto MainDone;
+      }
+
+      // g_test_case shall be set in command line
+      if(g_test_case[0] == 0) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -s parameter.\n"));
+        goto MainDone;
+      }
+
+      // we need to find out the test category from configuration (g_config_id)
+      g_test_category = get_test_category_from_configuration(&ide_test_config, g_config_id);
+      if(g_test_category == TEEIO_TEST_CATEGORY_MAX) {
+          TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -c parameter. %d\n", g_config_id));
+          goto MainDone;
+      }
+
+      // we need to check if the test_case is valid
+      if(!is_valid_test_case(g_test_case, g_test_category)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -s parameter. %s\n", g_test_case));
+        goto MainDone;
+      }
+
+      // then update the test_config with given topology / configuration id / test case
+      if(!update_test_config_with_given_top_config_id(&ide_test_config, g_top_id, g_config_id, g_test_case, g_test_category)) {
+        goto MainDone;
+      }
     }
 
     // Open pcap file
