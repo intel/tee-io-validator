@@ -36,6 +36,16 @@ typedef struct {
     cxl_ide_km_aes_256_gcm_key_buffer_t key_buffer;
 } cxl_ide_km_key_prog_teeio_t;
 
+typedef struct {
+  cxl_ide_km_header_t header;
+  uint8_t reserved[2];
+  uint8_t stream_id;
+  uint8_t reserved2;
+  uint8_t key_sub_stream;
+  uint8_t port_index;
+  cxl_ide_km_aes_256_gcm_key_buffer_t key_buffer;
+} cxl_ide_km_get_key_ack_teeio_t;
+
 #pragma pack()
 
 // setup cxl ide stream
