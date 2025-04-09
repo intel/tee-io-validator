@@ -957,7 +957,6 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite, bool detail)
   teeio_test_result_t test_result = TEEIO_TEST_RESULT_NOT_TESTED;
   ide_common_test_suite_context_t *suite_context = NULL;
   ide_run_test_config_result_t* run_test_config_result = NULL;
-  TEEIO_TEST_CATEGORY test_category = ((ide_common_test_suite_context_t *)test_suite->test_context)->test_category;
 
   while(test_suite) {
     suite_context = (ide_common_test_suite_context_t *)test_suite->test_context;
@@ -1003,9 +1002,7 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite, bool detail)
 
           if(detail) {
             TEEIO_PRINT(("       TestCase %s: %s\n", case_result->name, m_test_case_result_str[test_result]));
-            print_test_config_item_result(test_category, case_result->config_item_result, run_test_config_result->config_id, true);
             print_test_case_assertion_result(case_result->assertion_result);
-            print_test_config_item_result(test_category, case_result->config_item_result, run_test_config_result->config_id, false);
             TEEIO_PRINT(("\n"));
           } else {
             TEEIO_PRINT(("       TestCase %s: %s (pass: %d, fail: %d)\n", case_result->name, m_test_case_result_str[test_result], case_result->total_passed, case_result->total_failed));
