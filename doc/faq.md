@@ -71,28 +71,42 @@ Refer to [Issue#21](https://github.com/intel/tee-io-validator/issues/21)
 - If all above cannot solve the problem, refer to [What should I do if some issue is found?](#what-should-i-do-if-some-issue-is-found). Remeber to provide the **ide_test.ini/command line/logs** to help us to investigate the issue.
 
 ### How I know if the test is pass or fail?
-TEE-IO Device Validation Utility will print out the test result as below:
+TEE-IO Device Validation Utility prints out the test result in 2 parts: details and summary. 
+Below is an example which run the test of CXL-IDE.Query and CXL-IDE.GetKey.
 ```
- Print test results.
- TestSuite_1 - pass: 14, fail: 0, skip: 0
-     TestGroup (SelectiveIDE Default Query) - pass: 2, fail: 0, skip: 0
-       Query.1: case - pass; ide_stream_secure - na
-       Query.2: case - pass; ide_stream_secure - na
-     TestGroup (SelectiveIDE Default KeyProg) - pass: 6, fail: 0, skip: 0
-       KeyProg.1: case - pass; ide_stream_secure - na
-       KeyProg.2: case - pass; ide_stream_secure - na
-       KeyProg.3: case - pass; ide_stream_secure - na
-       KeyProg.4: case - pass; ide_stream_secure - na
-       KeyProg.5: case - pass; ide_stream_secure - na
-       KeyProg.6: case - pass; ide_stream_secure - na
-     TestGroup (SelectiveIDE Default KSetGo) - pass: 2, fail: 0, skip: 0
-       KSetGo.1: case - pass; ide_stream_secure - pass
-       KSetGo.2: case - pass; ide_stream_secure - pass
-     TestGroup (SelectiveIDE Default KSetStop) - pass: 4, fail: 0, skip: 0
-       KSetStop.1: case - pass; ide_stream_secure - na
-       KSetStop.2: case - pass; ide_stream_secure - na
-       KSetStop.3: case - pass; ide_stream_secure - na
-       KSetStop.4: case - pass; ide_stream_secure - na
+Print detailed results.
+TestSuite_1 (cxl-ide)
+  Configuration_1 (default)
+    TestGroup (Query) - setup pass
+      TestCase Query.1: pass
+          Assertion1.1.1: - pass sizeof(CxlIdeKmMessage) = 0x28
+          Assertion1.1.2: - pass CxlIdeKmMessage.ObjectID = 0x1
+          Assertion1.1.3: - pass CxlIdeKmMessage.PortIndex = 0x0
+          Assertion1.1.4: - pass CxlIdeKmMessage.MaxPortIndex = 0x0
+          Assertion1.1.5: - pass CxlIdeKmMessage.DevFunc = 0x0 && CxlIdeKmMessage.Bus = 0x20 && CxlIdeKmMessage.Segment = 0x0
+          Assertion1.1.6: - pass CxlIdeKmMessage.CXL_IDE_Capability_Version = 0x1
+      TestCase Query.2: skipped
+    TestGroup (Query) - teardown pass
+
+    TestGroup (GetKey) - setup pass
+      TestCase GetKey.1: pass
+        port_index = 0x00
+          Assertion5.1.1: - pass sizeof(CxlIdeKmMessage) = 0x33
+          Assertion5.1.2: - pass CxlIdeKmMessage.ObjectID = 0x8
+          Assertion5.1.3: - pass CxlIdeKmMessage.PortIndex = 0x0
+          Assertion5.1.4: - pass CxlIdeKmMessage.StreamID = 0x0
+          Assertion5.1.5: - pass CxlIdeKmMessage.key_sub_stream = 0x80
+    TestGroup (GetKey) - teardown pass
+
+Print summary results.
+TestSuite_1 (cxl-ide) - pass: 11, fail: 0
+  Configuration_1 (default)
+    TestGroup (Query) - pass: 6, fail: 0
+      TestCase Query.1: pass (pass: 6, fail: 0)
+      TestCase Query.2: skipped (pass: 0, fail: 0)
+
+    TestGroup (GetKey) - pass: 5, fail: 0
+      TestCase GetKey.1: pass (pass: 5, fail: 0)
 ```
 
 ### Where to check the ouput log?
