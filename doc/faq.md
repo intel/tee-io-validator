@@ -35,6 +35,8 @@ If you find anything missing or incorrect in the FAQ, feel free to create an iss
 
 - [How to run traffic in IDE Stream?](#how-to-run-traffic-in-ide-stream)
 
+- [How to setup a CXL-IDE stream between host and device?](#how-to-setup-a-cxl-ide-stream-between-host-and-device)
+
 ### What is TEE-IO Device Validation Utility?
 Intel TDX Connect adds “device” to TEE scope. “Device” need to follow standard protocols (SPDM, IDE, TDISP) to communicate with Intel Root Port and Intel TDX TSM. 
 TEE-IO Device Validation Utility is proposed to validate the interoperability of standard protocols (SPDM/IDE/TDISP) between the device and Intel component.
@@ -126,3 +128,6 @@ TEE-IO Device Validation Utility provides the stress test feature for KeyRefresh
 
 ### How to run traffic in IDE Stream?
 Refer to [run_traffic](./run_traffic.md)
+
+### How to setup a CXL-IDE stream between host and device?
+Refer to [Run CXL-IDE Stream cases](./teeio_validator_usage.md#run-cxl-ide-stream-cases)
