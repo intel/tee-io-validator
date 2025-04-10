@@ -80,7 +80,7 @@ static void do_test_cxl_ide_kset_go (
     teeio_record_assertion_result(case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "CxlIdeKmMessage.key_sub_stream = 0x%x", response.key_sub_stream);
 }
 
-static bool check_and_enable_ide_mode(cxl_ide_test_group_context_t *group_context, CXL_IDE_MODE ide_mode, int port_index)
+bool cxl_ide_check_and_enable_ide_mode(cxl_ide_test_group_context_t *group_context, CXL_IDE_MODE ide_mode, int port_index)
 {
   // call CXL.Query to get device's CXL IDE Capability
   libspdm_return_t status;
@@ -266,7 +266,7 @@ bool cxl_ide_test_kset_go_1_run(void *test_context)
 
   for(int port_index = 0; port_index <=lower_port->cxl_data.query_resp.max_port_index; port_index++) {
     for(CXL_IDE_MODE ide_mode = CXL_IDE_MODE_CONTAINMENT; ide_mode < CXL_IDE_MODE_MAX; ide_mode++) {
-      if(!check_and_enable_ide_mode(group_context, ide_mode, port_index)) {
+      if(!cxl_ide_check_and_enable_ide_mode(group_context, ide_mode, port_index)) {
         continue;
       }
 
