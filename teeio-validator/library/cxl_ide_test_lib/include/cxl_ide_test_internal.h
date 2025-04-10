@@ -124,4 +124,12 @@ bool cxl_ide_get_dev_caps(const void *doe_context,
                         void *spdm_context, const uint32_t *session_id,
                         int max_port_index, CXL_QUERY_RESP_CAPS* dev_caps);
 
+/**
+ * check and enable the IDE mode
+ */
+bool cxl_ide_check_and_enable_ide_mode (
+  cxl_ide_test_group_context_t *group_context,
+  CXL_IDE_MODE ide_mode,
+  int port_index);
+
 #endif
