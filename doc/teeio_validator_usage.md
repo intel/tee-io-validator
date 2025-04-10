@@ -32,14 +32,17 @@ Before running teeio-validator, use below command to check how the device is con
 # lspci -PP -s da:00.0
 d9:02.0/da:00.0 Non-Volatile memory controller: XXXX Vendor's Device
 ```
-From above output, the host BDF is ```d9:02.0```, the device BDF is ```da:00.0```. The bus of **host BDF**(```d9```) will be used when preparing the test .ini file.
+From above output, the host BDF is ```d9:02.0```, the device BDF is ```da:00.0```. These information will be used when preparing the test .ini file.
 
 ## Run PCIE-IDE Stream cases
 **Step1** Prepare the pcie_ide.ini.
+
 Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .ini file. Here is a sample [pcie_ide.ini](./sample_ini/pcie_ide.ini).
+
 **Note**: The ```bus``` in ```[Topology_1]``` shall be replaced by the bus of **host BDF**(```0xd9```). The ```rootport_1``` and ```endpoint_1``` in ```[Ports]``` shall be replaced by the dev/func of **host BDF** and **device  BDF** respectively. Refer to [Check how TEEIO Device is connected](#check-how-teeio-device-is-connected)
 
 **Step2** Run test case
+
 ```
 # Setup PCIE-IDE Stream
 ./teeio_validator -f pcie_ide.ini -c 1 -t 1 -s Test.IdeStream
@@ -53,10 +56,13 @@ Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .
 
 ## Run CXL-IDE Stream cases
 **Step1** Prepare the cxl_ide.ini.
+
 Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .ini file. Here is a sample [cxl_ide.ini](./sample_ini/cxl_ide.ini).
+
 **Note**: The ```bus``` in ```[Topology_1]``` shall be replaced by the bus of **host BDF**(```0xd9```). The ```rootport_1``` and ```endpoint_1``` in ```[Ports]``` shall be replaced by the dev/func of **host BDF** and **device  BDF** respectively. Refer to [Check how TEEIO Device is connected](#check-how-teeio-device-is-connected)
 
 **Step2** Run test case
+
 ```
 # Setup CXL-IDE Stream
 ./teeio_validator -f cxl_ide.ini -c 1 -t 1 -s Test.IdeStream
