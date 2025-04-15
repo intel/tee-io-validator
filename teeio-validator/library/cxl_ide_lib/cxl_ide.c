@@ -734,6 +734,7 @@ bool cxl_close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_T
   memset(&port_context->cxl_data, 0, sizeof(CXL_PRIV_DATA));
 
   m_dev_fp = 0;
+  g_doe_extended_offset = 0;
   return true;
 }
 
