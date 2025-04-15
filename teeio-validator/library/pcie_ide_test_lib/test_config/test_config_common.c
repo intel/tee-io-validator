@@ -270,14 +270,17 @@ bool test_config_support_common(void *test_context)
   if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE) {
     supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
   } else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
-    supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
+    supported = host_cap->lnk_ide_supported == 1 && dev_cap->lnk_ide_supported == 1;
   } else if(group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE) {
-    supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1 && host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1;
+    supported = host_cap->sel_ide_supported == 1 && dev_cap->sel_ide_supported == 1 && host_cap->lnk_ide_supported == 1 && dev_cap->lnk_ide_supported == 1;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO,
-              "test_config_support_common: host_cap->sel_ide_supported == %d && dev_cap->sel_ide_supported == %d\n",
-              host_cap->sel_ide_supported, dev_cap->sel_ide_supported));
+              "test_config_support_common: host sel_ide_supported = %d, lnk_ide_supported = %d\n",
+              host_cap->sel_ide_supported, host_cap->lnk_ide_supported));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO,
+              "test_config_support_common: dev sel_ide_supported = %d, lnk_ide_supported = %d\n",
+              dev_cap->sel_ide_supported, dev_cap->lnk_ide_supported));
 
   if(!supported) {
     teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_SUPPORT, TEEIO_TEST_RESULT_FAILED); 
