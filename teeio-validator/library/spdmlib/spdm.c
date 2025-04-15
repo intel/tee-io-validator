@@ -54,7 +54,7 @@ void *spdm_client_init(void)
     uint32_t data32;
     size_t scratch_buffer_size;
 
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "context_size - 0x%x\n", (uint32_t)libspdm_get_context_size()));
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_client_init\n"));
 
     m_spdm_context = (void *)malloc(libspdm_get_context_size());
     if (m_spdm_context == NULL) {
@@ -145,7 +145,7 @@ void *spdm_client_init(void)
 
     status = libspdm_init_connection(spdm_context, false);
     if (LIBSPDM_STATUS_IS_ERROR(status)) {
-        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_init_connection - 0x%x\n", (uint32_t)status));
+        TEEIO_DEBUG((TEEIO_DEBUG_INFO, "libspdm_init_connection failed with 0x%x\n", (uint32_t)status));
         free(m_spdm_context);
         m_spdm_context = NULL;
         return NULL;
@@ -262,6 +262,8 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id)
     libspdm_data_parameter_t parameter;
     char cert_chain_name[] = "device_cert_chain_0.bin";
     char measurement_name[] = "device_measurement.bin";
+
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_connect\n"));
 
     /* get cert_chain 0 */
     slot_id = 0;

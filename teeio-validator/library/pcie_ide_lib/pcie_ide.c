@@ -726,13 +726,6 @@ bool init_pci_doe(int fd)
     return false;
   }
 
-  trigger_doe_abort();
-  libspdm_sleep(1000000);
-  if (is_doe_error_asserted())
-  {
-    TEEIO_ASSERT(false);
-  }
-
   PCIE_CAP_ID ecap_id = {.raw = 0};
   uint8_t doe_discovery_version = 0;
   for(int i = 0; i < doe_cnt; i++) {
@@ -743,6 +736,15 @@ bool init_pci_doe(int fd)
       doe_discovery_version = PCIE_DOE_DISCOVERY_VERSION2;
     }
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Try to init pci_doe (doe_offset=0x%04x, ecap_id=0x%08x)\n", g_doe_extended_offset, ecap_id.raw));
+
+    // Before init PCI DOE, we need to abort any ongoing doe operation and check the Error bit.
+    trigger_doe_abort();
+    libspdm_sleep(1000 * 1000);
+    if (is_doe_error_asserted()) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "PCI DOE Error bit is set and cannot be cleared.\n"));
+      continue;
+    }
+
     if(pcie_doe_init_request(doe_discovery_version)) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "doe_offset=0x%04x is the one to be used in teeio-validator.\n", g_doe_extended_offset));
       return true;
@@ -771,6 +773,7 @@ bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOL
   port_context->cfg_space_fd = 0;
 
   m_dev_fp = 0;
+  g_doe_extended_offset = 0;
   return true;
 }
 
