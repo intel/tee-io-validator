@@ -18,6 +18,8 @@
 
 void libspdm_sleep(uint64_t microseconds);
 
+bool is_power_of_two(uint8_t x);
+
 // PCIE & MMIO helper APIs
 uint32_t device_pci_read_32 (uint32_t offset, int fp);
 void device_pci_write_32 (uint32_t offset, uint32_t data, int fp);

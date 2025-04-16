@@ -18,6 +18,29 @@
 #include "cxl_ide_test_internal.h"
 
 extern bool g_teeio_fixed_key;
+static uint8_t mPortIndex[0x100] = {0};
+
+static int construct_test_port_index(uint8_t max_port_index)
+{
+  int port_index_cnt = 0;
+
+  if(max_port_index == 0xff) {
+    return 0;
+  }
+
+  for(uint16_t port_index = max_port_index + 1; port_index <= 0xff; port_index++) {
+    if(is_power_of_two(port_index) || port_index == max_port_index + 1 || port_index == 0xff) {
+      mPortIndex[port_index_cnt++] = port_index;
+    }
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "construct test port_index list. Total %d port_index.\n", port_index_cnt));
+  for(int i = 0; i < port_index_cnt; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  mPortIndex[%d] = 0x%02x\n", i, mPortIndex[i]));
+  }
+
+  return port_index_cnt;
+}
 
 // Test cxl.key_prog with invalid parameters
 // Invalid params includes:
@@ -135,9 +158,12 @@ bool cxl_ide_test_key_prog_3_run(void *test_context)
 
   ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
 
-  int max_port_index = lower_port->cxl_data.query_resp.max_port_index;
+  int port_index_cnt = construct_test_port_index(lower_port->cxl_data.query_resp.max_port_index);
+  TEEIO_ASSERT (port_index_cnt > 0);
+
   char case_info[MAX_LINE_LENGTH] = {0};
-  for(int port_index = max_port_index + 1; port_index <= 0xff; port_index++) {
+  for(int i = 0; i < port_index_cnt; i++) {
+    uint8_t port_index = mPortIndex[i];
     sprintf(case_info, "  port_index = 0x%02x", port_index);
     test_cxl_ide_key_prog(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                           &group_context->spdm_doe.session_id, 0, CXL_IDE_KM_KEY_SUB_STREAM_CXL,

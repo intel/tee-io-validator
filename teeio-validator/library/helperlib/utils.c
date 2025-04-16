@@ -580,3 +580,8 @@ void dump_key_iv_in_key_prog(const uint32_t *key, int key_dw_size, const uint32_
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "IV (big-endian):\n"));
   dump_hex_array((uint8_t *)iv_buf, iv_dw_size * sizeof(uint32_t));
 }
+
+bool is_power_of_two(uint8_t x)
+{
+  return (x != 0) && ((x & (x - 1)) == 0);
+}
