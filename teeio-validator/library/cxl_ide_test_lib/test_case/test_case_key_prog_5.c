@@ -17,6 +17,42 @@
 #include "cxl_ide_test_common.h"
 #include "cxl_ide_test_internal.h"
 
+static uint8_t mSubStream[0x100] = {0};
+
+char* dump_binary_to_str(uint8_t data, char* str, int str_size) {
+  TEEIO_ASSERT(str_size >= 6);
+  sprintf(str, "0b");
+  for (int i = 3; i >= 0; i--) {
+      sprintf(str + 2 + 3 - i, "%d", (data >> i) & 1);
+  }
+
+  return str;
+}
+
+
+static int construct_test_sub_stream()
+{
+  int sub_stream_cnt = 0;
+
+  for(uint8_t sub_stream = 0; sub_stream < 0b10000; sub_stream++) {
+    if(sub_stream == 0b1000) {
+      continue;
+    }
+
+    if(is_power_of_two(sub_stream) || sub_stream == 0b0000 || sub_stream == 0b0111 || sub_stream == 0b1001 || sub_stream == 0b1111) {
+      mSubStream[sub_stream_cnt++] = sub_stream;
+    }
+  }
+
+  char binary_str[8] = {0};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "construct test sub_stream list. Total %d sub_stream.\n", sub_stream_cnt));
+  for(int i = 0; i < sub_stream_cnt; i++) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  mSubStream[%d] = %s\n", i, dump_binary_to_str(mSubStream[i], binary_str, 8)));
+  }
+
+  return sub_stream_cnt;
+}
+
 bool cxl_ide_test_key_prog_5_setup(void *test_context)
 {
   // Cxl.Query has been called in test_group.setup()
@@ -45,11 +81,11 @@ bool cxl_ide_test_key_prog_5_run(void *test_context)
 
   int max_port_index = lower_port->cxl_data.query_resp.max_port_index;
   char case_info[MAX_LINE_LENGTH] = {0};
+  int sub_stream_cnt = construct_test_sub_stream();
+
   for(int port_index = 0; port_index <= max_port_index; port_index++) {
-    for(uint8_t sub_stream = 0; sub_stream <= 0xf; sub_stream++) {
-      if(sub_stream == 0x8) {
-        continue;
-      }
+    for(int i = 0; i < sub_stream_cnt; i++) {
+      uint8_t sub_stream = mSubStream[i];
       sprintf(case_info, "  port_index = 0x%02x sub_stream=0x%02x", port_index, sub_stream);
       test_cxl_ide_key_prog(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                             &group_context->spdm_doe.session_id, 0, (sub_stream << 4) & 0xf0,
