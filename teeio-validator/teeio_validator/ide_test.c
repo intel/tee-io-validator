@@ -707,11 +707,11 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
 
 TestCaseDone:
 
-  do_run_test_config_disable(run_test_config, top_type, test_category);
-
   if(test_case->teardown_func != NULL) {
     test_case->teardown_func(test_case->test_context);
   }
+
+  do_run_test_config_disable(run_test_config, top_type, test_category);
 
   return true;
 }
