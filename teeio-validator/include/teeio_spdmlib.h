@@ -39,6 +39,30 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id);
 */
 bool spdm_stop(void *spdm_context, uint32_t session_id);
 
+libspdm_return_t device_doe_receive_message(
+    void *spdm_context,
+    size_t *response_size,
+    void **response,
+    uint64_t timeout);
+
+libspdm_return_t device_doe_send_message(
+    void *spdm_context,
+    size_t request_size,
+    const void *request,
+    uint64_t timeout);
+
+libspdm_return_t spdm_device_acquire_sender_buffer (
+    void *context, void **msg_buf_ptr);
+
+void spdm_device_release_sender_buffer (
+    void *context, const void *msg_buf_ptr);
+
+libspdm_return_t spdm_device_acquire_receiver_buffer (
+    void *context, void **msg_buf_ptr);
+
+void spdm_device_release_receiver_buffer (
+    void *context, const void *msg_buf_ptr);
+
 #define LIBSPDM_TRANSPORT_HEADER_SIZE 64
 #define LIBSPDM_TRANSPORT_TAIL_SIZE 64
 
