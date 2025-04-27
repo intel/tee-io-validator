@@ -1574,20 +1574,6 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
     test_suite.enabled = data32 == 1;
   }
 
-  // type
-  sprintf(entry_name, "type");
-  if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] type is missing.\n", section_name));
-    return false;
-  }
-  if (!is_valid_topology_type(entry_value))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid type. %s\n", section_name, entry_value));
-    return false;
-  }
-  test_suite.type = get_topology_type_from_name(entry_value);
-
   sprintf(entry_name, "category");
   if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
   {
@@ -1601,6 +1587,26 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   else
   {
     test_suite.test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
+  }
+
+  if(test_suite.test_category == TEEIO_TEST_CATEGORY_PCIE_IDE ||
+    test_suite.test_category == TEEIO_TEST_CATEGORY_TDISP) {
+    // type
+    sprintf(entry_name, "type");
+    if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] type is missing.\n", section_name));
+      return false;
+    }
+    if (!is_valid_topology_type(entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid type. %s\n", section_name, entry_value));
+      return false;
+    }
+    test_suite.type = get_topology_type_from_name(entry_value);
+  } else {
+    // Other test category either not care the type or use fixed LINK_IDE (like CXL).
+    test_suite.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
   }
 
   // topology
@@ -1691,7 +1697,7 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
 
   IDE_TEST_CASES *tc = &ts->test_cases;
 
-  for(int i = 0; i < IDE_COMMON_TEST_CASE_NUM; i++) {
+  for(int i = 0; i < MAX_TEST_CASE_NUM; i++) {
     tc->cases[i].cases_cnt = test_suite.test_cases.cases[i].cases_cnt;
     for(int j = 0; j < MAX_CASE_ID; j++) {
       tc->cases[i].cases_id[j] = test_suite.test_cases.cases[i].cases_id[j];
@@ -1731,20 +1737,6 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
     config.enabled = data32 == 1;
   }
 
-  // type
-  sprintf(entry_name, "type");
-  if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] type is missing.\n", section_name));
-    return false;
-  }
-  if (!is_valid_topology_type(entry_value))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid type. %s\n", section_name, *entry_value));
-    return false;
-  }
-  config.type = get_topology_type_from_name(entry_value);
-
   sprintf(entry_name, "category");
   if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
   {
@@ -1758,6 +1750,26 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
   else
   {
     config.test_category = TEEIO_TEST_CATEGORY_PCIE_IDE;
+  }
+
+  // type
+  if(config.test_category == TEEIO_TEST_CATEGORY_PCIE_IDE ||
+    config.test_category == TEEIO_TEST_CATEGORY_TDISP) {
+    sprintf(entry_name, "type");
+    if (!GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] type is missing.\n", section_name));
+      return false;
+    }
+    if (!is_valid_topology_type(entry_value))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid type. %s\n", section_name, *entry_value));
+      return false;
+    }
+    config.type = get_topology_type_from_name(entry_value);
+  } else {
+    // Other test category either not care the type or use fixed LINK_IDE (like CXL).
+    config.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
   }
 
   const char** configuration_priv_names = get_test_configuration_priv_names(config.test_category);
