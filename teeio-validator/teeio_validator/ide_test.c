@@ -14,6 +14,7 @@
 #include "cxl_ide_test_lib.h"
 #include "cxl_tsp_test_lib.h"
 #include "tdisp_test_lib.h"
+#include "spdm_test_lib.h"
 
 const char *m_ide_test_topology_name[] = {
   "SelectiveIDE",
@@ -50,7 +51,9 @@ teeio_test_funcs_t m_teeio_test_funcs[TEEIO_TEST_CATEGORY_MAX] = {
   // CXL-TSP
   { 0 },
   // TDISP
-  { 0 }
+  { 0 },
+  // SPDM
+  { 0 },
 };
 
 void teeio_init_test_funcs()
@@ -59,6 +62,7 @@ void teeio_init_test_funcs()
   cxl_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_IDE]);
   cxl_tsp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_TSP]);
   tdisp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_TDISP]);
+  spdm_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_SPDM]);
 }
 
 void append_config_item(ide_run_test_config_item_t **head, ide_run_test_config_item_t* new)
@@ -660,6 +664,13 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_case->test_context;
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  teeio_spdm_test_context_t m_spdm_test_context = {0};
+
+  void *context = case_context;
+  if(test_category == TEEIO_TEST_CATEGORY_SPDM) {
+    m_spdm_test_context.spdm_context = spdm_test_get_spdm_context_from_test_context(case_context);
+    context = &m_spdm_test_context;
+  }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Run %s\n", test_case->name));
 
@@ -682,8 +693,9 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
   }
 
   if(test_case->setup_func != NULL) {
-    if(!test_case->setup_func(test_case->test_context)) {
+    if(!test_case->setup_func(context)) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s setup failed. So skipped.\n", test_case->name));
+      case_context->action = IDE_COMMON_TEST_ACTION_SKIP;
       goto TestCaseDone;
     }
   }
@@ -697,7 +709,7 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
   }
 
   if(test_case->run_func != NULL) {
-    test_case->run_func(test_case->test_context);
+    test_case->run_func(context);
   }
 
   if(test_case->config_check_required) {
@@ -708,7 +720,7 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
 TestCaseDone:
 
   if(test_case->teardown_func != NULL) {
-    test_case->teardown_func(test_case->test_context);
+    test_case->teardown_func(context);
   }
 
   do_run_test_config_disable(run_test_config, top_type, test_category);
