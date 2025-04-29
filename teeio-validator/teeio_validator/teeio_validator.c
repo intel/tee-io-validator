@@ -41,6 +41,7 @@ bool pcap_file_init(const char* filepath, uint32_t transport_layer);
 void log_file_close();
 void pcap_file_close();
 void teeio_init_test_funcs();
+void teeio_clean_test_libs();
 
 extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 
@@ -169,6 +170,7 @@ int main(int argc, char *argv[])
 
 MainDone:
     log_file_close();
+    teeio_clean_test_libs();
 
     return ret;
 }
