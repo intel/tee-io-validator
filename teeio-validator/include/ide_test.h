@@ -538,9 +538,9 @@ typedef struct {
 // test case setup function
 typedef bool(*ide_common_test_case_setup_func_t) (void *test_context);
 // test case teardown function
-typedef bool(*ide_common_test_case_teardown_func_t) (void *test_context);
+typedef void(*ide_common_test_case_teardown_func_t) (void *test_context);
 // test case run function
-typedef bool(*ide_common_test_case_run_func_t) (void *test_context);
+typedef void(*ide_common_test_case_run_func_t) (void *test_context);
 
 typedef struct _ide_run_test_case ide_run_test_case_t;
 struct _ide_run_test_case {

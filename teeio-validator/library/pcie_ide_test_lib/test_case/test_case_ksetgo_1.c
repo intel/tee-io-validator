@@ -219,7 +219,7 @@ bool pcie_ide_test_ksetgo_1_setup(void *test_context)
     group_context->common.upper_port.ide_id, &group_context->k_set, 0, PCIE_IDE_STREAM_KS0);
 }
 
-bool pcie_ide_test_ksetgo_1_run(void *test_context)
+void pcie_ide_test_ksetgo_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -276,7 +276,7 @@ bool pcie_ide_test_ksetgo_1_run(void *test_context)
                               true, "K0|TX|CPL", case_class, case_id);
 
   if(teeio_test_case_result(case_class, case_id) != TEEIO_TEST_RESULT_PASS) {
-    return true;
+    return;
   }
 
   // enable dev ide
@@ -300,11 +300,9 @@ bool pcie_ide_test_ksetgo_1_run(void *test_context)
 
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
-
-  return true;
 }
 
-bool pcie_ide_test_ksetgo_1_teardown(void *test_context)
+void pcie_ide_test_ksetgo_1_teardown(void *test_context)
 {
-  return pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
+  pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
 }

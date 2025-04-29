@@ -247,7 +247,7 @@ bool cxl_tsp_test_get_configuration_setup(void *test_context)
   return true;
 }
 
-bool cxl_tsp_test_get_configuration_run(void *test_context)
+void cxl_tsp_test_get_configuration_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -270,11 +270,8 @@ bool cxl_tsp_test_get_configuration_run(void *test_context)
   test_cxl_tsp_get_configuration(spdm_doe->doe_context, spdm_doe->spdm_context,
                                 &spdm_doe->session_id, &current_device_configuration,
                                 case_class, case_id);
-
-  return true;
 }
 
-bool cxl_tsp_test_get_configuration_teardown(void *test_context)
+void cxl_tsp_test_get_configuration_teardown(void *test_context)
 {
-  return true;
 }

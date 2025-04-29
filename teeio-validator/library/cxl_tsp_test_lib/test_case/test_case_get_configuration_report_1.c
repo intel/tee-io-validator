@@ -157,7 +157,7 @@ bool cxl_tsp_test_get_configuration_report_setup(void *test_context)
   return true;
 }
 
-bool cxl_tsp_test_get_configuration_report_run(void *test_context)
+void cxl_tsp_test_get_configuration_report_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -184,11 +184,8 @@ bool cxl_tsp_test_get_configuration_report_run(void *test_context)
                                         configuration_report_buffer,
                                         &configuration_report_size,
                                         case_class, case_id);
-
-  return true;
 }
 
-bool cxl_tsp_test_get_configuration_report_teardown(void *test_context)
+void cxl_tsp_test_get_configuration_report_teardown(void *test_context)
 {
-  return true;
 }

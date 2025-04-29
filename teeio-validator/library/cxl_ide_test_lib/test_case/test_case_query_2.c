@@ -70,7 +70,7 @@ bool cxl_ide_test_query_2_setup(void *test_context)
   return true;
 }
 
-bool cxl_ide_test_query_2_run(void *test_context)
+void cxl_ide_test_query_2_run(void *test_context)
 {
   uint8_t bus_num;
   uint8_t segment;
@@ -101,11 +101,8 @@ bool cxl_ide_test_query_2_run(void *test_context)
                         i, dev_func_num, bus_num, segment,
                         case_class, case_id);
   }
-
-  return true;
 }
 
-bool cxl_ide_test_query_2_teardown(void *test_context)
+void cxl_ide_test_query_2_teardown(void *test_context)
 {
-  return true;
 }

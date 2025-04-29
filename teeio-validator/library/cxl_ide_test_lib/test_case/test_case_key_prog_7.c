@@ -210,7 +210,7 @@ bool cxl_ide_test_key_prog_7_setup(void *test_context)
   return true;
 }
 
-bool cxl_ide_test_key_prog_7_run(void *test_context)
+void cxl_ide_test_key_prog_7_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -237,16 +237,12 @@ bool cxl_ide_test_key_prog_7_run(void *test_context)
                             case_class, case_id);
     }
   }
-
-  return true;
 }
 
-bool cxl_ide_test_key_prog_7_teardown(void *test_context)
+void cxl_ide_test_key_prog_7_teardown(void *test_context)
 {
   if(m_dev_caps) {
     free(m_dev_caps);
     m_dev_caps = NULL;
   }
-
-  return true;
 }

@@ -12,37 +12,37 @@
 //
 // GetVersion
 bool cxl_tsp_test_get_version_setup(void *test_context);
-bool cxl_tsp_test_get_version_run(void *test_context);
-bool cxl_tsp_test_get_version_teardown(void *test_context);
+void cxl_tsp_test_get_version_run(void *test_context);
+void cxl_tsp_test_get_version_teardown(void *test_context);
 
 // GetCaps
 bool cxl_tsp_test_get_caps_setup(void *test_context);
-bool cxl_tsp_test_get_caps_run(void *test_context);
-bool cxl_tsp_test_get_caps_teardown(void *test_context);
+void cxl_tsp_test_get_caps_run(void *test_context);
+void cxl_tsp_test_get_caps_teardown(void *test_context);
 
 // SetConfiguration
 bool cxl_tsp_test_set_configuration_setup(void *test_context);
-bool cxl_tsp_test_set_configuration_run(void *test_context);
-bool cxl_tsp_test_set_configuration_teardown(void *test_context);
+void cxl_tsp_test_set_configuration_run(void *test_context);
+void cxl_tsp_test_set_configuration_teardown(void *test_context);
 
 // GetConfiguration
 bool cxl_tsp_test_get_configuration_setup(void *test_context);
-bool cxl_tsp_test_get_configuration_run(void *test_context);
-bool cxl_tsp_test_get_configuration_teardown(void *test_context);
+void cxl_tsp_test_get_configuration_run(void *test_context);
+void cxl_tsp_test_get_configuration_teardown(void *test_context);
 
 // GetConfigurationReport
 bool cxl_tsp_test_get_configuration_report_setup(void *test_context);
-bool cxl_tsp_test_get_configuration_report_run(void *test_context);
-bool cxl_tsp_test_get_configuration_report_teardown(void *test_context);
+void cxl_tsp_test_get_configuration_report_run(void *test_context);
+void cxl_tsp_test_get_configuration_report_teardown(void *test_context);
 
 // LockConfiguration
 bool cxl_tsp_test_lock_configuration_1_setup(void *test_context);
-bool cxl_tsp_test_lock_configuration_1_run(void *test_context);
-bool cxl_tsp_test_lock_configuration_1_teardown(void *test_context);
+void cxl_tsp_test_lock_configuration_1_run(void *test_context);
+void cxl_tsp_test_lock_configuration_1_teardown(void *test_context);
 
 bool cxl_tsp_test_lock_configuration_2_setup(void *test_context);
-bool cxl_tsp_test_lock_configuration_2_run(void *test_context);
-bool cxl_tsp_test_lock_configuration_2_teardown(void *test_context);
+void cxl_tsp_test_lock_configuration_2_run(void *test_context);
+void cxl_tsp_test_lock_configuration_2_teardown(void *test_context);
 
 //
 // CXL_TSP Test Config

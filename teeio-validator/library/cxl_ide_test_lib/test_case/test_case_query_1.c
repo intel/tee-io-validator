@@ -92,7 +92,7 @@ bool cxl_ide_test_query_1_setup(void *test_context)
   return true;
 }
 
-bool cxl_ide_test_query_1_run(void *test_context)
+void cxl_ide_test_query_1_run(void *test_context)
 {
   uint8_t bus_num;
   uint8_t segment;
@@ -120,11 +120,8 @@ bool cxl_ide_test_query_1_run(void *test_context)
                       &group_context->spdm_doe.session_id,
                       0, dev_func_num, bus_num, segment,
                       case_class, case_id);
-
-  return true;
 }
 
-bool cxl_ide_test_query_1_teardown(void *test_context)
+void cxl_ide_test_query_1_teardown(void *test_context)
 {
-  return true;
 }

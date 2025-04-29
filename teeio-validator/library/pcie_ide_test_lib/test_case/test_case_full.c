@@ -44,7 +44,7 @@ bool pcie_ide_test_full_1_setup(void *test_context)
 
 }
 
-bool pcie_ide_test_full_1_run(void *test_context)
+void pcie_ide_test_full_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -90,7 +90,6 @@ bool pcie_ide_test_full_1_run(void *test_context)
   getchar();
 
   teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_PASS, "PCIE-IDE Stream is setup.");
-  return true;
 }
 
 static bool test_full_ide_km_key_set_stop(const void *pci_doe_context,
@@ -247,7 +246,7 @@ TestFullTeardownDone:
   return res;
 }
 
-bool pcie_ide_test_full_1_teardown(void *test_context)
+void pcie_ide_test_full_1_teardown(void *test_context)
 {
-  return pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
+  pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K0);
 }

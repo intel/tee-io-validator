@@ -82,7 +82,7 @@ bool tdisp_test_interface_state_3_setup (void *test_context)
 	return setup_success = true;
 }
 
-bool tdisp_test_interface_state_3_run (void *test_context)
+void tdisp_test_interface_state_3_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -132,18 +132,18 @@ bool tdisp_test_interface_state_3_run (void *test_context)
 	teeio_record_assertion_result (case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
 		assertion_result, mAssertion[5]);
 
-	return true;
+	return;
 }
 
-bool tdisp_test_interface_state_3_teardown (void *test_context)
+void tdisp_test_interface_state_3_teardown (void *test_context)
 {
 	if (setup_success == false) {
-		return true;
+		return;
 	}
 
 	pci_tdisp_stop_interface_response_t response;
 	size_t response_size = sizeof (response);
 
-	return tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
+	tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
 		&response_size);
 }

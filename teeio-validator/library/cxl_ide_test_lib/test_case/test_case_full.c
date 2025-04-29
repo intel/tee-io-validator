@@ -49,7 +49,7 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context)
                               false);
 }
 
-bool cxl_ide_test_full_ide_stream_run(void *test_context)
+void cxl_ide_test_full_ide_stream_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -87,10 +87,9 @@ bool cxl_ide_test_full_ide_stream_run(void *test_context)
   getchar();
 
   teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_PASS, "CXL-IDE Stream is setup.");
-  return true;
 }
 
-bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
+void cxl_ide_test_full_ide_stream_teardown(void *test_context)
 {
   bool ret = false;
 
@@ -116,7 +115,7 @@ bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
                               upper_port, lower_port);
     if(!ret) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_stop_ide_stream failed.\n"));
-      return false;
+      return;
     }
   } else {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetStop is not supported.\n"));
@@ -125,6 +124,4 @@ bool cxl_ide_test_full_ide_stream_teardown(void *test_context)
   // clear LinkEncEnable on the RootPort side
   INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
   cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
-
-  return true;
 }

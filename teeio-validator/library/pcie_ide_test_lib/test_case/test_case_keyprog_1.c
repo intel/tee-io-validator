@@ -151,7 +151,7 @@ bool pcie_ide_test_keyprog_1_setup(void *test_context)
   return test_keyprog_setup_common(test_context);
 }
 
-bool pcie_ide_test_keyprog_1_run(void *test_context)
+void pcie_ide_test_keyprog_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -312,11 +312,8 @@ bool pcie_ide_test_keyprog_1_run(void *test_context)
       group_context->rp_stream_index,
       PCIE_IDE_STREAM_TX,
       PCIE_IDE_STREAM_KS0);
-
-  return true;
 }
 
-bool pcie_ide_test_keyprog_1_teardown(void *test_context)
+void pcie_ide_test_keyprog_1_teardown(void *test_context)
 {
-  return true;
 }

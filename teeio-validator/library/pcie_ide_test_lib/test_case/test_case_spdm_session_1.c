@@ -16,14 +16,12 @@ bool pcie_ide_test_spdm_session_1_setup(void *test_context)
   return false;
 }
 
-bool pcie_ide_test_spdm_session_1_run(void *test_context)
+void pcie_ide_test_spdm_session_1_run(void *test_context)
 {
   NOT_IMPLEMENTED(__func__);
-  return false;
 }
 
-bool pcie_ide_test_spdm_session_1_teardown(void *test_context)
+void pcie_ide_test_spdm_session_1_teardown(void *test_context)
 {
   NOT_IMPLEMENTED(__func__);
-  return false;
 }

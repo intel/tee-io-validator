@@ -112,7 +112,7 @@ bool pcie_ide_test_ksetstop_1_setup(void *test_context)
 
 }
 
-bool pcie_ide_test_ksetstop_1_run(void *test_context)
+void pcie_ide_test_ksetstop_1_run(void *test_context)
 {
   // first diable dev_ide and host_ide
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
@@ -190,11 +190,8 @@ bool pcie_ide_test_ksetstop_1_run(void *test_context)
   test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
                              "K0|TX|CPL", case_class, case_id);
-
-  return true;
 }
 
-bool pcie_ide_test_ksetstop_1_teardown(void *test_context)
+void pcie_ide_test_ksetstop_1_teardown(void *test_context)
 {
-  return true;
 }

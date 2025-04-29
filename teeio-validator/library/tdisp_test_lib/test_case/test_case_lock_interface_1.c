@@ -79,7 +79,7 @@ bool tdisp_test_lock_interface_1_setup (void *test_context)
 	return setup_success = tdisp_test_set_ide_stream (test_context, PCI_IDE_KM_KEY_SET_K0);
 }
 
-bool tdisp_test_lock_interface_1_run (void *test_context)
+void tdisp_test_lock_interface_1_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -132,7 +132,7 @@ bool tdisp_test_lock_interface_1_run (void *test_context)
 		TEEIO_DEBUG ((TEEIO_DEBUG_ERROR,
 			"tdisp_test_lock_interface_1_run get_state failed.\n"));
 
-		return false;
+		return;
 	}
 
 	res = (get_state_response.tdi_state == PCI_TDISP_INTERFACE_STATE_CONFIG_LOCKED);
@@ -140,18 +140,18 @@ bool tdisp_test_lock_interface_1_run (void *test_context)
 	teeio_record_assertion_result (case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
 		assertion_result, mAssertion[5]);
 
-	return true;
+	return;
 }
 
-bool tdisp_test_lock_interface_1_teardown (void *test_context)
+void tdisp_test_lock_interface_1_teardown (void *test_context)
 {
 	if (setup_success == false) {
-		return true;
+		return;
 	}
 
 	pci_tdisp_stop_interface_response_t response;
 	size_t response_size = sizeof (response);
 
-	return tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
+	tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
 		&response_size);
 }
