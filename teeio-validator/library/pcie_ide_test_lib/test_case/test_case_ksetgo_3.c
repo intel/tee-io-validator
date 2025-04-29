@@ -186,7 +186,7 @@ bool test_ksetgo_3_run_phase2(void* doe_context, void* spdm_context, uint32_t* s
   return true;
 }
 
-bool pcie_ide_test_ksetgo_3_run(void *test_context)
+void pcie_ide_test_ksetgo_3_run(void *test_context)
 {
   bool res = false;
 
@@ -237,10 +237,10 @@ bool pcie_ide_test_ksetgo_3_run(void *test_context)
                                 case_class, case_id);
 
 Done:
-  return true;
+  return;
 }
 
-bool pcie_ide_test_ksetgo_3_teardown(void *test_context)
+void pcie_ide_test_ksetgo_3_teardown(void *test_context)
 {
-  return pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K1);
+  pcie_ide_teardown_common(test_context, PCI_IDE_KM_KEY_SET_K1);
 }

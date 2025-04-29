@@ -90,7 +90,7 @@ bool tdisp_test_interface_report_5_setup (void *test_context)
 	return setup_success = true;
 }
 
-bool tdisp_test_interface_report_5_run (void *test_context)
+void tdisp_test_interface_report_5_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -108,7 +108,7 @@ bool tdisp_test_interface_report_5_run (void *test_context)
 
 	if (!tdisp_test_get_interface_report (test_context, g_tdisp_interface_id.function_id,
 		interface_report_buffer, &buffer_size)) {
-		return false;
+		return;
 	}
 
 	READ_DATA16 data16 = {.byte0 = interface_report_buffer[0], .byte1 = interface_report_buffer[1]};
@@ -159,18 +159,18 @@ bool tdisp_test_interface_report_5_run (void *test_context)
 			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[2]);
 	}
 
-	return true;
+	return;
 }
 
-bool tdisp_test_interface_report_5_teardown (void *test_context)
+void tdisp_test_interface_report_5_teardown (void *test_context)
 {
 	if (setup_success == false) {
-		return true;
+		return;
 	}
 
 	pci_tdisp_stop_interface_response_t response;
 	size_t response_size = sizeof (response);
 
-	return tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
+	tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
 		&response_size);
 }

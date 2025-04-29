@@ -106,7 +106,7 @@ bool pcie_ide_test_query_1_setup(void *test_context)
   return true;
 }
 
-bool pcie_ide_test_query_1_run(void *test_context)
+void pcie_ide_test_query_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -137,11 +137,8 @@ bool pcie_ide_test_query_1_run(void *test_context)
                       port_index, &dev_func, &bus, &segment,
                       &max_port_index, ide_reg_block, &ide_reg_block_count,
                       case_class, case_id);
-
-  return true;
 }
 
-bool pcie_ide_test_query_1_teardown(void *test_context)
+void pcie_ide_test_query_1_teardown(void *test_context)
 {
-  return true;
 }

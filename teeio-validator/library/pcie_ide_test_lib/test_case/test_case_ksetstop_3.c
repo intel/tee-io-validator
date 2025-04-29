@@ -54,7 +54,7 @@ bool pcie_ide_test_ksetstop_3_setup(void *test_context)
   return res;
 }
 
-bool pcie_ide_test_ksetstop_3_run(void *test_context)
+void pcie_ide_test_ksetstop_3_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -128,11 +128,8 @@ bool pcie_ide_test_ksetstop_3_run(void *test_context)
   test_pci_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
                              "K1|TX|CPL", case_class, case_id);
-
-  return true;
 }
 
-bool pcie_ide_test_ksetstop_3_teardown(void *test_context)
+void pcie_ide_test_ksetstop_3_teardown(void *test_context)
 {
-  return true;
 }

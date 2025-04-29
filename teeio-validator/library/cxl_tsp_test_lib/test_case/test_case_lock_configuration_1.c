@@ -102,7 +102,7 @@ bool cxl_tsp_test_lock_configuration_1_setup(void *test_context)
   return true;
 }
 
-bool cxl_tsp_test_lock_configuration_1_run(void *test_context)
+void cxl_tsp_test_lock_configuration_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -125,16 +125,12 @@ bool cxl_tsp_test_lock_configuration_1_run(void *test_context)
     spdm_doe->spdm_context,
     &spdm_doe->session_id,
     case_class, case_id);
-
-  return true;
 }
 
-bool cxl_tsp_test_lock_configuration_1_teardown(void *test_context)
+void cxl_tsp_test_lock_configuration_1_teardown(void *test_context)
 {
   TEEIO_PRINT(("CXL TSP test LOCK_CONFIGURATION Case 6.1 is done.\n"));
   TEEIO_PRINT(("If there are some other CXL TSP test cases, the device shall be first reset.\n"));
   TEEIO_PRINT(("Press any key to continue.\n"));
   getchar();
-  
-  return true;
 }

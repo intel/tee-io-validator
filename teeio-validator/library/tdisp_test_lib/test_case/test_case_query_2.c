@@ -52,7 +52,7 @@ bool tdisp_test_query_2_setup (void *test_context)
 	return true;
 }
 
-bool tdisp_test_query_2_run (void *test_context)
+void tdisp_test_query_2_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -147,11 +147,8 @@ bool tdisp_test_query_2_run (void *test_context)
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 10,
 		IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[10]);
-
-	return true;
 }
 
-bool tdisp_test_query_2_teardown (void *test_context)
+void tdisp_test_query_2_teardown (void *test_context)
 {
-	return true;
 }

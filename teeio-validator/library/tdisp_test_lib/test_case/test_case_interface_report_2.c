@@ -100,7 +100,7 @@ bool tdisp_test_interface_report_2_setup (void *test_context)
 	return setup_success = true;
 }
 
-bool tdisp_test_interface_report_2_run (void *test_context)
+void tdisp_test_interface_report_2_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -118,7 +118,7 @@ bool tdisp_test_interface_report_2_run (void *test_context)
 
 	if (!tdisp_test_get_interface_report (test_context, g_tdisp_interface_id.function_id,
 		interface_report_buffer, &buffer_size)) {
-		return false;
+		return;
 	}
 
 	pci_tdisp_device_interface_state_response_t get_state_response;
@@ -129,7 +129,7 @@ bool tdisp_test_interface_report_2_run (void *test_context)
 		TEEIO_DEBUG ((TEEIO_DEBUG_ERROR,
 			"tdisp_test_interface_report_2_run get_state failed.\n"));
 
-		return false;
+		return;
 	}
 
 	bool res = (get_state_response.tdi_state == PCI_TDISP_INTERFACE_STATE_RUN);
@@ -138,18 +138,18 @@ bool tdisp_test_interface_report_2_run (void *test_context)
 	teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
 		assertion_result, mAssertion[0]);
 
-	return true;
+	return;
 }
 
-bool tdisp_test_interface_report_2_teardown (void *test_context)
+void tdisp_test_interface_report_2_teardown (void *test_context)
 {
 	if (setup_success == false) {
-		return true;
+		return;
 	}
 
 	pci_tdisp_stop_interface_response_t response;
 	size_t response_size = sizeof (response);
 
-	return tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
+	tdisp_test_stop_interface (test_context, g_tdisp_interface_id.function_id, &response,
 		&response_size);
 }

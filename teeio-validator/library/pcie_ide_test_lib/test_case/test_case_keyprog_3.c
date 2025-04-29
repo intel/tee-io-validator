@@ -124,7 +124,7 @@ bool pcie_ide_test_keyprog_3_setup(void *test_context)
   return res;
 }
 
-bool pcie_ide_test_keyprog_3_run(void *test_context)
+void pcie_ide_test_keyprog_3_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -237,11 +237,8 @@ bool pcie_ide_test_keyprog_3_run(void *test_context)
                                 k_sets[ks] | directions[direction] | substreams[substream],
                                 port_index, &key_buffer, &kp_ack_status, "K0|TX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
-
-  return true;
 }
 
-bool pcie_ide_test_keyprog_3_teardown(void *test_context)
+void pcie_ide_test_keyprog_3_teardown(void *test_context)
 {
-  return true;
 }

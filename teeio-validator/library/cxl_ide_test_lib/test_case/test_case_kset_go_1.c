@@ -244,7 +244,7 @@ bool cxl_ide_test_kset_go_1_setup(void *test_context)
   return true;
 }
 
-bool cxl_ide_test_kset_go_1_run(void *test_context)
+void cxl_ide_test_kset_go_1_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -274,11 +274,8 @@ bool cxl_ide_test_kset_go_1_run(void *test_context)
                             &group_context->spdm_doe.session_id, port_index, ide_mode, case_class, case_id);
     }
   }
-
-  return true;
 }
 
-bool cxl_ide_test_kset_go_1_teardown(void *test_context)
+void cxl_ide_test_kset_go_1_teardown(void *test_context)
 {
-  return true;
 }

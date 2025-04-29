@@ -126,7 +126,7 @@ bool cxl_tsp_test_set_configuration_setup(void *test_context)
   return true;
 }
 
-bool cxl_tsp_test_set_configuration_run(void *test_context)
+void cxl_tsp_test_set_configuration_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -191,7 +191,7 @@ bool cxl_tsp_test_set_configuration_run(void *test_context)
                                   IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
                                   "device_capabilites.num_of_secondary_sessions is error - 0x%x", m_device_capabilities.number_of_secondary_sessions);
 
-      return true;
+      return;
     }
 
     for (int index = 0; index < CXL_TSP_2ND_SESSION_COUNT; index++) {
@@ -203,18 +203,15 @@ bool cxl_tsp_test_set_configuration_run(void *test_context)
           teeio_record_assertion_result(case_class, case_id, 0,
                                       IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
                                       "libspdm_get_random_number is error");
-          return true;
+          return;
         }
       }
     }
   }
   test_cxl_tsp_set_configuration(spdm_doe->doe_context, spdm_doe->spdm_context, &spdm_doe->session_id,
                                       &device_configuration, &device_2nd_session_info, case_class, case_id);
-
-  return true;
 }
 
-bool cxl_tsp_test_set_configuration_teardown(void *test_context)
+void cxl_tsp_test_set_configuration_teardown(void *test_context)
 {
-  return true;
 }

@@ -306,7 +306,7 @@ bool cxl_tsp_test_get_caps_setup(void *test_context)
   return true;
 }
 
-bool cxl_tsp_test_get_caps_run(void *test_context)
+void cxl_tsp_test_get_caps_run(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -327,11 +327,8 @@ bool cxl_tsp_test_get_caps_run(void *test_context)
   libcxltsp_device_capabilities_t device_capabilities;
   memset(&device_capabilities, 0, sizeof(device_capabilities));
   test_cxl_tsp_get_capabilities(spdm_doe->doe_context, spdm_doe->spdm_context, &spdm_doe->session_id, &device_capabilities, case_class, case_id);
-
-  return true;
 }
 
-bool cxl_tsp_test_get_caps_teardown(void *test_context)
+void cxl_tsp_test_get_caps_teardown(void *test_context)
 {
-  return true;
 }
