@@ -73,3 +73,17 @@ Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .
 # Run cases in [TestSuite_1] in cxl_ide.ini.
 ./teeio_validator -f cxl_ide.ini
 ```
+
+## Run SPDM test cases
+**Step1** Prepare the spdm_test.ini.
+
+Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .ini file. Here is a sample [spdm_test.ini](./sample_ini/spdm_test.ini).
+
+**Note**: The ```bus``` in ```[Topology_1]``` shall be replaced by the bus of **host BDF**(```0xd9```). The ```rootport_1``` and ```endpoint_1``` in ```[Ports]``` shall be replaced by the dev/func of **host BDF** and **device  BDF** respectively. Refer to [Check how TEEIO Device is connected](#check-how-teeio-device-is-connected)
+
+**Step2** Run test case
+
+```
+# Run cases in [TestSuite_1] in spdm_test.ini.
+./teeio_validator -f spdm_test.ini
+```

@@ -53,12 +53,14 @@ EntryName=EntryValue
 - [PCIE-IDE Test](../doc/ide_test/)
 - [CXL-IDE Test](../doc/cxl_ide_test/)
 - [CXL-TSP Test](../doc/tsp_test/)
+- [SPDM Test](../doc/spdm_test/)
 
 Settings of **Topology** / **Configuration** / **TestSuite** are different.
 
 - [PCIE-IDE Section settings](#pcie-ide-section-settings)
 - [CXL-IDE Section settings](#cxl-ide-section-settings)
 - [CXL-TSP Section settings](#cxl-tsp-section-settings)
+- [SPDM Section settings](#spdm-section-settings)
 
 ### PCIE-IDE Section settings
 [Topology_x]
@@ -163,3 +165,33 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |GetConfiguration|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspConfigurationResponse.md](../doc/tsp_test/TspTestCase/4.GetTargetTspConfigurationResponse.md)|
 |GetConfigurationReport|string||O|numbers separated by comma.<br> For example **1** means Case1 in [GetTargetTspConfigurationReportResponse.md](../doc/tsp_test/TspTestCase/5.GetTargetTspConfigurationReportResponse.md)|
 |LockConfiguration|string||O|numbers separated by comma.<br> For example **1,2** means Case1 and Case2 in [LockTargetTspConfigurationResponse.md](../doc/tsp_test/TspTestCase/6.LockTargetTspConfigurationResponse.md)|
+
+### SPDM Section settings
+[Topology_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **link_ide**|
+|connection|string||M|available values are: **direct, switch**|
+|bus|hex||M|The bus which rootport is connected to. For example 0x1a|
+|path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
+|path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
+
+[Configration_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|category|string|spdm|M|must be **spdm**|
+
+[TestSuite_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|category|string|spdm|M|must be **spdm**|
+|topology|number||M|Topology_x|
+|configuration|number||M|Configuration_x|
+|Version|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [Version.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/1.Version.md)|
+|Capabilities|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Capabilities.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/2.Capabilities.md)|
+|Algorithms|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Algorithms.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/3.Algorithms.md)|
+|Certificate|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Certificate.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/5.Certificate.md)|
+|Measurements|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [Measurements.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/7.Measurements.md)|
+|KeyExchangeRsp|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KeyExchangeRsp.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/8.KeyExchangeRsp.md)|
+|FinishRsp|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [FinishRsp.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/9.FinishRsp.md)|
+|EndSessionAck|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [EndSessionAck.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/16.EndSessionAck.md)|
