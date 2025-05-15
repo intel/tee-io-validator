@@ -51,6 +51,7 @@ EntryName=EntryValue
 
 **TEE-IO Device Validation Utility** supports multiple test categories.
 - [PCIE-IDE Test](../doc/ide_test/)
+- [TDISP Test](../doc/tdisp_test/)
 - [CXL-IDE Test](../doc/cxl_ide_test/)
 - [CXL-TSP Test](../doc/tsp_test/)
 - [SPDM Test](../doc/spdm_test/)
@@ -58,6 +59,7 @@ EntryName=EntryValue
 Settings of **Topology** / **Configuration** / **TestSuite** are different.
 
 - [PCIE-IDE Section settings](#pcie-ide-section-settings)
+- [TDISP Section settings](#tdisp-section-settings)
 - [CXL-IDE Section settings](#cxl-ide-section-settings)
 - [CXL-TSP Section settings](#cxl-tsp-section-settings)
 - [SPDM Section settings](#spdm-section-settings)
@@ -195,3 +197,34 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |KeyExchangeRsp|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [KeyExchangeRsp.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/8.KeyExchangeRsp.md)|
 |FinishRsp|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [FinishRsp.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/9.FinishRsp.md)|
 |EndSessionAck|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [EndSessionAck.md](https://github.com/DMTF/SPDM-Responder-Validator/blob/main/doc/16.EndSessionAck.md)|
+
+### TDISP Section settings
+[Topology_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
+|connection|string||M|available values are: **direct, switch**|
+|bus|hex||M|The bus which rootport is connected to. For example 0x1a|
+|path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
+|path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
+|stream_id|number|0|O|it shall be in [0, 255]|
+
+[Configration_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|available values are **selective_ide, link_ide, selective_and_link_ide**|
+|category|string|tdisp|M|must be **tdisp**|
+
+[TestSuite_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
+|category|string|tdisp|M|must be **tdisp**|
+|topology|number||M|Topology_x|
+|configuration|number||M|Configuration_x|
+|Query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [TdispVersion.md](../doc/tdisp_test/TdispTestCase/1.TdispVersion.md)|
+|LockInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [LockInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/3.LockInterfaceResponse.md)|
+|DeviceReport|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [DeviceInterfaceReport.md](../doc/tdisp_test/TdispTestCase/4.DeviceInterfaceReport.md)|
+|DeviceState|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [DeviceInterfaceState.md](../doc/tdisp_test/TdispTestCase/5.DeviceInterfaceState.md)|
+|StartInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [StartInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/6.StartInterfaceResponse.md)|
+|StopInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [StopInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/7.StopInterfaceResponse.md)|
