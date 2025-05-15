@@ -2,6 +2,7 @@
 
 ## Usage
 ```
+# note: teeio_validator shall be run with root privilege
 teeio_validator version 0.3.0
 
 Usage:
