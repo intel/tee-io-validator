@@ -2160,18 +2160,6 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
     topology->bus = data32;
   }
 
-  // rp_stream_index
-  sprintf(entry_name, "rp_stream_index");
-  if (!GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32)) 
-  {
-    // default is 0
-    data32 = 0;
-  }
-  if(data32 > MAX_RP_STREAM_INDEX) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] rp_stream_index(%d) shall be in [0, 255].\n", section_name, data32));
-  }
-  topology->rp_stream_index = data32;
-
   // path
   sprintf(entry_name, "path1");
   if(!ParsePathInTopologySection(context, section_name, entry_name, topology, true, test_config)) {
