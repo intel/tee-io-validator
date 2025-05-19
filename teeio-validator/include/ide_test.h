@@ -189,7 +189,6 @@ typedef struct {
   IDE_SWITCH_INTERNAL_CONNECTION *sw_conn2;
   uint8_t bus;
   uint8_t stream_id;
-  uint8_t rp_stream_index;
 } IDE_TEST_TOPOLOGY;
 
 typedef struct {
