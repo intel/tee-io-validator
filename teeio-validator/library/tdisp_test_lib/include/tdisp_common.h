@@ -13,15 +13,15 @@
 // TDISP test cases
 //
 
-// Query Case 1.1
-bool tdisp_test_query_1_setup (void *test_context);
-void tdisp_test_query_1_run (void *test_context);
-void tdisp_test_query_1_teardown (void *test_context);
+// Version Case 1
+bool tdisp_test_version_1_setup (void *test_context);
+void tdisp_test_version_1_run (void *test_context);
+void tdisp_test_version_1_teardown (void *test_context);
 
-// Query Case 1.2
-bool tdisp_test_query_2_setup (void *test_context);
-void tdisp_test_query_2_run (void *test_context);
-void tdisp_test_query_2_teardown (void *test_context);
+// Capabilities Case 1
+bool tdisp_test_capabilities_1_setup (void *test_context);
+void tdisp_test_capabilities_1_run (void *test_context);
+void tdisp_test_capabilities_1_teardown (void *test_context);
 
 // LockInterface Case 2.1
 bool tdisp_test_lock_interface_1_setup (void *test_context);

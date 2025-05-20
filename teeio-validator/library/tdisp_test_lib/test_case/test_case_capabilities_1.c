@@ -12,7 +12,7 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"tdisp_query send_receive_data",
+	"tdisp_capabilities send_receive_data",
 	"sizeof(TdispMessage) == sizeof(TDISP_CAPABILITIES)",
 	"TdispMessage.TDISPVersion == 0x10",
 	"TdispMessage.MessageType == TDISP_CAPABILITIES",
@@ -36,15 +36,15 @@ static const uint8_t tdisp_supported_messages[] = {
 };
 
 
-// Query Case 1.2
-bool tdisp_test_query_2_setup (void *test_context)
+// Capabilities Case 1
+bool tdisp_test_capabilities_1_setup (void *test_context)
 {
 	pci_tdisp_version_response_mine_t response;
 	size_t response_size = sizeof (response);
 
 	if (!tdisp_test_get_version (test_context, g_tdisp_interface_id.function_id, &response,
 		&response_size)) {
-		TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "tdisp_test_query_2_setup failed.\n"));
+		TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "tdisp_test_capabilities_1_setup failed.\n"));
 
 		return false;
 	}
@@ -52,7 +52,7 @@ bool tdisp_test_query_2_setup (void *test_context)
 	return true;
 }
 
-void tdisp_test_query_2_run (void *test_context)
+void tdisp_test_capabilities_1_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -149,6 +149,6 @@ void tdisp_test_query_2_run (void *test_context)
 		IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[10]);
 }
 
-void tdisp_test_query_2_teardown (void *test_context)
+void tdisp_test_capabilities_1_teardown (void *test_context)
 {
 }

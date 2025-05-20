@@ -33,7 +33,8 @@ ide_test_group_funcs_t m_tdisp_group_func = {
 };
 
 ide_test_case_name_t m_tdisp_test_case_names[] = {
-	{"Query", "1,2", TDISP_TEST_CASE_QUERY},
+	{"Version", "1", TDISP_TEST_CASE_VERSION},
+	{"Capabilities", "1", TDISP_TEST_CASE_CAPABILITIES},
 	{"LockInterface", "1,2,3,4", TDISP_TEST_CASE_LOCK_INTERFACE},
 	{"DeviceReport", "1,2,3,4,5", TDISP_TEST_CASE_DEVICE_REPORT},
 	{"DeviceState", "1,2,3,4", TDISP_TEST_CASE_DEVICE_STATE},
@@ -42,15 +43,18 @@ ide_test_case_name_t m_tdisp_test_case_names[] = {
 	{NULL, NULL, TDISP_TEST_CASE_NUM}
 };
 
-ide_test_case_funcs_t m_tdisp_test_query_cases[MAX_TDISP_QUERY_CASE_ID] = {
+ide_test_case_funcs_t m_tdisp_test_version_cases[MAX_TDISP_VERSION_CASE_ID] = {
 	{
-		tdisp_test_query_1_setup, tdisp_test_query_1_run,
-		tdisp_test_query_1_teardown, true
-	},
+		tdisp_test_version_1_setup, tdisp_test_version_1_run,
+		tdisp_test_version_1_teardown, true
+	}
+};
+
+ide_test_case_funcs_t m_tdisp_test_capabilities_cases[MAX_TDISP_CAPABILITIES_CASE_ID] = {
 	{
-		tdisp_test_query_2_setup, tdisp_test_query_2_run,
-		tdisp_test_query_2_teardown, true
-	},
+		tdisp_test_capabilities_1_setup, tdisp_test_capabilities_1_run,
+		tdisp_test_capabilities_1_teardown, true
+	}
 };
 
 ide_test_case_funcs_t
@@ -154,7 +158,8 @@ ide_test_case_funcs_t
 };
 
 TEEIO_TEST_CASES m_tdisp_test_case_funcs[TDISP_TEST_CASE_NUM] = {
-	{m_tdisp_test_query_cases, MAX_TDISP_QUERY_CASE_ID},
+	{m_tdisp_test_version_cases, MAX_TDISP_VERSION_CASE_ID},
+	{m_tdisp_test_capabilities_cases, MAX_TDISP_CAPABILITIES_CASE_ID},
 	{m_tdisp_test_lock_interface_cases, MAX_LOCK_INTERFACE_RESPONSE_CASE_ID},
 	{m_tdisp_test_interface_report_cases, MAX_DEVICE_INTERFACE_REPORT_CASE_ID},
 	{m_tdisp_test_interface_state_cases, MAX_DEVICE_INTERFACE_STATE_CASE_ID},

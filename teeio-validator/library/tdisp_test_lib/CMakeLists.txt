@@ -24,8 +24,8 @@ SET(src_tdisp_test_lib
   # test_case
   test_case/ide_test_common.c
   test_case/tdisp_test_common.c
-  test_case/test_case_query_1.c
-  test_case/test_case_query_2.c
+  test_case/test_case_version_1.c
+  test_case/test_case_capabilities_1.c
   test_case/test_case_lock_interface_1.c
   test_case/test_case_lock_interface_2.c
   test_case/test_case_lock_interface_3.c
