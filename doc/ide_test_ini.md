@@ -222,7 +222,8 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |category|string|tdisp|M|must be **tdisp**|
 |topology|number||M|Topology_x|
 |configuration|number||M|Configuration_x|
-|Query|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [TdispVersion.md](../doc/tdisp_test/TdispTestCase/1.TdispVersion.md)|
+|Version|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [TdispVersion.md](../doc/tdisp_test/TdispTestCase/1.TdispVersion.md)|
+|Capabilities|string||O|numbers separated by comma.<br> For example **1** means Cases1 in [TdispCapabilities.md](../doc/tdisp_test/TdispTestCase/2.TdispCapabilities.md)|
 |LockInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [LockInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/3.LockInterfaceResponse.md)|
 |DeviceReport|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [DeviceInterfaceReport.md](../doc/tdisp_test/TdispTestCase/4.DeviceInterfaceReport.md)|
 |DeviceState|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [DeviceInterfaceState.md](../doc/tdisp_test/TdispTestCase/5.DeviceInterfaceState.md)|
