@@ -10,7 +10,8 @@
 #include "ide_test.h"
 
 typedef enum {
-	TDISP_TEST_CASE_QUERY = 0,
+	TDISP_TEST_CASE_VERSION = 0,
+	TDISP_TEST_CASE_CAPABILITIES,
 	TDISP_TEST_CASE_LOCK_INTERFACE,
 	TDISP_TEST_CASE_DEVICE_REPORT,
 	TDISP_TEST_CASE_DEVICE_STATE,
@@ -20,7 +21,8 @@ typedef enum {
 } TDISP_TEST_CASE;
 
 // Follow doc/tdisp_test/TdispTestCase
-#define MAX_TDISP_QUERY_CASE_ID                 2	// Combine both version and capabilities into query case
+#define MAX_TDISP_VERSION_CASE_ID               1
+#define MAX_TDISP_CAPABILITIES_CASE_ID          1
 #define MAX_LOCK_INTERFACE_RESPONSE_CASE_ID     4
 #define MAX_DEVICE_INTERFACE_REPORT_CASE_ID     5
 #define MAX_DEVICE_INTERFACE_STATE_CASE_ID      4

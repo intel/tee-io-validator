@@ -12,7 +12,7 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"tdisp_query send_receive_data",
+	"tdisp_version send_receive_data",
 	"sizeof(TdispMessage) == sizeof(TDISP_VERSION)",
 	"TdispMessage.TDISPVersion == 0x10",
 	"TdispMessage.MessageType == TDISP_VERSION",
@@ -22,13 +22,13 @@ static const char *mAssertion[] = {
 };
 
 
-// Query Case 1.1
-bool tdisp_test_query_1_setup (void *test_context)
+// Version Case 1
+bool tdisp_test_version_1_setup (void *test_context)
 {
 	return true;
 }
 
-void tdisp_test_query_1_run (void *test_context)
+void tdisp_test_version_1_run (void *test_context)
 {
 	assert_context (test_context);
 
@@ -84,6 +84,6 @@ void tdisp_test_query_1_run (void *test_context)
 		assertion_result, mAssertion[6]);
 }
 
-void tdisp_test_query_1_teardown (void *test_context)
+void tdisp_test_version_1_teardown (void *test_context)
 {
 }
