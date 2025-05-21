@@ -13,7 +13,7 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"TdispMessage.TDI_STATE == CONFIG_LOCKED"
+	"TdispMessage.TDI_STATE = 0x%x"
 };
 static bool setup_success = false;
 
@@ -116,6 +116,8 @@ void tdisp_test_interface_report_1_run (void *test_context)
 		&response_size)) {
 		TEEIO_DEBUG ((TEEIO_DEBUG_ERROR,
 			"tdisp_test_interface_report_1_run get_state failed.\n"));
+		teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+			TEEIO_TEST_RESULT_FAILED, "tdisp_test_get_state failed.");
 
 		return;
 	}
@@ -124,7 +126,7 @@ void tdisp_test_interface_report_1_run (void *test_context)
 	teeio_test_result_t assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 
 	teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[0]);
+		assertion_result, mAssertion[0], get_state_response.tdi_state);
 }
 
 void tdisp_test_interface_report_1_teardown (void *test_context)

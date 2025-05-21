@@ -12,13 +12,13 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"tdisp_version send_receive_data",
-	"sizeof(TdispMessage) == sizeof(TDISP_VERSION)",
-	"TdispMessage.TDISPVersion == 0x10",
-	"TdispMessage.MessageType == TDISP_VERSION",
-	"TdispMessage.INTERFACE_ID == GET_TDISP_VERSION.INTERFACE_ID",
-	"TdispMessage.VERSION_NUM_COUNT == 1",
-	"TdispMessage.VERSION_NUM_ENTRY[0] == 0x10"
+	"tdisp_send_receive_data",
+	"sizeof(TdispMessage) = 0x%x",
+	"TdispMessage.TDISPVersion = 0x%x",
+	"TdispMessage.MessageType = 0x%x",
+	"TdispMessage.INTERFACE_ID = 0x%x",
+	"TdispMessage.VERSION_NUM_COUNT = 0x%x",
+	"TdispMessage.VERSION_NUM_ENTRY[0] = 0x%x"
 };
 
 
@@ -52,36 +52,42 @@ void tdisp_test_version_1_run (void *test_context)
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 0, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
 		assertion_result, mAssertion[0]);
+	if(!res) {
+		return;
+	}
 
 	res = (response_size == sizeof (pci_tdisp_version_response_mine_t));
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[1]);
+		assertion_result, mAssertion[1], response_size);
+	if(!res) {
+		return;
+	}
 
 	res = (response.header.version == PCI_TDISP_MESSAGE_VERSION_10);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 2, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[2]);
+		assertion_result, mAssertion[2], response.header.version);
 
 	res = (response.header.message_type == PCI_TDISP_VERSION);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 3, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[3]);
+		assertion_result, mAssertion[3], response.header.message_type);
 
 	res = (response.header.interface_id.function_id == g_tdisp_interface_id.function_id);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 4, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[4]);
+		assertion_result, mAssertion[4], response.header.interface_id.function_id);
 
 	res = (response.version_num_count == 1);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[5]);
+		assertion_result, mAssertion[5], response.version_num_count);
 
 	res = (response.version_num_entry[0] == PCI_TDISP_MESSAGE_VERSION_10);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[6]);
+		assertion_result, mAssertion[6], response.version_num_entry[0]);
 }
 
 void tdisp_test_version_1_teardown (void *test_context)
