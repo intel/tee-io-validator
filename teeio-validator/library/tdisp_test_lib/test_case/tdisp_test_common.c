@@ -200,12 +200,12 @@ bool tdisp_test_stop_interface (void *test_context, uint32_t function_id,
 }
 
 static const char *mAssertion[] = {
-	"tdisp_query send_receive_data",
-	"sizeof(TdispMessage) >= sizeof(DEVICE_INTERFACE_REPORT, REPORT_BYTES)",
-	"TdispMessage.TDISPVersion == 0x10",
-	"TdispMessage.MessageType == DEVICE_INTERFACE_REPORT",
-	"TdispMessage.INTERFACE_ID == DEVICE_INTERFACE_REPORT.INTERFACE_ID",
-	"TdispMessage.PORTION_LENGTH > 0"
+	"tdisp_send_receive_data",
+	"sizeof(TdispMessage) = 0x%x",
+	"TdispMessage.TDISPVersion = 0x%x",
+	"TdispMessage.MessageType = 0x%x",
+	"TdispMessage.INTERFACE_ID = 0x%x",
+	"TdispMessage.PORTION_LENGTH = 0x%x"
 };
 
 
@@ -258,35 +258,41 @@ bool tdisp_test_get_interface_report (void *test_context, uint32_t function_id,
 
 		res = !LIBSPDM_STATUS_IS_ERROR (status);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
-		teeio_record_assertion_result (case_class, case_id, 0,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[0]);
+		if(!res) {
+			teeio_record_assertion_result (case_class, case_id, 0,
+				IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[0]);
+			return false;
+		}
 
 		res = (response_size >= sizeof (pci_tdisp_device_interface_report_response_t)) &&
 			(response.portion_length <= request.length) && (response_size ==
 				sizeof (pci_tdisp_device_interface_report_response_t) + response.portion_length);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 1,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[1]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[1], response_size);
+		if (!res) {
+			return false;
+		}
 
 		res = (response.header.version == PCI_TDISP_MESSAGE_VERSION_10);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 2,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[2]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[2], response.header.version);
 
 		res = (response.header.message_type == PCI_TDISP_DEVICE_INTERFACE_REPORT);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 3,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[3]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[3], response.header.message_type);
 
 		res = (response.header.interface_id.function_id == function_id);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 4,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[4]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[4], response.header.interface_id.function_id);
 
 		res = (response.portion_length != 0);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 5,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[5]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[5], response.portion_length);
 
 		if (offset == 0) {
 			total_report_length = response.portion_length + response.remainder_length;
@@ -295,15 +301,17 @@ bool tdisp_test_get_interface_report (void *test_context, uint32_t function_id,
 				TEEIO_DEBUG ((TEEIO_DEBUG_ERROR,
 					"Not enough buffer size for interface report.\n"));
 
+				teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+					TEEIO_TEST_RESULT_FAILED, "Not enough buffer size for interface report.");
+
 				return false;
 			}
 		}
 		else {
 			if (total_report_length !=
 				(uint32_t) (offset + response.portion_length + response.remainder_length)) {
-				teeio_record_assertion_result (case_class, case_id, 1,
-					IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
-					mAssertion[1]);
+				teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+					TEEIO_TEST_RESULT_FAILED, "total_report_length is not correct.");
 
 				return false;
 			}

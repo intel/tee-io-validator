@@ -13,9 +13,9 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"sizeof(REPORT_BYTES) == sizeof(REPORT_BYTES, DEVICE_SPECIFIC_INFO) + REPORT_BYTES.DEVICE_SPECIFIC_INFO_LEN",
-	"(REPORT_BYTES.INTERFACE_INFO & 0xFFE0) == 0",
-	"(REPORT_BYTES.MMIO_RANGE[i].RangeAttributes & 0xFFF0) == 0"
+	"sizeof(REPORT_BYTES) = 0x%x",
+	"(REPORT_BYTES.INTERFACE_INFO & 0xFFE0) = 0x%x",
+	"(REPORT_BYTES.MMIO_RANGE[i].RangeAttributes & 0xFFF0) = 0x%x"
 };
 static bool setup_success = false;
 
@@ -136,11 +136,14 @@ void tdisp_test_interface_report_5_run (void *test_context)
 
 	teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
 		assertion_result, mAssertion[0]);
+	if(!res) {
+		return;
+	}
 
 	res = ((interface_info & 0xFFE0) == 0);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 7, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[1]);
+		assertion_result, mAssertion[1], interface_info & 0xFFE0);
 
 	for (uint32_t i = 0; i < mmio_range_count; ++i) {
 		data32.byte0 = interface_report_buffer[16 +
@@ -156,7 +159,7 @@ void tdisp_test_interface_report_5_run (void *test_context)
 		res = ((range_attributes & 0xFFF0) == 0);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 		teeio_record_assertion_result (case_class, case_id, 8,
-			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[2]);
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[2], range_attributes & 0xFFF0);
 	}
 
 	return;

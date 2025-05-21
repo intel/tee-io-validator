@@ -12,17 +12,17 @@
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
 
 static const char *mAssertion[] = {
-	"tdisp_capabilities send_receive_data",
-	"sizeof(TdispMessage) == sizeof(TDISP_CAPABILITIES)",
-	"TdispMessage.TDISPVersion == 0x10",
-	"TdispMessage.MessageType == TDISP_CAPABILITIES",
-	"TdispMessage.INTERFACE_ID == GET_TDISP_VERSION.INTERFACE_ID",
-	"TdispMessage.DSM_CAPS == 0",
-	"(TdispMessage.REQ_MSGS_SUPPORTED[0..2] == ExpectedSupportedBits) && (TdispMessage.REQ_MSGS_SUPPORTED[2..16] == 0x0)",
-	"(TdispMessage.LOCK_INTERFACE_FLAGS_SUPPORTED & 0xFFE0) == 0",
-	"TdispMessage.DEV_ADDR_WIDTH >= 52",
-	"TdispMessage.NUM_REQ_THIS > 0",
-	"TdispMessage.NUM_REQ_ALL > 0"
+	"tdisp_send_receive_data",
+	"sizeof(TdispMessage) = 0x%x",
+	"TdispMessage.TDISPVersion = 0x%x",
+	"TdispMessage.MessageType = 0x%x",
+	"TdispMessage.INTERFACE_ID = 0x%x",
+	"TdispMessage.DSM_CAPS = 0x%x",
+	"(TdispMessage.REQ_MSGS_SUPPORTED[0..2] = 0x%x) && (TdispMessage.REQ_MSGS_SUPPORTED[2..16] = 0x%x)",
+	"(TdispMessage.LOCK_INTERFACE_FLAGS_SUPPORTED & 0xFFE0) = 0x%x",
+	"TdispMessage.DEV_ADDR_WIDTH = 0x%x",
+	"TdispMessage.NUM_REQ_THIS = 0x%x",
+	"TdispMessage.NUM_REQ_ALL = 0x%x"
 };
 
 static const uint8_t tdisp_supported_messages[] = {
@@ -74,33 +74,39 @@ void tdisp_test_capabilities_1_run (void *test_context)
 		&response, &response_size);
 
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
-	teeio_record_assertion_result (case_class, case_id, 0, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[0]);
+	if(!res) {
+		teeio_record_assertion_result (case_class, case_id, 0, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+			assertion_result, mAssertion[0]);
+		return;
+	}
 
 	res = (response_size == sizeof (pci_tdisp_capabilities_response_t));
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[1]);
+		assertion_result, mAssertion[1], response_size);
+	if(!res) {
+		return;
+	}
 
 	res = (response.header.version == PCI_TDISP_MESSAGE_VERSION_10);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 2, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[2]);
+		assertion_result, mAssertion[2], response.header.version);
 
 	res = (response.header.message_type == PCI_TDISP_CAPABILITIES);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 3, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[3]);
+		assertion_result, mAssertion[3], response.header.message_type);
 
 	res = (response.header.interface_id.function_id == g_tdisp_interface_id.function_id);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 4, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[4]);
+		assertion_result, mAssertion[4], response.header.interface_id.function_id);
 
 	res = (response.rsp_caps.dsm_caps == 0);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[5]);
+		assertion_result, mAssertion[5], response.rsp_caps.dsm_caps);
 
 	// supported bits
 	int len =
@@ -126,27 +132,27 @@ void tdisp_test_capabilities_1_run (void *test_context)
 	res = ((first_two_bytes == expected_supported_bits) && (the_rest == 0));
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[6]);
+		assertion_result, mAssertion[6], first_two_bytes, the_rest);
 
 	res = ((response.rsp_caps.lock_interface_flags_supported & 0xFFE0) == 0);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 7, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[7]);
+		assertion_result, mAssertion[7], response.rsp_caps.lock_interface_flags_supported & 0xFFE0);
 
 	res = (response.rsp_caps.dev_addr_width >= 52);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 8, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[8]);
+		assertion_result, mAssertion[8], response.rsp_caps.dev_addr_width);
 
 	res = (response.rsp_caps.num_req_this > 0);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 9, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-		assertion_result, mAssertion[9]);
+		assertion_result, mAssertion[9], response.rsp_caps.num_req_this);
 
 	res = (response.rsp_caps.num_req_all > 0);
 	assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
 	teeio_record_assertion_result (case_class, case_id, 10,
-		IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[10]);
+		IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[10], response.rsp_caps.num_req_all);
 }
 
 void tdisp_test_capabilities_1_teardown (void *test_context)
