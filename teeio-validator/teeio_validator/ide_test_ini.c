@@ -2139,8 +2139,17 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
 
   // optional tdisp_function_id
   sprintf(entry_name, "tdisp_function_id");
-  if (GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+  if (GetHexUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
+    // Refer to "TDISP Function ID" definition in PCIE/TDISP Spec.
+    // Bit 15: 0  Requester ID
+    // Bit 23:16  Requester Segment (Reserved if Requester Segment Valid is Clear)
+    // Bit 24:    Requester Segment Valid
+    if(data32 > 0x1ffffff) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] tdisp_function_id(%x) is not valid\n", section_name, data32));
+      return false;
+    }
+
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "[%d] tdisp_function_id(%d) is available", section_name, data32));
     g_tdisp_interface_id.function_id = data32;
   }
