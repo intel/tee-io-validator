@@ -23,6 +23,8 @@ sudo dnf install glibc-devel glibc-static
 ## Build binaries
 
 ```
+git clone --single-branch -b main https://github.com/intel/tee-io-validator.git
+cd tee-io-validator
 git submodule update --init --recursive
 cd teeio-validator
 mkdir build
