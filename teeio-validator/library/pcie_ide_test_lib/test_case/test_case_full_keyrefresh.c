@@ -46,7 +46,8 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
   return setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, mKeySet,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->common.top->type, upper_port, lower_port, false);
+                          group_context->common.lower_port.port->port_index,
+                          group_context->common.top->type, upper_port, lower_port, false);
 }
 
 void pcie_ide_test_full_keyrefresh_run(void *test_context)
@@ -126,7 +127,8 @@ void pcie_ide_test_full_keyrefresh_run(void *test_context)
       res = ide_key_switch_to(doe_context, spdm_context, &session_id,
                               upper_port->mapped_kcbar_addr, stream_id,
                               &group_context->k_set, group_context->rp_stream_index,
-                              0, group_context->common.top->type, upper_port, lower_port, ks, false);
+                              group_context->common.lower_port.port->port_index,
+                              group_context->common.top->type, upper_port, lower_port, ks, false);
       if(!res) {
         break;
       } else {
