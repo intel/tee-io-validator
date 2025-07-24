@@ -132,4 +132,9 @@ bool cxl_ide_check_and_enable_ide_mode (
   CXL_IDE_MODE ide_mode,
   int port_index);
 
+/**
+ * Query the port index with device function and bus number
+ */
+bool cxl_ide_query_port_index(cxl_ide_test_group_context_t *context);
+
 #endif

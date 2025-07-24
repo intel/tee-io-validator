@@ -41,9 +41,13 @@ bool cxl_ide_test_full_ide_stream_setup(void *test_context)
   IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->common.suite_context->test_config, group_context->common.config_id);
   TEEIO_ASSERT(configuration);
 
+  if (!cxl_ide_query_port_index(group_context)) {
+    return false;
+  }
+
   return cxl_setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                               &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
-                              group_context->stream_id, 0,
+                              group_context->stream_id, group_context->common.lower_port.port->port_index,
                               upper_port, lower_port, false,
                               configuration->bit_map, configuration->priv_data.cxl_ide.ide_mode,
                               false);
@@ -111,7 +115,7 @@ void cxl_ide_test_full_ide_stream_teardown(void *test_context)
   if(dev_caps.k_set_stop_capable == 1) {
     ret = cxl_stop_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                               &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
-                              group_context->stream_id, 0,
+                              group_context->stream_id, group_context->common.lower_port.port->port_index,
                               upper_port, lower_port);
     if(!ret) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_stop_ide_stream failed.\n"));
