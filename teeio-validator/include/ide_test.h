@@ -138,6 +138,7 @@ typedef struct
   uint8_t bus;
   uint8_t device;
   uint8_t function;
+  uint8_t port_index;
 } IDE_PORT;
 
 typedef struct

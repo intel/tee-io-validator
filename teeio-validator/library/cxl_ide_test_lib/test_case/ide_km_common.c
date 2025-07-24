@@ -180,6 +180,62 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
+static bool do_query_port_index(cxl_ide_test_group_context_t *context,
+                                              uint8_t port_index,
+                                              uint8_t target_dev_func,
+                                              uint8_t target_bus,
+                                              uint8_t *max_port_index)
+{
+    libspdm_return_t status;
+    CXL_QUERY_RESP_CAPS caps = {0};
+    uint8_t dev_func = 0;
+    uint8_t bus = 0;
+    uint8_t segment = 0;
+    uint32_t ide_reg_block[CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT] = {0};
+    uint32_t ide_reg_block_count;
+
+    status = cxl_ide_km_query(context->spdm_doe.doe_context,
+                             context->spdm_doe.spdm_context,
+                             &context->spdm_doe.session_id,
+                             port_index, &dev_func, &bus,
+                             &segment, max_port_index, &caps.raw,
+                             ide_reg_block, &ide_reg_block_count);
+
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_ide_km_query failed for port %d with status=0x%08x\n", 
+                     port_index, status));
+        return false;
+    }
+
+    TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "Port %d query result: dev_func=0x%02x, bus=0x%02x, segment=0x%02x, max_port_index=%d\n",
+                 port_index, dev_func, bus, segment, *max_port_index));
+
+    // Check if this port matches the target device
+    return (dev_func == target_dev_func && bus == target_bus);
+}
+
+// Query the port index with device function and bus number
+bool cxl_ide_query_port_index(cxl_ide_test_group_context_t *context)
+{
+  uint8_t port_index = 0;
+  uint8_t dev_func = ((context->common.lower_port.port->device & 0x1f) << 3) | (context->common.lower_port.port->function & 0x7);
+  uint8_t bus = context->common.lower_port.port->bus;
+  uint8_t max_port_index = 0;
+
+  if (do_query_port_index(context, port_index, dev_func, bus, &max_port_index)) {
+    return true;
+  }
+
+  for(port_index = 1; port_index <= max_port_index; port_index++) {
+    if (do_query_port_index(context, port_index, dev_func, bus, &max_port_index)) {
+      context->common.lower_port.port->port_index = port_index;
+      return true;
+    }
+  }
+
+  return false;
+}
+
 // setup cxl ide stream
 bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
                           uint32_t *session_id, uint8_t *kcbar_addr,
