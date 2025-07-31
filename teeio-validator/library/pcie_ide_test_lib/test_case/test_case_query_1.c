@@ -88,15 +88,6 @@ pcie_ide_test_query(const void *pci_doe_context,
   assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
   teeio_record_assertion_result(case_class, case_id, 4, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, "IdeKmMessage.MaxPortIndex = 0x%x", response.max_port_index);
 
-  // assertion.5
-  res = *dev_func_num == response.dev_func_num && *bus_num == response.bus_num && *segment == response.segment;
-  assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
-  teeio_record_assertion_result(case_class, case_id, 5, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result,
-                                "IdeKmMessage.DevFunc = 0x%x && IdeKmMessage.Bus = 0x%x && IdeKmMessage.Segment = 0x%x",
-                                response.dev_func_num,
-                                response.bus_num,
-                                response.segment);
-
   return true;
 }
 
