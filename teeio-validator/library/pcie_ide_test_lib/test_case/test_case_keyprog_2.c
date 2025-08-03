@@ -128,6 +128,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   uint8_t ks;
   uint8_t direction;
   uint8_t substream;
+  uint8_t port_index = group_context->common.lower_port.port->port_index;
   int request_size = 0;
 
   uint8_t k_sets[] = {PCI_IDE_KM_KEY_SET_K0, PCI_IDE_KM_KEY_SET_K1};
@@ -149,7 +150,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|PR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|RX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|NPR
@@ -162,7 +163,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|NPR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|RX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|CPL
@@ -175,7 +176,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|RX|CPL", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|RX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|PR
@@ -188,7 +189,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|PR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|TX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|NPR
@@ -201,7 +202,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|NPR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|TX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|CPL
@@ -214,7 +215,7 @@ void pcie_ide_test_keyprog_2_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL with request_size=%d\n", request_size));
   test_ide_km_key_prog_case2(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, request_size, "K0|TX|CPL", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, request_size, "K0|TX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 }
 

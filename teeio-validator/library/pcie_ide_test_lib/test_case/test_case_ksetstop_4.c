@@ -40,7 +40,8 @@ bool pcie_ide_test_ksetstop_4_setup(void *test_context)
   bool res = setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, PCI_IDE_KM_KEY_SET_K1,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->common.top->type, upper_port, lower_port, false);
+                          group_context->common.lower_port.port->port_index,
+                          group_context->common.top->type, upper_port, lower_port, false);
   if(!res) {
     return false;
   }
@@ -49,9 +50,8 @@ bool pcie_ide_test_ksetstop_4_setup(void *test_context)
   res = ide_key_switch_to(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id,
                           &group_context->k_set, group_context->rp_stream_index,
-                          0, group_context->common.top->type,
-                          upper_port, lower_port,
-                          PCI_IDE_KM_KEY_SET_K0, false);
+                          group_context->common.lower_port.port->port_index,
+                          group_context->common.top->type, upper_port, lower_port, PCI_IDE_KM_KEY_SET_K0, false);
 
   return res;
 }
@@ -99,7 +99,7 @@ void pcie_ide_test_ksetstop_4_run(void *test_context)
   void* spdm_context = group_context->spdm_doe.spdm_context;
   uint32_t session_id = group_context->spdm_doe.session_id;
   uint8_t stream_id = group_context->stream_id;
-  uint8_t port_index = 0;
+  uint8_t port_index = group_context->common.lower_port.port->port_index;
 
   // then test KSetStop  
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|PR\n", k_set_names[PCI_IDE_KM_KEY_SET_K0]));
