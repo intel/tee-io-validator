@@ -130,6 +130,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   uint8_t ks;
   uint8_t direction;
   uint8_t substream;
+  uint8_t port_index = group_context->common.lower_port.port->port_index;
 
   uint8_t k_sets[] = {PCI_IDE_KM_KEY_SET_K0, PCI_IDE_KM_KEY_SET_K1};
   uint8_t directions[] = {PCI_IDE_KM_KEY_DIRECTION_RX, PCI_IDE_KM_KEY_DIRECTION_TX};
@@ -149,7 +150,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|PR with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|RX|PR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|RX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|NPR
@@ -161,7 +162,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|NPR with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|RX|NPR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|RX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|RX|CPL
@@ -173,7 +174,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|RX|CPL with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|RX|CPL", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|RX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|PR
@@ -185,7 +186,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|PR with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|TX|PR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|TX|PR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|NPR
@@ -197,7 +198,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|NPR with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|TX|NPR", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|TX|NPR", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 
   // KS0|TX|CPL
@@ -209,7 +210,7 @@ void pcie_ide_test_keyprog_4_run(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KeyProg K0|TX|CPL with substream=%d\n", substreams[substream]>>4));
   test_ide_km_key_prog_case4(doe_context, spdm_context, &session_id, stream_id,
                                 k_sets[ks] | directions[direction] | substreams[substream],
-                                0, &key_buffer, &kp_ack_status, "K0|TX|CPL", case_class, case_id);
+                                port_index, &key_buffer, &kp_ack_status, "K0|TX|CPL", case_class, case_id);
   dump_key_iv_in_key_prog(key_buffer.key, sizeof(key_buffer.key)/sizeof(uint32_t), key_buffer.iv, sizeof(key_buffer.iv)/sizeof(uint32_t));
 }
 

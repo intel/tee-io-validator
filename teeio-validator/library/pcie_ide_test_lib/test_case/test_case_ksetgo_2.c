@@ -39,7 +39,7 @@ bool pcie_ide_test_ksetgo_2_setup(void *test_context)
 
   return test_ksetgo_setup_common(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
     group_context->common.upper_port.mapped_kcbar_addr, group_context->stream_id, group_context->rp_stream_index,
-    group_context->common.upper_port.ide_id, &group_context->k_set, 0, PCIE_IDE_STREAM_KS1);
+    group_context->common.upper_port.ide_id, &group_context->k_set, group_context->common.lower_port.port->port_index, PCIE_IDE_STREAM_KS1);
 }
 
 void pcie_ide_test_ksetgo_2_run(void *test_context)
@@ -61,20 +61,21 @@ void pcie_ide_test_ksetgo_2_run(void *test_context)
   void *doe_context = group_context->spdm_doe.doe_context;
   void *spdm_context = group_context->spdm_doe.spdm_context;
   uint32_t session_id = group_context->spdm_doe.session_id;
+  uint8_t port_index = group_context->common.lower_port.port->port_index;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|PR\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0,
+                             PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index,
                              true, "K1|RX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|NPR\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0,
+                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index,
                               true, "K1|RX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|RX|CPL\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0,
+                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
                               true, "K1|RX|CPL", case_class, case_id);
 
   // set key_set_select in host ide
@@ -85,17 +86,17 @@ void pcie_ide_test_ksetgo_2_run(void *test_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|PR\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                             PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, 0,
+                             PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index,
                              true, "K1|TX|PR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|NPR\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, 0,
+                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index,
                               true, "K1|TX|NPR", case_class, case_id);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetGo K1|TX|CPL\n"));
   test_ide_km_key_set_go(doe_context, spdm_context, &session_id, stream_id,
-                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, 0,
+                              PCI_IDE_KM_KEY_SET_K1 | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index,
                               true, "K1|TX|CPL", case_class, case_id);
 
   if(teeio_test_case_result(case_class, case_id) != TEEIO_TEST_RESULT_PASS) {
