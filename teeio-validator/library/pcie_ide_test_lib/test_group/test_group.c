@@ -107,7 +107,16 @@ bool ide_query_port_index(void *test_context)
     }
   }
 
-  return found;
+  // if not found, use default port_index 0
+  // this is not ideal, but it is a fallback mechanism to ensure that the test can still run
+  // for example, Key Prog cases without querying port_index.
+  if (!found) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to find matching port_index for lower_port\n"));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Using default port_index=0 for lower_port\n"));
+    context->common.lower_port.port->port_index = 0;
+  }
+
+  return true;
 }
 
 // selective_ide test group
