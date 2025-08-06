@@ -192,7 +192,7 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
     uint8_t bus = 0;
     uint8_t segment = 0;
     uint32_t ide_reg_block[CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT] = {0};
-    uint32_t ide_reg_block_count;
+    uint32_t ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
 
     status = cxl_ide_km_query(context->spdm_doe.doe_context,
                              context->spdm_doe.spdm_context,
