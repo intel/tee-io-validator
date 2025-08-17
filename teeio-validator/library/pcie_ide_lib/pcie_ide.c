@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2023-2024 Intel. All rights reserved.
+ *  Copyright 2023-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  */
 
@@ -102,6 +102,41 @@ int open_configuration_space(char *bdf)
 
   return fd;
 }
+
+
+uint32_t get_cap_offset(int fd, uint32_t cap_id)
+{
+  uint32_t walker = 0;
+  uint32_t cap_header = 0;
+  uint32_t offset = 0;
+
+  // get capability start from Type 0/1 header
+  uint16_t data16;
+  data16 = device_pci_read_16(0x34, fd);
+  walker = data16 & 0xFF; // CAPABILITY_POINTER
+
+  if (cap_id != PCIE_CAPABILITY_ID)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not supported cap id: 0x%x\n", cap_id));
+    return 0;
+  }
+
+  while (walker < PCIE_EXT_CAP_START && walker != 0)
+  {
+    cap_header = device_pci_read_32(walker, fd);
+
+    if (((PCIE_CAP_LIST *)&cap_header)->id == cap_id)
+    {
+      offset = walker;
+      break;
+    }
+
+    walker = ((PCIE_CAP_LIST *)&cap_header)->next_cap_offset;
+  }
+
+  return offset;
+}
+
 
 uint32_t get_extended_cap_offset(int fd, uint32_t ext_id)
 {
