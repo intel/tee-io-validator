@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2024 Intel. All rights reserved.
+ *  Copyright 2024-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  **/
 
@@ -19,6 +19,11 @@
  * open PCIE's configuration space
 */
 int open_configuration_space(char *bdf);
+
+/**
+ * get offset of cap in cap list
+*/
+uint32_t get_cap_offset(int fd, uint32_t cap_id);
 
 /**
  * get offset of ext in ecap

@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2024 Intel. All rights reserved.
+ *  Copyright 2024-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  **/
 
@@ -148,6 +148,21 @@ bool pcie_ide_test_config_disable_sel_ide_for_cfg_req(void *test_context);
 bool pcie_ide_test_config_support_sel_ide_for_cfg_req(void *test_context);
 bool pcie_ide_test_config_check_sel_ide_for_cfg_req(void *test_context);
 
+// flit mode disable
+bool pcie_ide_test_config_flit_mode_disable_enable_sel(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_disable_sel(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_support_sel(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_check_sel(void *test_context);
+
+bool pcie_ide_test_config_flit_mode_disable_enable_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_disable_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_support_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_check_link(void *test_context);
+
+bool pcie_ide_test_config_flit_mode_disable_enable_sel_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_disable_sel_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_support_sel_link(void *test_context);
+bool pcie_ide_test_config_flit_mode_disable_check_sel_link(void *test_context);
 //
 // PCIE_IDE Test Group
 //

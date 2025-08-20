@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2023-2024 Intel. All rights reserved.
+ *  Copyright 2023-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  **/
 
@@ -20,6 +20,7 @@ const char* m_ide_test_configuration_name[] = {
   "aggregation",
   "selective_ide_for_configuration",
   "tee_limited_stream",
+  "flit_mode_disable",
   NULL
 };
 
@@ -52,7 +53,13 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
       pcie_ide_test_config_support_sel_ide_for_cfg_req,
       pcie_ide_test_config_check_sel_ide_for_cfg_req
     },
-    {NULL, NULL, NULL, NULL}  // tee_limited_stream
+    {NULL, NULL, NULL, NULL},  // tee_limited_stream
+    { // flit mode disable
+      pcie_ide_test_config_flit_mode_disable_enable_sel,
+      pcie_ide_test_config_flit_mode_disable_disable_sel,
+      pcie_ide_test_config_flit_mode_disable_support_sel,
+      pcie_ide_test_config_flit_mode_disable_check_sel
+    },
   },
   { // link_ide
     {
@@ -76,7 +83,13 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
 
     {NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
+    {NULL, NULL, NULL, NULL},
+    { // flit mode disable
+      pcie_ide_test_config_flit_mode_disable_enable_link,
+      pcie_ide_test_config_flit_mode_disable_disable_link,
+      pcie_ide_test_config_flit_mode_disable_support_link,
+      pcie_ide_test_config_flit_mode_disable_check_link
+    },
   },
   { // selective_and_link_ide
     {
@@ -97,7 +110,13 @@ ide_test_config_funcs_t m_config_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM][IDE_TEST_CONF
     },
     {NULL, NULL, NULL, NULL},
     {NULL, NULL, NULL, NULL},
-    {NULL, NULL, NULL, NULL}
+    {NULL, NULL, NULL, NULL},
+    { // flit mode disable
+      pcie_ide_test_config_flit_mode_disable_enable_sel_link,
+      pcie_ide_test_config_flit_mode_disable_disable_sel_link,
+      pcie_ide_test_config_flit_mode_disable_support_sel_link,
+      pcie_ide_test_config_flit_mode_disable_check_sel_link
+    },
   }
 };
 

@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2023-2024 Intel. All rights reserved.
+ *  Copyright 2023-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  **/
 
@@ -224,6 +224,116 @@ typedef struct
     // PCIE_SEL_IDE_STREAM_REG_BLOCK sel_ide_stream_block; // number of elements is dynamic
 } PCIE_IDE_ECAP;
 
+// 7.5.3.1 PCI Express Capability List Register (Offset 00h)
+typedef union
+{
+    struct
+    {
+        uint8_t id;
+        uint8_t next_cap_offset;
+    };
+    uint16_t raw;
+} PCIE_CAP_LIST;
+
+// 7.5.3.2 PCI Express Capabilities Register (Offset 02h)
+typedef union
+{
+    struct
+    {
+        uint16_t cap_version : 4;
+        uint16_t dev_port_type : 4;
+        uint16_t slot_impl : 1;
+        uint16_t interrupt_msg_number : 5;
+        uint16_t undefined : 1;
+        uint16_t flit_mode_supported : 1;
+    };
+    uint16_t raw;
+} PCIE_CAP;
+
+// 7.5.3.6 Link Capabilities Register (Offset 0Ch)
+typedef union
+{
+    struct
+    {
+        uint32_t max_link_speed : 4;
+        uint32_t max_link_width : 6;
+        uint32_t aspm_support : 2;
+        uint32_t l0s_exit_latency : 3;
+        uint32_t l1_exit_latency : 3;
+        uint32_t clock_power_management : 1;
+        uint32_t surprise_down_error_reporting : 1;
+        uint32_t dll_active_reporting : 1;
+        uint32_t link_bandwidth_notification : 1;
+        uint32_t aspm_optionality : 1;
+        uint32_t rsvd : 1;
+        uint32_t port_number : 8;
+    };
+    uint32_t raw;
+} PCIE_LINK_CAP;
+
+// 7.5.3.7 Link Control Register (Offset 10h)
+typedef union
+{
+    struct
+    {
+        uint16_t aspm_control : 2;
+        uint16_t ptm_propagation_delay_adaption_interpretation_b : 1;
+        uint16_t read_completion_boundary : 1;
+        uint16_t link_disable : 1;
+        uint16_t retrain_link : 1;
+        uint16_t common_clock_config : 1;
+        uint16_t extended_synch : 1;
+        uint16_t enable_clock_power_management : 1;
+        uint16_t hardware_autonomous_width_disable : 1;
+        uint16_t link_bandwidth_management_interrupt_enable : 1;
+        uint16_t link_autonomous_bandwidth_interrupt_enable : 1;
+        uint16_t sris_clocking : 1;
+        uint16_t flit_mode_disable : 1;
+        uint16_t drs_signaling_control : 2;
+    };
+    uint16_t raw;
+} PCIE_LINK_CTRL;
+
+// 7.5.3.8 Link Status Register (Offset 12h)
+typedef union
+{
+    struct
+    {
+        uint16_t current_link_speed : 4;
+        uint16_t negotiated_link_width : 6;
+        uint16_t undefined : 1;
+        uint16_t link_training : 1;
+        uint16_t slot_clock_config : 1;
+        uint16_t data_link_layer_active : 1;
+        uint16_t link_bandwidth_management_status : 1;
+        uint16_t link_autonomous_bandwidth_status : 1;
+    };
+    uint16_t raw;
+} PCIE_LINK_STATUS;
+
+// 7.5.3.20 Link Status 2 Register (Offset 32h)
+typedef union
+{
+    struct
+    {
+        uint16_t current_deemphasis_level : 1;
+        uint16_t equalization_8gt_complete : 1;
+        uint16_t equalization_8gt_phase1_successful : 1;
+        uint16_t equalization_8gt_phase2_successful : 1;
+        uint16_t equalization_8gt_phase3_successful : 1;
+        uint16_t link_equalization_request_8gt : 1;
+        uint16_t retimer_presence_detected : 1;
+        uint16_t two_retimers_presence_detected : 1;
+        uint16_t crosslink_resolution : 2;
+        uint16_t flit_mode_status : 1;
+        uint16_t rsvdz : 1;
+        uint16_t downstream_component_presence : 3;
+        uint16_t drs_message_received : 1;
+    };
+    uint16_t raw;
+} PCIE_LINK_STATUS2;
+
+
 #pragma pack(0)
 
 // 6.33.3 IDE Key Management 
@@ -271,6 +381,8 @@ enum PCIE_IDE_STREAM_KEY_SUB_STREAM_ENUM {
 
 #define IDE_STREAM_STATUS_SECURE 2
 #define IDE_STREAM_STATUS_INSECURE 0
+
+#define PCIE_CAPABILITY_ID 0x10
 
 #define PCIE_CONFIG_SPACE_SIZE  0x1000
 #define PCIE_EXT_CAP_START  0x100
