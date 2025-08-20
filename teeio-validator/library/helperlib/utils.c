@@ -358,6 +358,33 @@ void dump_hex_array(uint8_t* data, int size)
   }
 }
 
+bool convert_hex_str_to_uint16(char* str, uint16_t* data16)
+{
+  unsigned long result = 0;
+  char *end_ptr = NULL;
+
+  if(str == NULL || data16 == NULL) {
+    return false;
+  }
+
+  if(!IsValidHexString((uint8_t *)str, (uint32_t)strlen(str))) {
+    return false;
+  }
+
+  result = strtoul((const char *)str, &end_ptr, 0);
+  if (*end_ptr != '\0') {
+    return false;
+  }
+
+  if(result > UINT16_MAX) {
+    return false;
+  }
+
+  *data16 = (uint16_t)result;
+  return true;
+}
+
+
 bool convert_hex_str_to_uint8(char* str, uint8_t* data8)
 {
   unsigned long result = 0;
