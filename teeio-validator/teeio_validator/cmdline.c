@@ -35,6 +35,7 @@ extern int g_config_id;
 extern char g_test_case[MAX_CASE_NAME_LENGTH];
 extern TEEIO_DEBUG_LEVEL g_debug_level;
 extern bool g_libspdm_log;
+extern uint16_t g_scan_segment;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 extern bool g_teeio_fixed_key;
@@ -55,6 +56,7 @@ void print_usage()
   TEEIO_PRINT(("  -c <config_id>      : configuration id which is to be tested. For example 1\n"));
   TEEIO_PRINT(("  -s <test_case>      : Test case to be tested. For example Test.IdeStream\n"));
   TEEIO_PRINT(("  -l <debug_level>    : Set debug level. error/warn/info/verbose\n"));
+  TEEIO_PRINT(("  -g <scan_segment>   : Segment number in hex format. For example 0x0\n"));
   TEEIO_PRINT(("  -b <scan_bus>       : Bus number in hex format. For example 0x1a\n"));
   TEEIO_PRINT(("  -e <test_interval>  : test interval of 2 rounds.\n"));
   TEEIO_PRINT(("  -n <test_rounds>    : test rounds of a case.\n"));
@@ -69,6 +71,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
 {
   int opt, v;
   uint8_t data8;
+  uint16_t data16;
   char buf[MAX_LINE_LENGTH] = {0};
   int pos = 0;
 
@@ -90,7 +93,7 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
   }
   TEEIO_PRINT(("%s\n", buf));
 
-  while ((opt = getopt(argc, argv, "f:t:c:s:l:b:n:e:kh")) != -1) {
+  while ((opt = getopt(argc, argv, "f:t:c:s:l:g:b:n:e:kh")) != -1) {
       switch (opt) {
           case 'f':
               if(!validate_file_name(optarg)) {
@@ -121,6 +124,16 @@ bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONF
                 return false;
               }
               g_config_id = v;
+              break;
+
+          case 'g':
+              data16 = 0;
+              if(convert_hex_str_to_uint16(optarg, &data16)) {
+                g_scan_segment = data16;
+              } else {
+                TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid -g parameter. %s\n", optarg));
+                return false;
+              }
               break;
 
           case 'b':

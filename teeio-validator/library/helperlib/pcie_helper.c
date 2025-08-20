@@ -22,21 +22,26 @@ extern bool g_pci_log;
 IDE_TEST_DEVICES_INFO devices[MAX_SUPPORT_DEVICE_NUM] = {0};
 
 /**
- * the correct bdf string looks like: 2a:00.0
+ * the correct bdf string looks like: 0001:2a:00.0
 */
 bool is_valid_bdf(uint8_t *bdf)
 {
   if(strlen((const char*)bdf) != BDF_LENGTH - 1 ||
-      bdf[2] != ':' ||
-      bdf[5] != '.') {
+      bdf[4] != ':' ||
+      bdf[7] != ':' ||
+      bdf[10] != '.') {
       return false;
   }
 
-  if(isxdigit(bdf[0]) == 0 ||
+  if( isxdigit(bdf[0]) == 0 ||
       isxdigit(bdf[1]) == 0 ||
+      isxdigit(bdf[2]) == 0 ||
       isxdigit(bdf[3]) == 0 ||
-      isxdigit(bdf[4]) == 0 ||
-      isxdigit(bdf[6]) == 0) {
+      isxdigit(bdf[5]) == 0 ||
+      isxdigit(bdf[6]) == 0 ||
+      isxdigit(bdf[8]) == 0 ||
+      isxdigit(bdf[9]) == 0 ||
+      isxdigit(bdf[11]) == 0) {
         return false;
       }
 
@@ -63,19 +68,25 @@ bool is_valid_dev_func(uint8_t *df)
 }
 
 
-bool parse_bdf_string(uint8_t *bdf, uint8_t* bus, uint8_t* device, uint8_t* function)
+bool parse_bdf_string(uint8_t *bdf, uint16_t* segment, uint8_t* bus, uint8_t* device, uint8_t* function)
 {
     char buffer[BDF_LENGTH] = {0};
     char *ptr = buffer;
     uint32_t res = 0;
 
-    if(bdf == NULL || strlen((const char*)bdf) != BDF_LENGTH - 1 || bus == NULL || device == NULL || function == NULL) {
+    if(bdf == NULL || strlen((const char*)bdf) != BDF_LENGTH - 1 || segment == NULL || bus == NULL || device == NULL || function == NULL) {
       return false;
     }
 
     memcpy(buffer, bdf, sizeof(buffer));
-    buffer[2] = '\0';
-    buffer[5] = '\0';
+    buffer[4] = '\0';
+    buffer[7] = '\0';
+    buffer[10] = '\0';
+
+    sscanf(ptr, "%x", &res);
+    *segment = (uint16_t)res;
+
+    ptr += 5;
     sscanf(ptr, "%x", &res);
     *bus = (uint8_t)res;
 

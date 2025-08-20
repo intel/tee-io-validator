@@ -70,6 +70,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |------|------|------|------|------|
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
 |connection|string||M|available values are: **direct, switch**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
 |path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
@@ -108,6 +109,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |------|------|------|------|------|
 |type|string||M|must be **link_ide**|
 |connection|string||M|available values are: **direct, switch**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
 |path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
@@ -143,6 +145,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |------|------|------|------|------|
 |type|string||M|must be **link_ide**|
 |connection|string||M|available values are: **direct, switch**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
 |path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
@@ -175,6 +178,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |------|------|------|------|------|
 |type|string||M|must be **link_ide**|
 |connection|string||M|available values are: **direct, switch**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|
 |path2|string||O|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_3,endpoint_3. <br/>**Note: path2 is only available in the connection of peer2peer**|
@@ -205,6 +209,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |------|------|------|------|------|
 |type|string||M|available values are: **selective_ide, link_ide, selective_and_link_ide**|
 |connection|string||M|available values are: **direct, switch**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |tdisp_function_id|hex|0x0|O|FUNCTION_ID of the device hosting the TDI. Refer to PCIE/TDISP spec for more detailed information|
 |path1|string||M|rootport_x to endpoint_y. Each ports are separated by ‘,’. For example: rootport_1,switch_1:port_1-port_2,endpoint_2|

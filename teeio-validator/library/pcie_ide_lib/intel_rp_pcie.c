@@ -290,7 +290,10 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_P
     for (i = 0; i < kcu->RootPortCount; i++)
     {
       krpi = (INTEL_KEYP_ROOT_PORT_INFORMATION *)(buffer + offset + sizeof(INTEL_KEYP_KEY_CONFIGURATION_UNIT) + i * sizeof(INTEL_KEYP_ROOT_PORT_INFORMATION));
-      if (krpi->Bus == port_context->port->bus && krpi->Bits.Device == port_context->port->device && krpi->Bits.Function == port_context->port->function)
+      if (krpi->SegmentNumber == port_context->port->segment &&
+          krpi->Bus == port_context->port->bus &&
+          krpi->Bits.Device == port_context->port->device &&
+          krpi->Bits.Function == port_context->port->function)
       {
         found = true;
         break;

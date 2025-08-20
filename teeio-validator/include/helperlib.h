@@ -34,7 +34,7 @@ void mmio_write_reg64(void *const reg_ptr, const uint64_t reg_val);
 uint64_t mmio_read_reg64(void *reg_ptr);
 
 void reg_memcpy_dw(void *dst, uint64_t dst_bytes, void *src, uint64_t nbytes);
-bool parse_bdf_string(uint8_t* bdf, uint8_t* bus, uint8_t* device, uint8_t* function);
+bool parse_bdf_string(uint8_t *bdf, uint16_t* segment, uint8_t* bus, uint8_t* device, uint8_t* function);
 bool is_valid_dev_func(uint8_t *df);
 
 // Function to calculate the checksum of an ACPI table
@@ -71,6 +71,7 @@ bool IsValidHexString(uint8_t *Hex, uint32_t Length);
 bool IsValidDigital(uint8_t *Digital, uint32_t Length, bool IncludeHex);
 int find_char_in_str(const char *str, char c);
 int revert_find_char_in_str(const char *str, char c);
+bool convert_hex_str_to_uint16(char* str, uint16_t* data16);
 bool convert_hex_str_to_uint8(char* str, uint8_t* data8);
 void dump_hex_array(uint8_t* data, int size);
 bool set_deivce_info(int fp, char* device_name);
