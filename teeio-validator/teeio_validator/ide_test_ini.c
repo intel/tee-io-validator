@@ -38,6 +38,7 @@
 #include "teeio_debug.h"
 #include "ide_test.h"
 
+extern uint16_t g_scan_segment;
 extern uint8_t g_scan_bus;
 extern bool g_run_test_suite;
 extern pci_tdisp_interface_id_t g_tdisp_interface_id;
@@ -1871,8 +1872,8 @@ bool ParseSwitchesSection(void *context, IDE_TEST_CONFIG *test_config, int index
     port = sw->ports + sw->ports_cnt;
 
     port->enabled = true;
-    sprintf(port->bdf, "00:%s", entry_value);
-    parse_bdf_string((uint8_t *)port->bdf, &port->bus, &port->device, &port->function);
+    sprintf(port->bdf, "0000:00:%s", entry_value);
+    parse_bdf_string((uint8_t *)port->bdf, &port->segment, &port->bus, &port->device, &port->function);
     strncpy(port->port_name, entry_name, PORT_NAME_LENGTH);
     port->port_type = IDE_PORT_TYPE_SWITCH;
     port->id = i + 1;
@@ -2154,6 +2155,25 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
     g_tdisp_interface_id.function_id = data32;
   }
 
+  // segment
+  if(g_scan_segment != INVALID_SCAN_SEGMENT) {
+    topology->segment = g_scan_segment;
+  } else {
+    sprintf(entry_name, "segment");
+    if (!GetHexUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_WARN, "[%s] segment is missing, use default segment.\n", section_name));
+      topology->segment = 0;
+    }
+    else {
+      if(data32 > 0xffff) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] segment(%x) shall be in [0, 0xffff].\n", section_name, data32));
+        return false;
+      }
+      topology->segment = data32;
+    }
+  }
+
   // bus
   if(g_scan_bus != INVALID_SCAN_BUS) {
     topology->bus = g_scan_bus;
@@ -2263,8 +2283,8 @@ void ParsePortsSection(void *context, IDE_TEST_CONFIG *test_config, IDE_PORT_TYP
 
     port = test_config->ports_config.ports + test_config->ports_config.cnt;
     port->enabled = true;
-    sprintf(port->bdf, "00:%s", entry_value);
-    parse_bdf_string((uint8_t *)port->bdf, &port->bus, &port->device, &port->function);
+    sprintf(port->bdf, "0000:00:%s", entry_value);
+    parse_bdf_string((uint8_t *)port->bdf, &port->segment, &port->bus, &port->device, &port->function);
     strncpy(port->port_name, entry_name, PORT_NAME_LENGTH);
     port->port_type = port_type;
     test_config->ports_config.cnt += 1;

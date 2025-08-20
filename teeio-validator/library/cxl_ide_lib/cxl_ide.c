@@ -1015,7 +1015,7 @@ bool cxl_scan_devices(void *test_context)
   TEEIO_ASSERT(context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
-  ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->bus);
+  ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->segment, context->common.top->bus);
   if(ret) {
     context->common.upper_port.port->bus = context->common.root_port.port->bus;
     strncpy(context->common.upper_port.port->bdf, context->common.root_port.port->bdf, BDF_LENGTH);

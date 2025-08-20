@@ -26,7 +26,7 @@
 #define MAX_SUPPORTED_SWITCH_PORTS_NUM  16
 #define PORT_NAME_LENGTH 32
 #define SWITCH_NAME_LENGTH 32
-#define BDF_LENGTH 8
+#define BDF_LENGTH 13
 #define DF_LENGTH 5
 #define TEST_CASE_DESCRIPTION_LENGTH 32
 #define MAX_SUPPORTED_TEST_CASE_NUM 32
@@ -51,6 +51,7 @@
 
 #define INVALID_IDE_ID  0xFF
 #define INVALID_RP_STREAM_INDEX 0xFF
+#define INVALID_SCAN_SEGMENT 0xFFFF
 #define INVALID_SCAN_BUS 0xFF
 
 // Follow doc/IdeKmTestCase
@@ -135,6 +136,7 @@ typedef struct
   IDE_PORT_TYPE port_type;
   char port_name[PORT_NAME_LENGTH];
   char bdf[BDF_LENGTH];
+  uint16_t segment;
   uint8_t bus;
   uint8_t device;
   uint8_t function;
@@ -188,6 +190,7 @@ typedef struct {
   int lower_port;
   IDE_SWITCH_INTERNAL_CONNECTION *sw_conn1;
   IDE_SWITCH_INTERNAL_CONNECTION *sw_conn2;
+  uint16_t segment;
   uint8_t bus;
   uint8_t stream_id;
 } IDE_TEST_TOPOLOGY;

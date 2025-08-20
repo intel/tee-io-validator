@@ -34,14 +34,15 @@ typedef union {
 #define PCI_HEADER_TYPE1  1
 #define PCI_HEADER_LAYOUT_MASK  0x7f
 
-bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint8_t bus, uint8_t* SecBus, uint8_t* SubBus)
+bool scan_rp_switch_internal_port_at_bus(IDE_PORT* port, uint16_t segment, uint8_t bus, uint8_t* SecBus, uint8_t* SubBus)
 {
   bool res = false;
   PCI_READ_DATA32 data32 = { .raw = 0 };
   int fd = -1;
 
+  port->segment = segment;
   port->bus = bus;
-  snprintf(port->bdf, BDF_LENGTH, "%02x:%02x.%x", bus, port->device, port->function&0xf);
+  snprintf(port->bdf, BDF_LENGTH, "%04x:%02x:%02x.%x", segment, bus, port->device, port->function&0xf);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Scan %s...\n", port->bdf));
 
@@ -91,16 +92,16 @@ ScanSwitchInternalPortDone:
 return res;
 }
 
-bool scan_switch_internal_conn_at_bus(uint8_t bus, uint8_t* SecBus, uint8_t *SubBus, IDE_PORT* ups_port, IDE_PORT* dps_port)
+bool scan_switch_internal_conn_at_bus(uint16_t segment, uint8_t bus, uint8_t* SecBus, uint8_t *SubBus, IDE_PORT* ups_port, IDE_PORT* dps_port)
 {
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Start to scan switch internal_conn at bus: %02x\n", bus));
 
-  if(!scan_rp_switch_internal_port_at_bus(ups_port, bus, SecBus, SubBus)) {
+  if(!scan_rp_switch_internal_port_at_bus(ups_port, segment, bus, SecBus, SubBus)) {
     return false;
   }
 
   bus = *SecBus;
-  if(!scan_rp_switch_internal_port_at_bus(dps_port, bus, SecBus, SubBus)) {
+  if(!scan_rp_switch_internal_port_at_bus(dps_port, segment, bus, SecBus, SubBus)) {
     return false;
   }
 
@@ -108,14 +109,15 @@ bool scan_switch_internal_conn_at_bus(uint8_t bus, uint8_t* SecBus, uint8_t *Sub
   return true;
 }
 
-bool scan_endpoint_at_bus(uint8_t bus, IDE_PORT* port)
+bool scan_endpoint_at_bus(uint16_t segment, uint8_t bus, IDE_PORT* port)
 {
   bool res = false;
   PCI_READ_DATA32 data32 = { .raw = 0 };
   int fd = -1;
 
+  port->segment = segment;
   port->bus = bus;
-  snprintf(port->bdf, BDF_LENGTH, "%02x:%02x.%x", bus, port->device, port->function&0xf);
+  snprintf(port->bdf, BDF_LENGTH, "%04x:%02x:%02x.%x", segment, bus, port->device, port->function&0xf);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Scan endpoint(%s)...\n", port->bdf));
 
@@ -151,19 +153,19 @@ ScanEndpointDone:
 //   upper=rootport_1
 //   lower=endpoint_1
 //   switches=1:port_1-port_2,2:port_1-port_2
-bool scan_devices_at_bus(IDE_PORT* rp, IDE_PORT* ep, ide_common_test_switch_internal_conn_context_t* conn, uint8_t bus)
+bool scan_devices_at_bus(IDE_PORT* rp, IDE_PORT* ep, ide_common_test_switch_internal_conn_context_t* conn, uint16_t segment, uint8_t bus)
 {
   uint8_t SecBus, SubBus;
 
   // set the rp's bus
-  if(!scan_rp_switch_internal_port_at_bus(rp, bus, &SecBus, &SubBus)) {
+  if(!scan_rp_switch_internal_port_at_bus(rp, segment, bus, &SecBus, &SubBus)) {
     return false;
   }
 
   bus = SecBus;
   if(conn != NULL) {
     while(conn) {
-      if(!scan_switch_internal_conn_at_bus(bus, &SecBus, &SubBus, conn->ups.port, conn->dps.port)) {
+      if(!scan_switch_internal_conn_at_bus(segment, bus, &SecBus, &SubBus, conn->ups.port, conn->dps.port)) {
         return false;
       }
       bus = SecBus;
@@ -171,7 +173,7 @@ bool scan_devices_at_bus(IDE_PORT* rp, IDE_PORT* ep, ide_common_test_switch_inte
     }
   }
 
-  if(!scan_endpoint_at_bus(bus, ep)) {
+  if(!scan_endpoint_at_bus(segment, bus, ep)) {
     return false;
   }
 
