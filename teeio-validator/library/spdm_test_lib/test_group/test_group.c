@@ -30,16 +30,16 @@ extern uint32_t g_doe_extended_offset;
   // first scan pcie devices to populate the complete bdf of each devices in a specific topology
   if(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH) {
     // root_port and upper_port is the same port
-    ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->bus);
+    ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->segment, context->common.top->bus);
     if(ret) {
       context->common.upper_port.port->bus = context->common.root_port.port->bus;
       strncpy(context->common.upper_port.port->bdf, context->common.root_port.port->bdf, BDF_LENGTH);
     }
   } else if(top->connection == IDE_TEST_CONNECT_P2P) {
     // root_port and upper_port is not the same port
-    ret = scan_devices_at_bus(context->common.root_port.port, context->common.upper_port.port, context->common.sw_conn1, context->common.top->bus);
+    ret = scan_devices_at_bus(context->common.root_port.port, context->common.upper_port.port, context->common.sw_conn1, context->common.top->segment, context->common.top->bus);
     if(ret) {
-      ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn2, context->common.top->bus);
+      ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn2, context->common.top->segment, context->common.top->bus);
     }
   }
 

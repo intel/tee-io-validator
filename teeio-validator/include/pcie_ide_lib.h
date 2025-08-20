@@ -38,6 +38,7 @@ bool scan_devices_at_bus(
     IDE_PORT* rp,
     IDE_PORT* ep,
     ide_common_test_switch_internal_conn_context_t* conn,
+    uint16_t segment,
     uint8_t bus);
 
 /**

@@ -101,15 +101,15 @@ bool scan_open_devices_in_top(IDE_TEST_CONFIG *test_config, int top_id, DEVCIES_
     if (top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH)
     {
         // root_port and upper_port is the same port
-        ret = scan_devices_at_bus(root_port, lower_port, sw_conn1, top->bus);
+        ret = scan_devices_at_bus(root_port, lower_port, sw_conn1, top->segment, top->bus);
     }
     else if (top->connection == IDE_TEST_CONNECT_P2P)
     {
         // root_port and upper_port is not the same port
-        ret = scan_devices_at_bus(root_port, upper_port, sw_conn1, top->bus);
+        ret = scan_devices_at_bus(root_port, upper_port, sw_conn1, top->segment, top->bus);
         if (ret)
         {
-            ret = scan_devices_at_bus(root_port, lower_port, sw_conn2, top->bus);
+            ret = scan_devices_at_bus(root_port, lower_port, sw_conn2, top->segment, top->bus);
         }
     }
 

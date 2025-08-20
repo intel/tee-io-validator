@@ -78,7 +78,7 @@ int open_configuration_space(char *bdf)
   }
 
   char buf[MAX_FILE_NAME];
-  sprintf(buf, "/sys/bus/pci/devices/0000:%s/config", bdf);
+  sprintf(buf, "/sys/bus/pci/devices/%s/config", bdf);
 
   int fd = open(buf, O_RDWR);
   if (fd == -1)
