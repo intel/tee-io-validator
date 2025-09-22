@@ -15,6 +15,7 @@ SET(CMAKE_BUILD_TYPE ${TARGET} CACHE STRING "Choose the target of build: Debug R
 SET(CRYPTO ${CRYPTO} CACHE STRING "Choose the crypto of build: mbedtls openssl" FORCE)
 SET(GCOV ${GCOV} CACHE STRING "Choose the target of Gcov: ON  OFF, and default is OFF" FORCE)
 SET(STACK_USAGE ${STACK_USAGE} CACHE STRING "Choose the target of STACK_USAGE: ON  OFF, and default is OFF" FORCE)
+set(X509_IGNORE_CRITICAL ${X509_IGNORE_CRITICAL} CACHE STRING "Choose if libspdm-provided cryptography libraries (OpenSSL and MbedTLS) ignore unsupported critical extensions in certificates : ON OFF, and default is OFF" FORCE)
 
 if(NOT GCOV)
     SET(GCOV "OFF")
@@ -22,6 +23,10 @@ endif()
 
 if(NOT STACK_USAGE)
     SET(STACK_USAGE "OFF")
+endif()
+
+if(NOT X509_IGNORE_CRITICAL)
+    set(X509_IGNORE_CRITICAL "OFF")
 endif()
 
 SET(LIBSPDM_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu/libspdm)
@@ -82,6 +87,14 @@ elseif(CRYPTO STREQUAL "openssl")
     MESSAGE("CRYPTO = openssl")
 else()
     MESSAGE(FATAL_ERROR "Unkown CRYPTO")
+endif()
+
+if (X509_IGNORE_CRITICAL STREQUAL "ON")
+    if (CRYPTO STREQUAL "openssl")
+        add_definitions(-DOPENSSL_IGNORE_CRITICAL=1)
+    elseif(CRYPTO STREQUAL "mbedtls")
+        add_definitions(-DLIBSPDM_MBEDTLS_X509_ALLOW_UNSUPPORTED_CRITICAL_EXTENSION)
+    endif()
 endif()
 
 if(ENABLE_BINARY_BUILD STREQUAL "1")
