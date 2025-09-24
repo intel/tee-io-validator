@@ -69,6 +69,12 @@ void cxl_cfg_rp_txrx_key_valid(
     bool valid
     );
 
+void cxl_cfg_rp_txrx_transto_insecure_state(
+    INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    CXL_IDE_STREAM_DIRECTION direction,
+    bool insecure_state
+    );
+
 void cxl_cfg_rp_start_trigger(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     bool start
