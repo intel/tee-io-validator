@@ -447,6 +447,10 @@ bool cxl_teardown_ide_stream(void *test_context)
 
   INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
 
+  // set RXTRANSTOINSECURESTATE and TXTRANSTOINSECURESTATE on the RootPort side
+  cxl_cfg_rp_txrx_transto_insecure_state(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
+  cxl_cfg_rp_txrx_transto_insecure_state(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_TX, true);
+
   // clear LinkEncEnable on the RootPort side
   cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
 

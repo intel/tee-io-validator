@@ -71,6 +71,8 @@ bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_reset_kcbar_registers before link_enc_ctrl=0x%08x\n", enc_ctrl.raw));
 
+  enc_ctrl.rxtransto_insecure_state = 0;
+  enc_ctrl.txtransto_insecure_state = 0;
   enc_ctrl.rxkey_valid = 0;
   enc_ctrl.txkey_valid = 0;
   enc_ctrl.start_trigger = 0;
@@ -819,6 +821,27 @@ void cxl_cfg_rp_txrx_key_valid(
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_txrx_key_valid (direct=%d) after  link_enc_control = 0x%08x\n", direction, enc_ctrl.raw));
 }
 
+void cxl_cfg_rp_txrx_transto_insecure_state(
+    INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
+    CXL_IDE_STREAM_DIRECTION direction,
+    bool insecure_state
+    )
+{
+  INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_ctrl = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_txrx_transto_insecure_state (direct=%d) before link_enc_control = 0x%08x\n", direction, enc_ctrl.raw));
+
+  if(direction == CXL_IDE_STREAM_DIRECTION_RX) {
+    enc_ctrl.rxtransto_insecure_state = insecure_state ? 1 : 0;
+  } else {
+    enc_ctrl.txtransto_insecure_state = insecure_state ? 1 : 0;
+  }
+
+  mmio_write_reg32(&kcbar_ptr->link_enc_control, enc_ctrl.raw);
+
+  enc_ctrl.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_cfg_rp_txrx_transto_insecure_state (direct=%d) after  link_enc_control = 0x%08x\n", direction, enc_ctrl.raw));
+}
+
 void cxl_cfg_rp_start_trigger(
     INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     bool start
@@ -890,8 +913,8 @@ void cxl_dump_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr)
 
     INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_control = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
     TEEIO_PRINT(("enc_control   : %08x\n", enc_control.raw));
-    TEEIO_PRINT(("    start_trigger=%d, rxkey_valid=%d, txkey_valid=%d\n",
-                      enc_control.start_trigger, enc_control.rxkey_valid, enc_control.txkey_valid));
+    TEEIO_PRINT(("    start_trigger=%d, rxkey_valid=%d, txkey_valid=%d\n, txtransto_insecure_state: %d, rxtransto_insecure_state: %d",
+                      enc_control.start_trigger, enc_control.rxkey_valid, enc_control.txkey_valid, enc_control.txtransto_insecure_state, enc_control.rxtransto_insecure_state));
 
 }
 

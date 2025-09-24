@@ -230,7 +230,9 @@ typedef union {
     uint32_t  start_trigger:1;
     uint32_t  rxkey_valid:1;
     uint32_t  txkey_valid:1;
-    uint32_t  rsvd:29;
+    uint32_t  txtransto_insecure_state:1;
+    uint32_t  rxtransto_insecure_state:1;
+    uint32_t  rsvd:27;
   };
   uint32_t  raw;
 } INTEL_KEYP_CXL_LINK_ENC_CONTROL;
