@@ -158,7 +158,7 @@ typedef union
     uint8_t valid:1;
     uint8_t rsvd0:7;
     uint16_t rid_base;
-    uint8_t rsvd1;
+    uint8_t segment_base;
   };
   uint32_t raw;
 } PCIE_SEL_IDE_RID_ASSOC_2;
@@ -333,6 +333,19 @@ typedef union
     uint16_t raw;
 } PCIE_LINK_STATUS2;
 
+// 7.7.9.4 Device Status 3 Register (Offset 0Ch)
+typedef union
+{
+    struct
+    {
+        uint32_t inital_link_width : 3;
+        uint32_t segment_captured : 1;
+        uint32_t remote_L0p_supported : 1;
+        uint32_t rsvdz: 26;
+    };
+    uint32_t raw;
+} PCIE_DEVICE_STATUS3;
+
 #pragma pack(0)
 
 // 6.33.3 IDE Key Management 
@@ -390,6 +403,7 @@ enum PCIE_IDE_STREAM_KEY_SUB_STREAM_ENUM {
 #define PCI_IDE_EXT_CAPABILITY_ID   0x0030
 #define PCI_AER_EXT_CAPABILITY_ID   0x0001
 #define PCI_DVSCE_EXT_CAPABILITY_ID 0x0023
+#define PCI_DEVICE3_EXT_CAPABILITY_ID 0x002F
 
 // PCIE Spec 6.1 Section 6.30.1.1
 #define PCIE_DOE_DISCOVERY_VERSION2 0x2
