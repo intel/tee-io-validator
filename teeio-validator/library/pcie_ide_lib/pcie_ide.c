@@ -1346,13 +1346,40 @@ void dump_ecap(
     }
 }
 
+void dump_flit_mode_status(int cfg_space_fd)
+{
+    uint32_t pcie_cap_offset = get_cap_offset(cfg_space_fd, PCIE_CAPABILITY_ID);
+    uint32_t offset;
+    TEEIO_PRINT(("PCIE Cap:\n"));
+
+    offset = pcie_cap_offset + 0x02;
+    PCIE_CAP pcie_cap = {.raw = device_pci_read_16(offset, cfg_space_fd)};
+    TEEIO_PRINT(("    pcie_cap            : %04x\n", pcie_cap.raw));
+    TEEIO_PRINT(("                        : cap_version=%x, dev_port_type=%x, slot_impl=%x, interrupt_msg_number=%x, flit_mode_supported=%x\n",
+                                                            pcie_cap.cap_version, pcie_cap.dev_port_type,
+                                                            pcie_cap.slot_impl, pcie_cap.interrupt_msg_number,
+                                                            pcie_cap.flit_mode_supported));
+
+    offset = pcie_cap_offset + 0x10;
+    PCIE_LINK_CTRL pcie_link_ctrl = {.raw = device_pci_read_16(offset, cfg_space_fd)};
+    TEEIO_PRINT(("    pcie_link_ctrl      : %04x\n", pcie_link_ctrl.raw));
+    TEEIO_PRINT(("                        : flit_mode_disable=%x\n", pcie_link_ctrl.flit_mode_disable));
+
+    offset = pcie_cap_offset + 0x32;
+    PCIE_LINK_STATUS2 pcie_link_status2= {.raw = device_pci_read_16(offset, cfg_space_fd)};
+    TEEIO_PRINT(("    pcie_link_status2   : %04x\n", pcie_link_ctrl.raw));
+    TEEIO_PRINT(("                        : flit_mode_status=%x\n", pcie_link_status2.flit_mode_status));
+}
+
 void dump_rootport_registers(uint8_t *kcbar_addr, uint8_t rp_stream_index, int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
 {
     dump_kcbar((INTEL_KEYP_ROOT_COMPLEX_KCBAR *)kcbar_addr, rp_stream_index);
     dump_ecap(cfg_space_fd, ide_id, ecap_offset, ide_type);
+    dump_flit_mode_status(cfg_space_fd);
 }
 
 void dump_dev_registers(int cfg_space_fd, uint8_t ide_id, uint32_t ecap_offset, TEST_IDE_TYPE ide_type)
 {
     dump_ecap(cfg_space_fd, ide_id, ecap_offset, ide_type);
+    dump_flit_mode_status(cfg_space_fd);
 }
