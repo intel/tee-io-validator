@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2024 Intel. All rights reserved.
+ *  Copyright 2024-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  **/
 
@@ -21,6 +21,11 @@
 int open_configuration_space(char *bdf);
 
 /**
+ * get offset of cap in cap list
+*/
+uint32_t get_cap_offset(int fd, uint32_t cap_id);
+
+/**
  * get offset of ext in ecap
 */
 uint32_t get_extended_cap_offset(int fd, uint32_t ext_id);
@@ -39,6 +44,11 @@ bool scan_devices_at_bus(
     IDE_PORT* ep,
     ide_common_test_switch_internal_conn_context_t* conn,
     uint8_t bus);
+
+/**
+ * Check if the PCIE Flit Mode is enabled on the given port context
+ */
+bool pcie_check_flit_mode_enabled(ide_common_test_port_context_t *port_context);
 
 /**
  * Initialize rootcomplex port

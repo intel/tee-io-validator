@@ -1,6 +1,6 @@
 /**
  *  Copyright Notice:
- *  Copyright 2023-2024 Intel. All rights reserved.
+ *  Copyright 2023-2025 Intel. All rights reserved.
  *  License: BSD 3-Clause License.
  */
 
@@ -102,6 +102,41 @@ int open_configuration_space(char *bdf)
 
   return fd;
 }
+
+
+uint32_t get_cap_offset(int fd, uint32_t cap_id)
+{
+  uint32_t walker = 0;
+  uint32_t cap_header = 0;
+  uint32_t offset = 0;
+
+  // get capability start from Type 0/1 header
+  uint16_t data16;
+  data16 = device_pci_read_16(0x34, fd);
+  walker = data16 & 0xFF; // CAPABILITY_POINTER
+
+  if (cap_id != PCIE_CAPABILITY_ID)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not supported cap id: 0x%x\n", cap_id));
+    return 0;
+  }
+
+  while (walker < PCIE_EXT_CAP_START && walker != 0)
+  {
+    cap_header = device_pci_read_32(walker, fd);
+
+    if (((PCIE_CAP_LIST *)&cap_header)->id == cap_id)
+    {
+      offset = walker;
+      break;
+    }
+
+    walker = ((PCIE_CAP_LIST *)&cap_header)->next_cap_offset;
+  }
+
+  return offset;
+}
+
 
 uint32_t get_extended_cap_offset(int fd, uint32_t ext_id)
 {
@@ -474,6 +509,38 @@ FindFreeLinkSelectiveIDERegisterBlockDone:
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ide_id = %d\n", *ide_id));
 
   return true;
+}
+
+// Check if the PCIE Flit Mode is enabled on the given port context
+bool pcie_check_flit_mode_enabled(ide_common_test_port_context_t *port_context)
+{
+  int fd = port_context->cfg_space_fd;
+  uint32_t pcie_cap_offset = get_cap_offset(fd, PCIE_CAPABILITY_ID);
+  uint32_t offset;
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Capability Offset: 0x%02x\n", port_context->port->bdf, pcie_cap_offset));
+  offset = pcie_cap_offset + 0x02;
+  PCIE_CAP pcie_cap;
+  pcie_cap.raw = device_pci_read_16(offset, fd);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Capability: 0x%04x\n", port_context->port->bdf, pcie_cap));
+  if (pcie_cap.flit_mode_supported) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Flit Mode Supported\n", port_context->port->bdf));
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Flit Mode Not Supported\n", port_context->port->bdf));
+    return false;
+  }
+
+  offset = pcie_cap_offset + 0x32;
+  PCIE_LINK_STATUS2 pcie_link_status2;
+  pcie_link_status2.raw = device_pci_read_16(offset, fd);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Link Status2: 0x%04x\n", port_context->port->bdf, pcie_link_status2.raw));
+  if (pcie_link_status2.flit_mode_status) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Flit Mode Enabled\n", port_context->port->bdf));
+    return true;
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: PCIE Flit Mode Not Enabled\n", port_context->port->bdf));
+    return false;
+  }
 }
 
 bool populate_rid_assoc_reg_block(
