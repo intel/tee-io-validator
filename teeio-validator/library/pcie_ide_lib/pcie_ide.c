@@ -147,7 +147,8 @@ uint32_t get_extended_cap_offset(int fd, uint32_t ext_id)
 
   if (ext_id != PCI_DOE_EXT_CAPABILITY_ID &&
       ext_id != PCI_IDE_EXT_CAPABILITY_ID &&
-      ext_id != PCI_AER_EXT_CAPABILITY_ID)
+      ext_id != PCI_AER_EXT_CAPABILITY_ID &&
+      ext_id != PCI_DEVICE3_EXT_CAPABILITY_ID)
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not supported extended cap id: 0x%x\n", ext_id));
     return 0;
@@ -234,7 +235,8 @@ bool close_root_port(pcie_ide_test_group_context_t *group_context)
 void dump_rid_assoc_reg_block(PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK * reg_block)
 {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rid_assoc1.raw = 0x%08x (rid_limit = 0x%x)\n", reg_block->rid_assoc1.raw, reg_block->rid_assoc1.rid_limit));
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rid_assoc2.raw = 0x%08x (rid_base = 0x%x, valid=%x)\n", reg_block->rid_assoc2.raw, reg_block->rid_assoc2.rid_base, reg_block->rid_assoc2.valid));
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rid_assoc2.raw = 0x%08x (rid_base = 0x%x, valid=%x, seg_base = 0x%x)\n",
+                                        reg_block->rid_assoc2.raw, reg_block->rid_assoc2.rid_base, reg_block->rid_assoc2.valid, reg_block->rid_assoc2.segment_base));
 }
 void dump_addr_assoc_reg_block(PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK * reg_block)
 {
@@ -543,18 +545,45 @@ bool pcie_check_flit_mode_enabled(ide_common_test_port_context_t *port_context)
   }
 }
 
+// Check if the segment is captured on the given port context
+bool pcie_check_segment_captured(ide_common_test_port_context_t *port_context)
+{
+  int fd = port_context->cfg_space_fd;
+  uint32_t ecap_offset = get_extended_cap_offset(fd, PCI_DEVICE3_EXT_CAPABILITY_ID);
+  uint32_t offset;
+
+  if (ecap_offset == 0)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "ECAP Offset of Device3 is NOT found, ignore check\n"));
+    return true;
+  }
+
+  offset = ecap_offset + 0x0C;
+  PCIE_DEVICE_STATUS3 device_status3;
+  device_status3.raw = device_pci_read_32(offset, fd);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: Device3 Status: 0x%08x\n", port_context->port->bdf, device_status3.raw));
+  if (device_status3.segment_captured) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: Segment Captured\n", port_context->port->bdf));
+    return true;
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: Segment Not Captured\n", port_context->port->bdf));
+    return false;
+  }
+}
+
 bool populate_rid_assoc_reg_block(
     PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK *rid_assoc_reg_block,
-    uint8_t bus, uint8_t device, uint8_t func)
+    uint16_t segment, uint8_t bus, uint8_t device, uint8_t func)
 {
     if(rid_assoc_reg_block == NULL) {
         return false;
     }
     uint16_t rid_base = (uint16_t)(bus<<8) + device;
     uint16_t rid_limit = rid_base + func + 1;
+    uint8_t segment_base = (uint8_t)(segment & 0xff);
     PCIE_SEL_IDE_RID_ASSOC_1 rid_assoc1 = {.rid_limit = rid_limit, .rsvd0 = 0, .rsvd1 = 0};
     rid_assoc_reg_block->rid_assoc1.raw = rid_assoc1.raw;
-    PCIE_SEL_IDE_RID_ASSOC_2 rid_assoc2 = {.rid_base = rid_base, .valid = 1, .rsvd0 = 0, .rsvd1 = 0};
+    PCIE_SEL_IDE_RID_ASSOC_2 rid_assoc2 = {.rid_base = rid_base, .valid = 1, .rsvd0 = 0, .segment_base = segment_base};
     rid_assoc_reg_block->rid_assoc2.raw = rid_assoc2.raw;
 
     return true;
@@ -740,7 +769,15 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
 
   // rid & addr assoc_reg_block
   ide_common_test_port_context_t *lower_port_context = &group_context->common.lower_port;
-  populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
+  uint16_t segment = 0;
+  if (pcie_check_flit_mode_enabled(port_context)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Upper port PCIE Flit Mode Enabled.\n"));
+    if (pcie_check_segment_captured(port_context)) {
+      segment = port_context->port->segment;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for upper port.\n", segment));
+    }
+  }
+  populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, segment, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
   ide_common_test_switch_internal_conn_context_t *itr = NULL;
   char* dev_bdf = NULL;
@@ -927,6 +964,17 @@ bool init_dev_port(pcie_ide_test_group_context_t *group_context)
   port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
   port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
   port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
+
+  // set segment base for lower port if flit mode enabled
+  uint16_t segment = 0;
+  if (pcie_check_flit_mode_enabled(port_context)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Lower port PCIE Flit Mode Enabled.\n"));
+    if (pcie_check_segment_captured(port_context)) {
+      segment = port_context->port->segment;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for lower port.\n", segment));
+    }
+  }
+  port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump dev assoc_reg_block:\n"));
   dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
