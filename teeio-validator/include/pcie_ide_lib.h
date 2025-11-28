@@ -253,6 +253,10 @@ void dump_dev_registers(
     uint32_t ecap_offset,
     TEST_IDE_TYPE ide_type);
 
+
+/**
+ * Configures the IDE keys for the specified PCIe root port.
+*/
 void cfg_rootport_ide_keys(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar_ptr,
     const uint8_t rp_stream_index,              // N

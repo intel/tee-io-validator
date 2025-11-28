@@ -1083,6 +1083,7 @@ void prime_rp_ide_key_set(
     const uint8_t key_set_select)
 {
     INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_cfg_reg_block = get_stream_cfg_reg_block(kcbar_ptr, rp_stream_index);
+    // Input is device side direction, rootport side should use the opposite direction (i.e., RX <-> TX)
     INTEL_KEYP_STREAM_TXRX_CONTROL *ctrl_reg_ptr = (direction == PCIE_IDE_STREAM_RX) ? &stream_cfg_reg_block->tx_ctrl : &stream_cfg_reg_block->rx_ctrl;
     INTEL_KEYP_STREAM_TXRX_STATUS *status_reg_ptr = (direction == PCIE_IDE_STREAM_RX) ? &stream_cfg_reg_block->tx_status : &stream_cfg_reg_block->rx_status;
 
