@@ -46,6 +46,7 @@ void kcbar_set_key_slot(
     // Jump to Tx iv_slots[0]
     iv_slot_ptr = (INTEL_KEYP_IV_SLOT *)(key_slot_ptr + kcbar_capabilities.num_tx_key_slots + 1);
 
+    // Input is device side direction, rootport side should use the opposite direction (i.e., RX <-> TX)
     if (direction == PCIE_IDE_STREAM_TX)
     {
         // Jump to rx key_slots[0]
@@ -81,6 +82,8 @@ void cfg_rootport_ide_keys(
         rp_stream_index);
 
     INTEL_KEYP_STREAM_KEYSET_SLOT_ID *keyset_slot_id_ptr = NULL;
+
+    // Input is device side direction, rootport side should use the opposite direction (i.e., RX <-> TX)
     if (direction == PCIE_IDE_STREAM_TX)
     {
         keyset_slot_id_ptr = key_set_select == PCIE_IDE_STREAM_KS0 ? &stream_cfg_reg_block->rx_key_set_0 : &stream_cfg_reg_block->rx_key_set_1;
