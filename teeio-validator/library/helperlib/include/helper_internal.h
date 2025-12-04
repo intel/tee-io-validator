@@ -4,7 +4,7 @@
  *  License: BSD 3-Clause License.
  **/
 
-#ifndef __HELPER_INTERNAL__H__
+#ifndef __HELPER_INTERNAL_H__
 #define __HELPER_INTERNAL_H__
 
 #include <stdint.h>
