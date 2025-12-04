@@ -775,6 +775,15 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
     if (pcie_check_segment_captured(port_context)) {
       segment = port_context->port->segment;
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for upper port.\n", segment));
+
+      // Some device does not implement pcie link status2 register properly,
+      // In this case we should use segment number from root_port in case selective IDE fails in FM.
+      if (!pcie_check_flit_mode_enabled(lower_port_context) || !pcie_check_segment_captured(lower_port_context)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Lower port PCIE Flit Mode Not Enabled or Segment Not Captured.\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Some device does not implement pcie link status2 register properly.\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Use the segment number (%d) from lower port.\n", segment));
+        lower_port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
+      }
     }
   }
   populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, segment, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
