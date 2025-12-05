@@ -522,7 +522,8 @@ bool cxl_init_dev_port(cxl_ide_test_group_context_t *group_context)
   TEEIO_ASSERT(group_context != NULL);
   TEEIO_ASSERT(group_context->common.top != NULL);
 
-  TEEIO_ASSERT(group_context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
+  TEEIO_ASSERT(group_context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE ||
+    group_context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_TSP);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_init_dev_port start.\n"));
 
@@ -1012,7 +1013,8 @@ bool cxl_scan_devices(void *test_context)
 
   IDE_TEST_TOPOLOGY *top = context->common.top;
 
-  TEEIO_ASSERT(context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE);
+  TEEIO_ASSERT(context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_IDE ||
+    context->common.suite_context->test_category == TEEIO_TEST_CATEGORY_CXL_TSP);
   TEEIO_ASSERT(top->connection == IDE_TEST_CONNECT_DIRECT || top->connection == IDE_TEST_CONNECT_SWITCH);
 
   ret = scan_devices_at_bus(context->common.root_port.port, context->common.lower_port.port, context->common.sw_conn1, context->common.top->segment, context->common.top->bus);
