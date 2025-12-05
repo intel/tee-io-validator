@@ -36,3 +36,44 @@ Below binaries are generated in `build/bin` directory.
 - teeio_validator
 - lside
 - setide
+
+### Example CMake commands
+
+Here provides more CMake commands to replace the command in [Build binaries](#build-binaries)
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=mbedtls ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Release -DCRYPTO=mbedtls ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=openssl ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Release -DCRYPTO=openssl ..
+```
+
+### DiceTcbInfo extension support
+
+To support DiceTcbInfo extension, please use the following CMake command to replace the command in [Build binaries](#build-binaries)
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=mbedtls -DX509_IGNORE_CRITICAL=ON ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Release -DCRYPTO=mbedtls -DX509_IGNORE_CRITICAL=ON ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Debug -DCRYPTO=openssl -DX509_IGNORE_CRITICAL=ON ..
+```
+
+```
+cmake -DARCH=x64 -DTOOLCHAIN=GCC -DTARGET=Release -DCRYPTO=openssl -DX509_IGNORE_CRITICAL=ON ..
+```
+
