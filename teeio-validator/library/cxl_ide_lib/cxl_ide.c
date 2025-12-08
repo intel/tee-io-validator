@@ -563,6 +563,9 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
   CXL_KEY_REFRESH_TIME_CAPABILITY key_refresh_time_cap = {.raw = mmio_read_reg32(ptr)};
 
+  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability2);
+  CXL_KEY_REFRESH_TIME_CAPABILITY2 key_refresh_time_cap2 = {.raw = mmio_read_reg32(ptr)};
+
   ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, truncation_transmit_delay_capability);
   CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY truncation_transmit_delay_cap = {.raw = mmio_read_reg32(ptr)};
 
@@ -589,9 +592,11 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
                                   ide_control.pcrc_disable, ide_control.ide_stop_enable));
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  key_refresh_time_cap.rx_min_key_refresh_time = 0x%08x\n", key_refresh_time_cap.rx_min_key_refresh_time));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  key_refresh_time_cap2.rx_min_key_refresh_time2 = 0x%08x\n", key_refresh_time_cap2.rx_min_key_refresh_time2));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  key_refresh_time_ctrl.tx_key_refresh_time    = 0x%08x\n", key_refresh_time_ctrl.tx_key_refresh_time));
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  truncation_transmit_delay_cap.rx_min_truncation_transmit_delay = 0x%08x\n", truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  truncation_transmit_delay_cap.rx_min_truncation_transmit_delay2 = 0x%08x\n", truncation_transmit_delay_cap.rx_min_truncation_transmit_delay2));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  truncation_transmit_delay_ctrl.tx_truncation_transmit_delay    = 0x%08x\n", truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_status = 0x%08x\n", ide_status.raw));
@@ -906,6 +911,35 @@ void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap)
                                     cap.multiple_logical_device, cap.viral_capable, cap.pm_init_completion_reporting_capable));
 }
 
+// Return a pointer to the Key Refresh Time Capability register used by the receiver.
+//
+// For 68B FLIT mode, this points to key_refresh_time_capability.
+// For 256B FLIT mode, this points to key_refresh_time_capability2.
+//
+// `pcie_flit_enabled` is derived from the PCIe link status and indicates whether
+// 256B FLIT mode is enabled on the link. When PCIe FLIT mode is enabled,
+// CXL operates in 256B FLIT mode; otherwise, CXL operates in 68B FLIT mode
+// (see CXL 3.1 spec, Table 6‑4).
+static inline uint8_t *cxl_get_key_refresh_cap_ptr(uint8_t *cxl_ide_capability_struct_ptr,
+                                                   bool pcie_flit_enabled)
+{
+    return cxl_ide_capability_struct_ptr +
+           (pcie_flit_enabled
+                ? OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability2)
+                : OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability));
+}
+
+// Select the minimum required truncation transmit delay (in flits) for a receiver.
+// For 68B FLIT mode, use rx_min_truncation_transmit_delay;
+// for 256B FLIT mode, use rx_min_truncation_transmit_delay2.
+static inline uint8_t cxl_get_rx_min_truncation_delay(const CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY *cap,
+                                                      uint8_t pcie_flit_enabled)
+{
+    return pcie_flit_enabled
+        ? cap->rx_min_truncation_transmit_delay2
+        : cap->rx_min_truncation_transmit_delay;
+}
+
 bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_port, ide_common_test_port_context_t* dev_port)
 {
   uint8_t* host_ptr;
@@ -913,6 +947,8 @@ bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_po
 
   uint8_t *host_cxl_ide_capability_struct_ptr = host_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
   uint8_t *dev_cxl_ide_capability_struct_ptr = dev_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
+
+  uint8_t pcie_flit_enabled = pcie_check_flit_mode_enabled(host_port);
 
   if(host_cxl_ide_capability_struct_ptr == NULL || dev_cxl_ide_capability_struct_ptr == NULL) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pointer to cxl_ide_capability_struct_ptr is NULL(host:%llx, dev:%llx)!\n",
@@ -923,7 +959,7 @@ bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_po
 
   // Check Key Refresh Time Control in Host side
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Key Refresh Time Control in Host side\n"));
-  dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
+  dev_ptr = cxl_get_key_refresh_cap_ptr(dev_cxl_ide_capability_struct_ptr, pcie_flit_enabled);
   host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_control);
 
   CXL_KEY_REFRESH_TIME_CAPABILITY dev_key_refresh_time_cap = {.raw = mmio_read_reg32(dev_ptr)};
@@ -939,7 +975,7 @@ bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_po
 
   // Check Key Refresh Time Control in Device side
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Check Key Refresh Time Control in Device side\n"));
-  host_ptr = host_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_capability);
+  host_ptr = cxl_get_key_refresh_cap_ptr(host_cxl_ide_capability_struct_ptr, pcie_flit_enabled);
   dev_ptr = dev_cxl_ide_capability_struct_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, key_refresh_time_control);
 
   CXL_KEY_REFRESH_TIME_CAPABILITY host_key_refresh_time_cap = {.raw = mmio_read_reg32(host_ptr)};
@@ -964,6 +1000,8 @@ bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t*
   uint8_t *host_cxl_ide_capability_struct_ptr = host_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
   uint8_t *dev_cxl_ide_capability_struct_ptr = dev_port->cxl_data.memcache.cxl_ide_capability_struct_ptr;
 
+  uint8_t pcie_flit_enabled = pcie_check_flit_mode_enabled(host_port);
+
   if(host_cxl_ide_capability_struct_ptr == NULL || dev_cxl_ide_capability_struct_ptr == NULL) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "pointer to cxl_ide_capability_struct_ptr is NULL!\n"));
     return false;
@@ -978,11 +1016,14 @@ bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t*
   CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL host_truncation_transmit_delay_ctrl = {.raw = mmio_read_reg32(host_ptr)};
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay = 0x%x\n", dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay2 = 0x%x\n", dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay2));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay        = 0x%x\n", host_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
 
-  if(host_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Host CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
-    mmio_write_reg32(host_ptr, dev_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay);
+  uint8_t dev_rx_min_truncation_transmit_delay = cxl_get_rx_min_truncation_delay(&dev_truncation_transmit_delay_cap, pcie_flit_enabled);
+
+  if(host_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < dev_rx_min_truncation_transmit_delay) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Host CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", dev_rx_min_truncation_transmit_delay));
+    mmio_write_reg32(host_ptr, dev_rx_min_truncation_transmit_delay);
   }
 
   // Truncation Transmit Delay Control in Device side
@@ -994,11 +1035,14 @@ bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t*
   CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL dev_truncation_transmit_delay_ctrl = {.raw = mmio_read_reg32(dev_ptr)};
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay = 0x%x\n", host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Host   CXL_TRUNCATION_TRANSMIT_DELAY_CAPABILITY.rx_min_truncation_transmit_delay2 = 0x%x\n", host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay2));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Device CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay        = 0x%x\n", dev_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay));
 
-  if(dev_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Device CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay));
-    mmio_write_reg32(dev_ptr, host_truncation_transmit_delay_cap.rx_min_truncation_transmit_delay);
+  uint8_t host_rx_min_truncation_transmit_delay = cxl_get_rx_min_truncation_delay(&host_truncation_transmit_delay_cap, pcie_flit_enabled);
+
+  if(dev_truncation_transmit_delay_ctrl.tx_truncation_transmit_delay < host_rx_min_truncation_transmit_delay) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Program Device CXL_TRUNCATION_TRANSMIT_DELAY_CONTROL.tx_truncation_transmit_delay as 0x%x\n", host_rx_min_truncation_transmit_delay));
+    mmio_write_reg32(dev_ptr, host_rx_min_truncation_transmit_delay);
   }
 
   return true;
