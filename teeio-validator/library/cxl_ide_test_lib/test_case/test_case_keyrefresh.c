@@ -125,18 +125,10 @@ void cxl_ide_test_keyrefresh_run(void *test_context)
 
 void cxl_ide_test_keyrefresh_teardown(void *test_context)
 {
-  ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
-  TEEIO_ASSERT(case_context);
-  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+  bool ret = false;
 
-  cxl_ide_test_group_context_t *group_context = (cxl_ide_test_group_context_t *)case_context->group_context;
-  TEEIO_ASSERT(group_context);
-  teeio_common_test_group_context_t *common = &group_context->common;
-  TEEIO_ASSERT(common->signature == GROUP_CONTEXT_SIGNATURE);
-
-  ide_common_test_port_context_t* upper_port = &common->upper_port;
-
-  // clear LinkEncEnable on the RootPort side
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
-  cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
+  ret = cxl_teardown_ide_stream(test_context);
+  if(!ret) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_teardown_ide_stream failed.\n"));
+  }
 }
