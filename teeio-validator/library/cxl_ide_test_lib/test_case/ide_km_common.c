@@ -410,3 +410,43 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
 
   return true;
 }
+
+bool cxl_teardown_ide_stream(void *test_context)
+{
+  bool ret = false;
+
+  ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
+  TEEIO_ASSERT(case_context);
+  TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
+
+  cxl_ide_test_group_context_t *group_context = case_context->group_context;
+  TEEIO_ASSERT(group_context);
+  TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
+
+  ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
+
+  CXL_QUERY_RESP_CAPS dev_caps = {.raw = lower_port->cxl_data.query_resp.caps};
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dev_caps.k_set_stop_capable = %d\n", dev_caps.k_set_stop_capable));
+
+  // send KSetStop if supported.
+  if(dev_caps.k_set_stop_capable == 1) {
+    ret = cxl_stop_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
+                              &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
+                              group_context->stream_id, group_context->common.lower_port.port->port_index,
+                              upper_port, lower_port);
+    if(!ret) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_stop_ide_stream failed.\n"));
+      return false;
+    }
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetStop is not supported.\n"));
+  }
+
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
+
+  // clear LinkEncEnable on the RootPort side
+  cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
+
+  return true;
+}

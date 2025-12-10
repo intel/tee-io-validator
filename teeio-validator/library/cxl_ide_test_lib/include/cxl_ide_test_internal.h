@@ -77,6 +77,9 @@ bool cxl_ide_generate_key(const void *pci_doe_context,
                           uint8_t *cxl_ide_km_iv
                           );
 
+// teardown cxl ide stream
+bool cxl_teardown_ide_stream(void *test_context);
+
 typedef void(*cxl_ide_test_key_prog_t)(const void *doe_context,
                                    void *spdm_context, const uint32_t *session_id, int stream_id,
                                    uint8_t key_sub_stream, uint8_t port_index,
