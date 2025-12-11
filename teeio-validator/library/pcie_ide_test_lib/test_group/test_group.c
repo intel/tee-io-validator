@@ -57,16 +57,17 @@ bool ide_query_port_index(void *test_context)
   uint8_t port_index = 0;
   uint8_t dev_func = ((context->common.lower_port.port->device & 0x1f) << 3) | (context->common.lower_port.port->function & 0x7);
   uint8_t bus = context->common.lower_port.port->bus;
-  uint8_t segment = 0;
+  uint8_t segment = context->common.lower_port.port->segment;
   uint8_t max_port_index = 0;
   uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
   uint32_t ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
-  uint8_t port_dev_func = dev_func;
-  uint8_t port_bus = bus;
+  uint8_t target_dev_func = dev_func;
+  uint8_t target_bus = bus;
+  uint8_t target_segment = segment;
   bool found = false;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Querying PCI IDE KM for dev_func=0x%x, bus=0x%x, segment=0x%x\n",
-               port_dev_func, port_bus, segment));
+               target_dev_func, target_bus, target_segment));
   status = pci_ide_km_query(context->spdm_doe.doe_context,
                             context->spdm_doe.spdm_context,
                             &context->spdm_doe.session_id,
@@ -80,7 +81,7 @@ bool ide_query_port_index(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "pci_ide_km_query result: port_index=%d dev_func=0x%x bus=0x%x segment=0x%x max_port_index=%d\n",
                port_index, dev_func, bus, segment, max_port_index));
 
-  if (port_dev_func == dev_func && port_bus == bus){
+  if (target_dev_func == dev_func && target_bus == bus && target_segment == segment) {
     context->common.lower_port.port->port_index = port_index;
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
     found = true;
@@ -99,7 +100,7 @@ bool ide_query_port_index(void *test_context)
       TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "pci_ide_km_query result: port_index=%d dev_func=0x%x bus=0x%x segment=0x%x max_port_index=%d\n",
                   port_index, dev_func, bus, segment, max_port_index));
 
-      if (port_dev_func == dev_func && port_bus == bus) {
+      if (target_dev_func == dev_func && target_bus == bus && target_segment == segment) {
         context->common.lower_port.port->port_index = port_index;
         TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
         found = true;
