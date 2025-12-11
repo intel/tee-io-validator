@@ -184,6 +184,7 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
                                               uint8_t port_index,
                                               uint8_t target_dev_func,
                                               uint8_t target_bus,
+                                              uint8_t target_segment,
                                               uint8_t *max_port_index)
 {
     libspdm_return_t status;
@@ -211,7 +212,7 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
                  port_index, dev_func, bus, segment, *max_port_index));
 
     // Check if this port matches the target device
-    return (dev_func == target_dev_func && bus == target_bus);
+    return (dev_func == target_dev_func && bus == target_bus && segment == target_segment);
 }
 
 // Query the port index with device function and bus number
@@ -220,14 +221,15 @@ bool cxl_ide_query_port_index(cxl_ide_test_group_context_t *context)
   uint8_t port_index = 0;
   uint8_t dev_func = ((context->common.lower_port.port->device & 0x1f) << 3) | (context->common.lower_port.port->function & 0x7);
   uint8_t bus = context->common.lower_port.port->bus;
+  uint8_t segment = context->common.lower_port.port->segment;
   uint8_t max_port_index = 0;
 
-  if (do_query_port_index(context, port_index, dev_func, bus, &max_port_index)) {
+  if (do_query_port_index(context, port_index, dev_func, bus, segment, &max_port_index)) {
     return true;
   }
 
   for(port_index = 1; port_index <= max_port_index; port_index++) {
-    if (do_query_port_index(context, port_index, dev_func, bus, &max_port_index)) {
+    if (do_query_port_index(context, port_index, dev_func, bus, segment, &max_port_index)) {
       context->common.lower_port.port->port_index = port_index;
       return true;
     }
