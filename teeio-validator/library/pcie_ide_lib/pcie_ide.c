@@ -1011,7 +1011,8 @@ uint32_t get_ide_reg_block_offset(int fd, TEST_IDE_TYPE ide_type, uint8_t ide_id
         ide_reg_block_offset = ide_ecap_offset
                                 + sizeof(PCIE_CAP_ID)
                                 + sizeof(PCIE_IDE_CAP)
-                                + sizeof(PCIE_IDE_CTRL);
+                                + sizeof(PCIE_IDE_CTRL)
+                                + sizeof(PCIE_LNK_IDE_STREAM_REG_BLOCK) * ide_id;
         return ide_reg_block_offset;
     }
 
