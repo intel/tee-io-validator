@@ -440,6 +440,9 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
 {
     int cmd = 0;
     TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
+    int upper_port_cfg_space_fd = upper_port->cfg_space_fd;
+    uint32_t upper_port_ecap_offset = upper_port->ecap_offset;
+
     if(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE) {
         ide_type = TEST_IDE_TYPE_LNK_IDE;
     } else if(top_type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE) {
@@ -583,6 +586,18 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
   if (LIBSPDM_STATUS_IS_ERROR(status))
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KSetGo %s|TX|CPL failed with 0x%x\n", k_set_names[ks], status));
+    return false;
+  }
+
+  // wait for 10 ms for device to get ide ready
+  libspdm_sleep(10 * 1000);
+
+  // Now ide stream shall be in secure state
+  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
+  PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
+  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ide_stream state is %x.\n", stream_status.state));
     return false;
   }
 
