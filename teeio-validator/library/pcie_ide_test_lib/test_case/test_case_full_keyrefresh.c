@@ -27,7 +27,7 @@ extern int g_test_rounds;
 
 static uint8_t mKeySet = 0;
 
-bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
+bool pcie_ide_keyrefresh_setup_common(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -40,8 +40,6 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
   ide_common_test_port_context_t* upper_port = &group_context->common.upper_port;
   ide_common_test_port_context_t* lower_port = &group_context->common.lower_port;
 
-  mKeySet = PCI_IDE_KM_KEY_SET_K0;
-
   // An ide_stream is first setup so that key_refresh can be tested in run.
   return setup_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context, &group_context->spdm_doe.session_id,
                           upper_port->mapped_kcbar_addr, group_context->stream_id, mKeySet,
@@ -50,7 +48,7 @@ bool pcie_ide_test_full_keyrefresh_setup(void *test_context)
                           group_context->common.top->type, upper_port, lower_port, false);
 }
 
-void pcie_ide_test_full_keyrefresh_run(void *test_context)
+void pcie_ide_keyrefresh_run_common(void *test_context)
 {
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
@@ -143,7 +141,34 @@ void pcie_ide_test_full_keyrefresh_run(void *test_context)
                                 res ? "PCIE-IDE KeyRefresh succeeded." : "PCIE-IDE KeyRefresh failed.");
 }
 
-void pcie_ide_test_full_keyrefresh_teardown(void *test_context)
+bool pcie_ide_test_full_keyrefresh_ks0_setup(void *test_context)
+{
+  mKeySet = PCI_IDE_KM_KEY_SET_K0;
+  return pcie_ide_keyrefresh_setup_common(test_context);
+}
+
+void pcie_ide_test_full_keyrefresh_ks0_run(void *test_context)
+{
+  pcie_ide_keyrefresh_run_common(test_context);
+}
+
+void pcie_ide_test_full_keyrefresh_ks0_teardown(void *test_context)
+{
+  pcie_ide_teardown_common(test_context, mKeySet);
+}
+
+bool pcie_ide_test_full_keyrefresh_ks1_setup(void *test_context)
+{
+  mKeySet = PCI_IDE_KM_KEY_SET_K1;
+  return pcie_ide_keyrefresh_setup_common(test_context);
+}
+
+void pcie_ide_test_full_keyrefresh_ks1_run(void *test_context)
+{
+  pcie_ide_keyrefresh_run_common(test_context);
+}
+
+void pcie_ide_test_full_keyrefresh_ks1_teardown(void *test_context)
 {
   pcie_ide_teardown_common(test_context, mKeySet);
 }

@@ -135,7 +135,7 @@ ide_test_group_funcs_t m_group_funcs[IDE_TEST_TOPOLOGY_TYPE_NUM] = {
   }
 };
 
-#define TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh"
+#define TEST_CLASS_CASE_NAMES "IdeStream,KeyRefresh,KeyRefreshKs1"
 
 ide_test_case_name_t m_test_case_names[] = {
   {"Query",       "1,2",                  IDE_COMMON_TEST_CASE_QUERY},
@@ -182,7 +182,8 @@ ide_test_case_funcs_t m_pcie_ide_spdm_session_cases[MAX_SPDMSESSION_CASE_ID] = {
 
 ide_test_case_funcs_t m_pcie_ide_test_full_cases[MAX_FULL_CASE_ID] = {
   { pcie_ide_test_full_1_setup, pcie_ide_test_full_1_run, pcie_ide_test_full_1_teardown, false },  // IdeStream
-  { pcie_ide_test_full_keyrefresh_setup, pcie_ide_test_full_keyrefresh_run, pcie_ide_test_full_keyrefresh_teardown, false }  // KeyRefresh
+  { pcie_ide_test_full_keyrefresh_ks0_setup, pcie_ide_test_full_keyrefresh_ks0_run, pcie_ide_test_full_keyrefresh_ks0_teardown, false },  // KeyRefresh
+  { pcie_ide_test_full_keyrefresh_ks1_setup, pcie_ide_test_full_keyrefresh_ks1_run, pcie_ide_test_full_keyrefresh_ks1_teardown, false }  // KeyRefreshKs1
 };
 
 TEEIO_TEST_CASES m_pcie_ide_test_case_funcs[IDE_COMMON_TEST_CASE_NUM] = {
