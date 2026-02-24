@@ -106,9 +106,14 @@ void pcie_ide_test_full_1_run(void *test_context);
 void pcie_ide_test_full_1_teardown(void *test_context);
 
 // Full case - KeyRefresh
-bool pcie_ide_test_full_keyrefresh_setup(void *test_context);
-void pcie_ide_test_full_keyrefresh_run(void *test_context);
-void pcie_ide_test_full_keyrefresh_teardown(void *test_context);
+bool pcie_ide_test_full_keyrefresh_ks0_setup(void *test_context);
+void pcie_ide_test_full_keyrefresh_ks0_run(void *test_context);
+void pcie_ide_test_full_keyrefresh_ks0_teardown(void *test_context);
+
+// Full case - KeyRefreshKs1
+bool pcie_ide_test_full_keyrefresh_ks1_setup(void *test_context);
+void pcie_ide_test_full_keyrefresh_ks1_run(void *test_context);
+void pcie_ide_test_full_keyrefresh_ks1_teardown(void *test_context);
 
 //
 // PCIE_IDE Test Config
