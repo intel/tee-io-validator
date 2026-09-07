@@ -118,6 +118,7 @@ void *spdm_init_client(void)
   size_t scratch_buffer_size;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_init_client\n"));
+  teeio_fault_transport_reset();
 
   spdm_context = (void *)malloc(libspdm_get_context_size());
   if (spdm_context == NULL) {
@@ -127,13 +128,23 @@ void *spdm_init_client(void)
 
   libspdm_register_device_io_func(spdm_context, device_doe_send_message, device_doe_receive_message);
 
-  libspdm_register_transport_layer_func(
-    spdm_context,
-    LIBSPDM_MAX_SPDM_MSG_SIZE,
-    LIBSPDM_TRANSPORT_HEADER_SIZE,
-    LIBSPDM_TRANSPORT_TAIL_SIZE,
-    libspdm_transport_pci_doe_encode_message,
-    libspdm_transport_pci_doe_decode_message);
+  if(teeio_fault_is_enabled()) {
+    libspdm_register_transport_layer_func(
+      spdm_context,
+      LIBSPDM_MAX_SPDM_MSG_SIZE,
+      LIBSPDM_TRANSPORT_HEADER_SIZE,
+      LIBSPDM_TRANSPORT_TAIL_SIZE,
+      teeio_fault_transport_encode_message,
+      teeio_fault_transport_decode_message);
+  } else {
+    libspdm_register_transport_layer_func(
+      spdm_context,
+      LIBSPDM_MAX_SPDM_MSG_SIZE,
+      LIBSPDM_TRANSPORT_HEADER_SIZE,
+      LIBSPDM_TRANSPORT_TAIL_SIZE,
+      libspdm_transport_pci_doe_encode_message,
+      libspdm_transport_pci_doe_decode_message);
+  }
 
   libspdm_register_device_buffer_func(
     spdm_context,

@@ -33,6 +33,8 @@
 #include "hal/library/debuglib.h"
 
 #include <library/spdm_return_status.h>
+#include <industry_standard/spdm.h>
+#include <industry_standard/pcidoe.h>
 #include <industry_standard/pci_tdisp.h>
 #include "helperlib.h"
 #include "teeio_debug.h"
@@ -2319,6 +2321,202 @@ bool ParseMainSection(void *context, IDE_TEST_CONFIG *test_config)
   return true;
 }
 
+static bool copy_fault_string(char *destination, size_t destination_size,
+                              const uint8_t *source, const char *field,
+                              const char *section)
+{
+  size_t length = strlen((const char *)source);
+
+  if (length == 0 || length >= destination_size) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] %s is empty or too long.\n",
+                 section, field));
+    return false;
+  }
+  memcpy(destination, source, length + 1);
+  return true;
+}
+
+static bool parse_fault_u32(const uint8_t *value, int base, uint32_t *result)
+{
+  char *end = NULL;
+  unsigned long parsed;
+
+  parsed = strtoul((const char *)value, &end, base);
+  if (value[0] == '\0' || *end != '\0' || parsed > UINT32_MAX) {
+    return false;
+  }
+  *result = (uint32_t)parsed;
+  return true;
+}
+
+static bool parse_fault_doe_type(const uint8_t *value, uint32_t *doe_type)
+{
+  if (strcmp((const char *)value, "any") == 0) {
+    *doe_type = TEEIO_FAULT_MATCH_ANY;
+  } else if (strcmp((const char *)value, "doe_discovery") == 0) {
+    *doe_type = PCI_DOE_DATA_OBJECT_TYPE_DOE_DISCOVERY;
+  } else if (strcmp((const char *)value, "spdm") == 0) {
+    *doe_type = PCI_DOE_DATA_OBJECT_TYPE_SPDM;
+  } else if (strcmp((const char *)value, "secured_spdm") == 0) {
+    *doe_type = PCI_DOE_DATA_OBJECT_TYPE_SECURED_SPDM;
+  } else if (strcmp((const char *)value, "plain_spdm") == 0) {
+    *doe_type = TEEIO_FAULT_DOE_TYPE_PLAIN_SPDM;
+  } else if (strcmp((const char *)value, "plain_secured_spdm") == 0) {
+    *doe_type = TEEIO_FAULT_DOE_TYPE_PLAIN_SECURED_SPDM;
+  } else {
+    return false;
+  }
+  return true;
+}
+
+static bool ParseFaultRuleSection(void *context, IDE_TEST_FAULT_CONFIG *config,
+                                  int index)
+{
+  char section[MAX_SECTION_NAME_LENGTH] = {0};
+  char error[128] = {0};
+  uint8_t *value = NULL;
+  teeio_fault_rule_t *rule;
+  uint32_t parsed;
+  int pattern_size;
+
+  snprintf(section, sizeof(section), "FaultRule_%d", index);
+  if (!IsValidSection(context, (uint8_t *)section)) {
+    return true;
+  }
+  if (config->rule_count >= TEEIO_FAULT_MAX_RULES) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Too many fault rules.\n"));
+    return false;
+  }
+
+  rule = &config->rules[config->rule_count];
+  memset(rule, 0, sizeof(*rule));
+  rule->id = index;
+  rule->doe_type = TEEIO_FAULT_MATCH_ANY;
+  rule->spdm_code = TEEIO_FAULT_MATCH_ANY;
+  rule->occurrence = 1;
+
+  if (!GetStringFromDataFile(context, (uint8_t *)section,
+                             (uint8_t *)"scenario", &value) ||
+      !copy_fault_string(rule->scenario, sizeof(rule->scenario), value,
+                         "scenario", section)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] scenario is required.\n", section));
+    return false;
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"expected", &value) &&
+      !copy_fault_string(rule->expected, sizeof(rule->expected), value,
+                         "expected", section)) {
+    return false;
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"doe_type", &value) &&
+      !parse_fault_doe_type(value, &rule->doe_type)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid doe_type. %s\n", section, value));
+    return false;
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"spdm_code", &value)) {
+    if (strcmp((const char *)value, "any") == 0) {
+      rule->spdm_code = TEEIO_FAULT_MATCH_ANY;
+    } else if (!parse_fault_u32(value, 0, &rule->spdm_code) ||
+               rule->spdm_code > UINT8_MAX) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid spdm_code. %s\n", section, value));
+      return false;
+    }
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"occurrence", &value)) {
+    if (strcmp((const char *)value, "all") == 0) {
+      rule->occurrence = TEEIO_FAULT_OCCURRENCE_ALL;
+    } else if (!parse_fault_u32(value, 10, &rule->occurrence) ||
+               rule->occurrence == 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] occurrence shall be all or a positive integer.\n",
+                   section));
+      return false;
+    }
+  }
+
+  if (!GetStringFromDataFile(context, (uint8_t *)section,
+                             (uint8_t *)"action", &value) ||
+      !teeio_fault_parse_action((const char *)value, &rule->action)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] action is missing or invalid.\n", section));
+    return false;
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"recovery", &value) &&
+      !teeio_fault_parse_recovery((const char *)value, &rule->recovery)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                 "[%s] recovery shall be none or same_session.\n", section));
+    return false;
+  }
+
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"offset", &value) &&
+      !parse_fault_u32(value, 0, &rule->offset)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid offset. %s\n", section, value));
+    return false;
+  }
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"offset_from_end", &value)) {
+    if (!parse_fault_u32(value, 10, &parsed) || parsed > 1) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                   "[%s] offset_from_end shall be 0 or 1.\n", section));
+      return false;
+    }
+    rule->offset_from_end = parsed == 1;
+  }
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"size", &value) &&
+      !parse_fault_u32(value, 0, &rule->size)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid size. %s\n", section, value));
+    return false;
+  }
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"declared_length", &value) &&
+      !parse_fault_u32(value, 0, &rule->declared_length)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid declared_length. %s\n",
+                 section, value));
+    return false;
+  }
+  if (GetStringFromDataFile(context, (uint8_t *)section,
+                            (uint8_t *)"pattern", &value)) {
+    pattern_size = teeio_fault_parse_pattern((const char *)value, rule->pattern,
+                                             sizeof(rule->pattern));
+    if (pattern_size < 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] invalid pattern. %s\n", section, value));
+      return false;
+    }
+    rule->pattern_size = (uint32_t)pattern_size;
+  }
+
+  if (!teeio_fault_validate_rule(rule, error, sizeof(error))) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] %s.\n", section, error));
+    return false;
+  }
+  config->rule_count++;
+  return true;
+}
+
+static bool ParseFaultRuleSections(void *context,
+                                   IDE_TEST_FAULT_CONFIG *config)
+{
+  uint32_t index;
+
+  memset(config, 0, sizeof(*config));
+
+  for (index = 1; index <= TEEIO_FAULT_MAX_RULES; index++) {
+    if (!ParseFaultRuleSection(context, config, index)) {
+      return false;
+    }
+  }
+  return true;
+}
+
 void ParsePortsSection(void *context, IDE_TEST_CONFIG *test_config, IDE_PORT_TYPE port_type)
 {
   char entry_name[MAX_ENTRY_NAME_LENGTH] = {0};
@@ -2437,6 +2635,10 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
                  main_config->spdm_version >> 4, main_config->spdm_version & 0x0f));
   }
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "\n"));
+
+  IDE_TEST_FAULT_CONFIG *fault_config = &test_config->fault_injection;
+  TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "Fault rules=%u\n\n",
+               fault_config->rule_count));
 
   IDE_TEST_PORTS_CONFIG *ports = &test_config->ports_config;
   for(int i = 0; i < ports->cnt; i++) {
@@ -2643,6 +2845,11 @@ bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char *ide_test_ini)
 
   // [Main]
   if (!ParseMainSection(context, test_config))
+  {
+    goto ParseDone;
+  }
+
+  if (!ParseFaultRuleSections(context, &test_config->fault_injection))
   {
     goto ParseDone;
   }

@@ -24,6 +24,7 @@ SET(src_helperlib
     utils.c
     pcap.c
     teeio_common.c
+    fault_injection.c
 )
 
 SET(helperlib_LIBRARY

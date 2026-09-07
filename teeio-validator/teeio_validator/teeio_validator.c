@@ -114,6 +114,7 @@ int main(int argc, char *argv[])
     g_libspdm_log = ide_test_config.main_config.libspdm_log;
     g_doe_log = ide_test_config.main_config.doe_log;
     teeio_spdm_set_version(ide_test_config.main_config.spdm_version);
+    teeio_fault_init(&ide_test_config.fault_injection);
 
     if(debug_level == TEEIO_DEBUG_NUM) {
         g_debug_level = ide_test_config.main_config.debug_level;
@@ -164,7 +165,23 @@ int main(int argc, char *argv[])
 
     run(&ide_test_config);
 
-    ret = 0;
+        if (ide_test_config.fault_injection.rule_count > 0) {
+            TEEIO_PRINT(("Fault scenario result: %s\n",
+                                     teeio_fault_result_record()));
+        }
+        if (ide_test_config.fault_injection.rule_count > 0 &&
+                !teeio_fault_scenario_fired()) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                                     "Fault scenario never fired.\n"));
+            ret = -1;
+        } else if (teeio_fault_same_session_recovery_configured() &&
+                   !teeio_fault_same_session_recovery_succeeded()) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Same-session recovery failed or did not run.\n"));
+            ret = -1;
+        } else {
+            ret = 0;
+        }
 
     // Close pcap file
     if (ide_test_config.main_config.pcap_enable) {
