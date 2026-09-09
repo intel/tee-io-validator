@@ -114,6 +114,16 @@ uint32_t read_ide_stream_ctrl_in_ecap(
     uint32_t ide_ecap_offset
 );
 
+/**
+ * read ide_stream_status register in ecap
+*/
+uint32_t read_ide_stream_status_in_ecap(
+    int fd,
+    TEST_IDE_TYPE ide_type,
+    uint8_t ide_id,
+    uint32_t ide_ecap_offset
+);
+
 /*
  * setup the ide ecap regs
  * IDE Extended Capability is defined in [PCI-SIG IDE] Sec 7.9.99
@@ -130,7 +140,7 @@ bool setup_ide_ecap_regs (
 
 /*
  * Reset ide stream related regisgers.
- * These registers include both PCIE ecap registers and Intel KCBAR registers 
+ * These registers include both PCIE ecap registers and Intel KCBAR registers
 */
 bool reset_ide_registers(
     ide_common_test_port_context_t *port_context,

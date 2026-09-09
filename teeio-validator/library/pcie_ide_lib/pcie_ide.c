@@ -228,7 +228,7 @@ bool close_root_port(pcie_ide_test_group_context_t *group_context)
     unset_device_info(group_context->common.upper_port.cfg_space_fd);
   }
   group_context->common.upper_port.cfg_space_fd = 0;
-  
+
   return true;
 }
 
@@ -328,7 +328,7 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
   TEEIO_ASSERT(num_key_iv_slots % 3 == 0);
 
   // We use key_iv_slot_usage_map to indicate the usage of key/iv slots.
-  // We assume PR/NPR/CPL substreams are allocated continuously. So 1 bit in key_iv_slot_usage_map represents 3 key/iv slots. 
+  // We assume PR/NPR/CPL substreams are allocated continuously. So 1 bit in key_iv_slot_usage_map represents 3 key/iv slots.
   // In the future if the supported key/iv slots exceeds key_iv_slot_usage_map, we will revisit here.
   if(num_key_iv_slots > sizeof(key_iv_slot_usage_map) * 8 * 3) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "supported num_key_iv_slots (%d) exceeds key_iv_slot_usage_map (%d) and it shall be expanded.\n", num_key_iv_slots, sizeof(key_iv_slot_usage_map) * 8 * 3));
@@ -1113,6 +1113,26 @@ uint32_t read_ide_stream_ctrl_in_ecap(
     uint32_t ide_stream_ctrl = device_pci_read_32(offset, fd);
 
     return ide_stream_ctrl;
+}
+
+/**
+ * read ide_stream_status register in ecap
+*/
+uint32_t read_ide_stream_status_in_ecap(
+    int fd,
+    TEST_IDE_TYPE ide_type,
+    uint8_t ide_id,
+    uint32_t ide_ecap_offset
+)
+{
+    uint32_t offset = get_ide_reg_block_offset(fd, ide_type, ide_id, ide_ecap_offset) + 4;
+
+    // For sel_ide, ide_stream_ctrl is preceded by ide_cap.
+    if(ide_type == TEST_IDE_TYPE_SEL_IDE) {
+        offset += 4;
+    }
+
+    return device_pci_read_32(offset, fd);
 }
 
 
