@@ -66,6 +66,7 @@ static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
   TEEIO_TEST_CASES* test_cases = &m_spdm_test_case_funcs[case_class];
 
   TEEIO_ASSERT(case_id < test_cases->cnt);
+  TEEIO_ASSERT(test_cases->funcs[case_id].run != NULL);
   return &test_cases->funcs[case_id];
 }
 

@@ -1512,19 +1512,26 @@ void CloseIniFile(
   return;
 }
 
-bool ParseTestSuiteCaseEntry(void *context, uint8_t *section_name, uint8_t *entry_name, uint32_t *cases_id, uint32_t *cases_cnt, uint32_t max_case_id)
+bool ParseTestSuiteCaseEntry(void *context, uint8_t *section_name, uint8_t *entry_name,
+                             uint32_t *cases_id, uint32_t *cases_cnt,
+                             const uint32_t *supported_case_ids,
+                             uint32_t supported_case_count, bool *entry_found)
 {
   uint32_t array_size = 0;
 
-  if (context == NULL || section_name == NULL || entry_name == NULL || cases_id == NULL || cases_cnt == NULL)
+  if (context == NULL || section_name == NULL || entry_name == NULL || cases_id == NULL ||
+      cases_cnt == NULL || supported_case_ids == NULL || supported_case_count == 0 ||
+      entry_found == NULL)
   {
     return false;
   }
 
+  *entry_found = false;
   if (!GetUint32ArrayLengthFromDataFile(context, section_name, entry_name, &array_size))
   {
     return false;
   }
+  *entry_found = true;
   if (array_size > *cases_cnt)
   {
     return false;
@@ -1537,8 +1544,19 @@ bool ParseTestSuiteCaseEntry(void *context, uint8_t *section_name, uint8_t *entr
 
   for (int i = 0; i < array_size; i++)
   {
-    if (cases_id[i] > max_case_id)
+    bool supported = false;
+    for (int j = 0; j < supported_case_count; j++)
     {
+      if (cases_id[i] == supported_case_ids[j])
+      {
+        supported = true;
+        break;
+      }
+    }
+    if (!supported)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] %s.%u is not a supported test case.\n",
+                   section_name, entry_name, cases_id[i]));
       return false;
     }
   }
@@ -1667,13 +1685,21 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
     }
     uint32_t* u32_array = (uint32_t *)malloc(cases_cnt * sizeof(uint32_t));
     get_uint32_array_from_string(u32_array, &cases_cnt, test_case->names);
-    uint32_t max_case_id = get_max_from_uint32_array(u32_array, cases_cnt);
+    uint32_t supported_case_count = cases_cnt;
 
     memset(cases_id, 0, sizeof(cases_id));
     sprintf(entry_name, "%s", test_case->class);
 
-    if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name, cases_id, &cases_cnt, max_case_id))
+    bool entry_found = false;
+    if (!ParseTestSuiteCaseEntry(context, (uint8_t *)section_name, (uint8_t *)entry_name,
+                                 cases_id, &cases_cnt, u32_array, supported_case_count,
+                                 &entry_found))
     {
+      if (entry_found)
+      {
+        free(u32_array);
+        return false;
+      }
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[%s] [%s] not found.\n", section_name, entry_name));
       cases_cnt = 0;
     }

@@ -78,35 +78,34 @@ static bool gen_teeio_spdm_test_case_from_responder_test_case(
   char buf[MAX_LINE_LENGTH] = {0};
   int buf_offset = 0;
   int max_val = 0;
-  int i = 0;
+  int case_count = 0;
 
   common_test_case_t* ptr_responder = responder_spdm_test_case;
   while(ptr_responder->case_id != COMMON_TEST_ID_END) {
-    i++;
-    ptr_responder = responder_spdm_test_case + i;
+    if(ptr_responder->case_id > max_val) {
+      max_val = ptr_responder->case_id;
+    }
+    case_count++;
+    ptr_responder = responder_spdm_test_case + case_count;
   }
 
-  if(i == 0) {
+  if(case_count == 0) {
     TEEIO_ASSERT(false);
     return false;
   }
 
-  ide_test_case_funcs_t* teeio_tc_funcs = (ide_test_case_funcs_t*)malloc(sizeof(ide_test_case_funcs_t) * i);
-  memset(teeio_tc_funcs, 0, sizeof(ide_test_case_funcs_t) * i);
+  ide_test_case_funcs_t* teeio_tc_funcs = (ide_test_case_funcs_t*)malloc(sizeof(ide_test_case_funcs_t) * max_val);
+  memset(teeio_tc_funcs, 0, sizeof(ide_test_case_funcs_t) * max_val);
 
-  i = 0;
+  int i = 0;
   ptr_responder = responder_spdm_test_case;
 
   while(ptr_responder->case_id != COMMON_TEST_ID_END) {
-    ide_test_case_funcs_t* ptr_teeio = teeio_tc_funcs + i;
+    ide_test_case_funcs_t* ptr_teeio = teeio_tc_funcs + ptr_responder->case_id - 1;
     ptr_teeio->config_check_required = false;
     ptr_teeio->run = ptr_responder->case_func;
     ptr_teeio->setup = ptr_responder->case_setup_func;
     ptr_teeio->teardown = ptr_responder->case_teardown_func;
-
-    if(ptr_responder->case_id > max_val) {
-      max_val = ptr_responder->case_id;     
-    }
 
     if(buf_offset + strlen(buf) + 4 + 1 > sizeof(buf)) {
       TEEIO_ASSERT(false);
