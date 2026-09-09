@@ -23,6 +23,7 @@ INCLUDE_DIRECTORIES(${SPDM_DEVICE_DIR}/include
 SET(src_spdm_test_lib
   spdm_test_common.c
   spdm_test_case.c
+  test_case/test_case_fault.c
   ## test configs
   test_config/test_config.c
   ## test groups

@@ -24,4 +24,8 @@ bool spdm_test_config_default_check(void *test_context);
 bool spdm_test_group_setup(void *test_context);
 bool spdm_test_group_teardown(void *test_context);
 
+bool spdm_test_case_fault_setup(void *test_context);
+void spdm_test_case_fault_run(void *test_context);
+void spdm_test_case_fault_teardown(void *test_context);
+
 #endif
