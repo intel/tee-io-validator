@@ -57,6 +57,12 @@ libspdm_return_t ide_km_key_set_go(const void *pci_doe_context,
                                    uint8_t stream_id, uint8_t key_sub_stream,
                                    uint8_t port_index);
 
+// check if an IDE stream status is Secure
+bool is_ide_stream_secure(TEST_IDE_TYPE ide_type,
+                          int rp_cfg_space_fd, uint32_t rp_ecap_offset, uint8_t rp_ide_id,
+                          int ep_cfg_space_fd, uint32_t ep_ecap_offset, uint8_t ep_ide_id
+);
+
 // setup ide stream
 bool setup_ide_stream(void* doe_context, void* spdm_context,
                     uint32_t* session_id, uint8_t* kcbar_addr,
