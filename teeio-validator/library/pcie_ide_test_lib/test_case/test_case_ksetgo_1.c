@@ -301,6 +301,18 @@ void pcie_ide_test_ksetgo_1_run(void *test_context)
 
   // wait for 10 ms for device to get ide ready
   libspdm_sleep(10 * 1000);
+
+  // IDE stream status should be Secure
+  bool ide_stream_secure = is_ide_stream_secure(ide_type,
+                                                group_context->common.upper_port.cfg_space_fd,
+                                                group_context->common.upper_port.ecap_offset,
+                                                group_context->common.upper_port.ide_id,
+                                                group_context->common.lower_port.cfg_space_fd,
+                                                group_context->common.lower_port.ecap_offset,
+                                                group_context->common.lower_port.ide_id);
+  teeio_record_assertion_result(case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                ide_stream_secure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                "ide_stream status is %s\n", ide_stream_secure ? "SECURE" : "INSECURE");
 }
 
 void pcie_ide_test_ksetgo_1_teardown(void *test_context)
