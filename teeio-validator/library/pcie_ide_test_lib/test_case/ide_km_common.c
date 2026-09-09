@@ -200,6 +200,31 @@ libspdm_return_t ide_km_key_set_go(const void *pci_doe_context,
     return LIBSPDM_STATUS_SUCCESS;
 }
 
+bool is_ide_stream_secure(TEST_IDE_TYPE ide_type,
+                          int rp_cfg_space_fd, uint32_t rp_ecap_offset, uint8_t rp_ide_id,
+                          int ep_cfg_space_fd, uint32_t ep_ecap_offset, uint8_t ep_ide_id)
+{
+  PCIE_SEL_IDE_STREAM_STATUS stream_status;
+
+  // Check IDE stream status on root port
+  stream_status.raw = read_stream_status_in_rp_ecap(rp_cfg_space_fd, rp_ecap_offset, ide_type, rp_ide_id);
+  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "RP ide_stream state is %x.\n", stream_status.state));
+    return false;
+  }
+
+  // Check IDE stream status on the device
+  stream_status.raw = read_ide_stream_status_in_ecap(ep_cfg_space_fd, ide_type, ep_ide_id, ep_ecap_offset);
+  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "EP ide_stream state is %x.\n", stream_status.state));
+    return false;
+  }
+
+  return true;
+}
+
 // setup ide stream
 bool setup_ide_stream(void* doe_context, void* spdm_context,
                     uint32_t* session_id, uint8_t* kcbar_addr,
@@ -327,7 +352,7 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
       rp_stream_index,
       PCIE_IDE_STREAM_TX,
       ks);
-  
+
   if(skip_ksetgo) {
     return true;
   }
@@ -418,15 +443,9 @@ bool setup_ide_stream(void* doe_context, void* spdm_context,
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
-  PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
-  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ide_stream state is %x.\n", stream_status.state));
-    return false;
-  }
-
-  return true;
+  return is_ide_stream_secure(ide_type,
+                              upper_port_cfg_space_fd, upper_port_ecap_offset, upper_port->ide_id,
+                              lower_port->cfg_space_fd, lower_port->ecap_offset, lower_port->ide_id);
 }
 
 // key switch to @ks
@@ -593,13 +612,7 @@ bool ide_key_switch_to(void* doe_context, void* spdm_context,
   libspdm_sleep(10 * 1000);
 
   // Now ide stream shall be in secure state
-  uint32_t data = read_stream_status_in_rp_ecap(upper_port_cfg_space_fd, upper_port_ecap_offset, ide_type, upper_port->ide_id);
-  PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
-  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "ide_stream state is %x.\n", stream_status.state));
-    return false;
-  }
-
-  return true;
+  return is_ide_stream_secure(ide_type,
+                              upper_port_cfg_space_fd, upper_port_ecap_offset, upper_port->ide_id,
+                              lower_port->cfg_space_fd, lower_port->ecap_offset, lower_port->ide_id);
 }
