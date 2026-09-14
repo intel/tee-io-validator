@@ -37,6 +37,8 @@ SET(TEEIO_VALIDATOR_LIB_DIR ${PROJECT_SOURCE_DIR}/library)
 set(SPDM_RESPONDER_VALIDATOR_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu/SPDM-Responder-Validator)
 set(COMMON_TEST_FRAMEWORK_DIR ${PROJECT_SOURCE_DIR}/../spdm-emu/SPDM-Responder-Validator/common_test_framework)
 
+include_directories(${LIBSPDM_DIR}/os_stub/include)
+
 #
 # OpenSSL specific compiled libraries.
 #
@@ -246,7 +248,10 @@ ADD_COMPILE_OPTIONS(-DLIBSPDM_CONFIG="${PROJECT_SOURCE_DIR}/include/spdm_lib_con
         if(CRYPTO STREQUAL "mbedtls")
             ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/mbedtlslib out/mbedtlslib.lib)
         elseif(CRYPTO STREQUAL "openssl")
+            set(TEEIO_TOOLCHAIN ${TOOLCHAIN})
+            set(TOOLCHAIN NONE)
             ADD_SUBDIRECTORY(${LIBSPDM_DIR}/os_stub/openssllib out/openssllib.lib)
+            set(TOOLCHAIN ${TEEIO_TOOLCHAIN})
         endif()
     endif()
 

@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ide_test.h"
+#include "os_include.h"
 #include "command.h"
 #include "teeio_spdmlib.h"
 
