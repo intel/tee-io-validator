@@ -64,6 +64,7 @@ ide_test_case_name_t m_spdm_test_case_names[] = {
   {"HeartbeatAck",      NULL,    SPDM_TEST_CASE_HEARTBEAT_ACK    },
   {"KeyUpdateAck",      NULL,    SPDM_TEST_CASE_KEY_UPDATE_ACK   },
   {"EndSessionAck",     NULL,    SPDM_TEST_CASE_END_SESSION_ACK  },
+  {"Fault",             NULL,    SPDM_TEST_CASE_FAULT            },
   {NULL,                NULL,    SPDM_TEST_CASE_NUM              }
 };
 
@@ -162,6 +163,19 @@ void spdm_test_lib_init_test_cases()
     }
   }
 
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs =
+    (ide_test_case_funcs_t *)calloc(1, sizeof(ide_test_case_funcs_t));
+  TEEIO_ASSERT(m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs != NULL);
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].cnt = 1;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].setup =
+    spdm_test_case_fault_setup;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].run =
+    spdm_test_case_fault_run;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].teardown =
+    spdm_test_case_fault_teardown;
+  m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names = malloc(2);
+  TEEIO_ASSERT(m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names != NULL);
+  strcpy(m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names, "1");
 }
 
 void spdm_test_lib_clean(void)
