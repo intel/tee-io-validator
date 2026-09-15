@@ -11,9 +11,14 @@
 #include "teeio_spdmlib.h"
 #include "spdm_test_lib.h"
 #include "hal/library/cryptlib/cryptlib_cert.h"
+#include "internal/libspdm_common_lib.h"
 
 #define TEEIO_FAULT_SET_CERTIFICATE_SCENARIO \
   "B5_certificate_chunk_bit_flip"
+#define TEEIO_FAULT_OVERSIZED_CHUNK_SCENARIO \
+  "B6_chunk_exceeds_transfer_size"
+#define TEEIO_FAULT_ABANDON_SCENARIO "B6_abandon_then_fresh_request"
+#define TEEIO_FAULT_MISSING_SCENARIO "B6_missing_final_chunk"
 #define TEEIO_FAULT_SET_CERTIFICATE_ASSERTION_ID 1
 
 typedef struct {
@@ -21,9 +26,450 @@ typedef struct {
   uint8_t heartbeat_period;
   uint8_t reserved[2];
   uint32_t session_id;
+  libspdm_transport_encode_message_func saved_encode;
+  libspdm_transport_decode_message_func saved_decode;
+  void *saved_app;
+  uint8_t *frame;
+  bool installed;
+  bool armed;
+  bool abandon;
+  bool missing;
+  bool oversized;
+  bool partial_response;
+  bool selected;
+  bool invalid;
+  bool first_early_invalid_request;
+  bool terminal_certificate_rejection;
+  bool last_send_final;
+  uint8_t handle;
+  uint32_t last_sequence;
+  uint32_t next_get_sequence;
+  uint32_t send_count;
+  uint32_t ack_count;
+  uint32_t data_transfer_size;
+  size_t certificate_target;
+  size_t certificate_request_size;
+  size_t certificate_sent;
+  uint8_t certificate_original;
+  bool certificate_target_valid;
+  bool backend_probe;
+  bool backend_rejection;
 } teeio_fault_test_buffer_t;
 
 void spdm_test_case_common_teardown(void *test_context);
+bool spdm_test_case_fault_key_exchange_setup(void *test_context);
+void spdm_test_case_fault_key_exchange_run(void *test_context);
+void spdm_test_case_fault_key_exchange_teardown(void *test_context);
+bool spdm_test_case_fault_mut_auth_setup(void *test_context);
+void spdm_test_case_fault_mut_auth_run(void *test_context);
+
+static bool is_key_exchange_scenario(void)
+{
+  return teeio_fault_scenario_is("B4_duplicate_key_exchange") ||
+         teeio_fault_scenario_is("B4_key_exchange_before_certificate");
+}
+
+static bool is_set_certificate_scenario(void)
+{
+  return teeio_fault_scenario_is(TEEIO_FAULT_SET_CERTIFICATE_SCENARIO) ||
+         teeio_fault_scenario_is(TEEIO_FAULT_OVERSIZED_CHUNK_SCENARIO) ||
+         teeio_fault_scenario_is(TEEIO_FAULT_ABANDON_SCENARIO) ||
+         teeio_fault_scenario_is(TEEIO_FAULT_MISSING_SCENARIO);
+}
+
+/* Fault.1 stays here; B4 and B5 mutual-auth entry points are deliberately
+ * separate drivers. Do not fold their setup/run/teardown into this state. */
+
+static uint32_t chunk_sequence(const uint8_t *message)
+{
+  return message[0] >= SPDM_MESSAGE_VERSION_14 ?
+    libspdm_read_uint32(message + 4) : libspdm_read_uint16(message + 4);
+}
+
+static void chunk_assert(uint32_t id, bool passed, const char *description)
+{
+  teeio_record_assertion_result(
+    SPDM_TEST_CASE_FAULT, 1, id, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+    passed ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+    "%s", description);
+}
+
+/* Strict, bounded DER TLV reader: no indefinite/nonminimal lengths, overflow,
+ * trailing data, or speculative reads. Only the tags used below are accepted. */
+static bool certificate_der(const uint8_t **cursor, const uint8_t *end,
+                            uint8_t tag, const uint8_t **value, size_t *length)
+{
+  const uint8_t *p = *cursor;
+  size_t n, size;
+  if (end - p < 2 || *p++ != tag) return false;
+  size = *p++;
+  if (size & 0x80) {
+    n = size & 0x7f;
+    if (n == 0 || n > sizeof(size_t) || (size_t)(end - p) < n || *p == 0)
+      return false;
+    size = 0;
+    while (n--) size = (size << 8) | *p++;
+    if (size < 128) return false;
+  }
+  if (size > (size_t)(end - p)) return false;
+  *value = p;
+  *length = size;
+  *cursor = p + size;
+  return true;
+}
+
+static bool certificate_signature_target(teeio_fault_test_buffer_t *state,
+                                         const uint8_t *chain, size_t size,
+                                         uint32_t hash)
+{
+  const uint8_t *cert, *p, *end, *value, *signature, *integer;
+  uint8_t constraints[64];
+  size_t constraints_size = sizeof(constraints);
+  const uint8_t *second = NULL;
+  size_t second_size = 0;
+  unsigned count = 0;
+  size_t cert_size, length, signature_size, integer_size;
+  size_t header = sizeof(spdm_cert_chain_t) + libspdm_get_hash_size(hash);
+  state->certificate_target_valid = false;
+  if (chain == NULL || size <= header || size > LIBSPDM_MAX_CERT_CHAIN_SIZE ||
+      libspdm_read_uint32(chain) != size) return false;
+  /* Bound the entire outer certificate list BEFORE calling the platform's
+   * X.509 walker; do not rely on backend-specific malformed-DER behavior. */
+  p = chain + header;
+  end = chain + size;
+  while (p < end) {
+    const uint8_t *start = p;
+    if (!certificate_der(&p, end, 0x30, &value, &length) || length == 0) return false;
+    if (count++ == 1) { second = start; second_size = (size_t)(p - start); }
+  }
+  if (second == NULL || !libspdm_x509_get_cert_from_cert_chain(
+        chain + header, size - header, 1, &cert, &cert_size)) return false;
+  if (cert != second || cert_size != second_size) return false;
+    /* Index 1 must actually be a CA, not an end-entity certificate on a shorter
+     * platform chain. Require canonical BasicConstraints cA=TRUE. */
+    if (!libspdm_x509_get_extended_basic_constraints(cert, cert_size,
+      constraints, &constraints_size) || constraints_size > sizeof(constraints)) return false;
+    p = constraints;
+    end = constraints + constraints_size;
+    if (!certificate_der(&p, end, 0x30, &value, &length) || p != end) return false;
+    p = value;
+    if (!certificate_der(&p, end, 0x01, &value, &length) ||
+    length != 1 || value[0] != 0xff) return false;
+  p = cert;
+  end = cert + cert_size;
+  if (!certificate_der(&p, end, 0x30, &value, &length) || p != end) return false;
+  p = value;
+  if (!certificate_der(&p, end, 0x30, &value, &length) || /* TBSCertificate */
+      !certificate_der(&p, end, 0x30, &value, &length) || /* signatureAlgorithm */
+      !certificate_der(&p, end, 0x03, &signature, &signature_size) || p != end ||
+      signature_size < 2 || signature[0] != 0) return false;
+  /* Negotiation pins ECDSA-P384. Keep the BIT STRING and both DER INTEGER
+   * encodings intact: flip a low-order r byte, never its sign/length byte. */
+  p = signature + 1;
+  if (!certificate_der(&p, end, 0x30, &value, &length) || p != end) return false;
+  p = value;
+  if (!certificate_der(&p, end, 0x02, &integer, &integer_size) ||
+      integer_size < 2 || (integer[0] & 0x80) ||
+      (integer[0] == 0 && !(integer[1] & 0x80))) return false;
+  state->certificate_target = sizeof(spdm_set_certificate_request_t) +
+    (size_t)(integer + integer_size - 1 - chain);
+  state->certificate_original = integer[integer_size - 1];
+  if (!certificate_der(&p, end, 0x02, &integer, &integer_size) || p != end ||
+      integer_size == 0 || (integer[0] & 0x80) ||
+      (integer_size > 1 && integer[0] == 0 && !(integer[1] & 0x80))) return false;
+  state->certificate_request_size = sizeof(spdm_set_certificate_request_t) + size;
+  state->certificate_sent = 0;
+  state->certificate_target_valid = true;
+  return true;
+}
+
+/* Scope plaintext FI to the operation under test, not setup, positive control,
+ * or recovery. A per-context frame provides DOE headroom and padding even when
+ * the encoder changes the returned buffer pointer (libspdm's zero-copy API).
+ * No FI reset/re-init: those APIs erase the original observed outcome. */
+static libspdm_return_t chunk_encode(
+  void *spdm, const uint32_t *session_id, bool app, bool request,
+  size_t size, void *message, size_t *transport_size, void **transport)
+{
+  teeio_fault_test_buffer_t *state =
+    ((libspdm_context_t *)spdm)->app_context_data_ptr;
+  const uint8_t *bytes = message;
+  teeio_fault_result_t result;
+  bool candidate = false;
+  uint32_t sequence = 0;
+  size_t target_in_chunk = 0;
+  bool b5 = !state->abandon && !state->missing && !state->oversized;
+  libspdm_return_t status;
+
+  if ((state->armed || state->backend_probe) && !app && session_id == NULL && size >= 4) {
+    if (bytes[1] == SPDM_CHUNK_SEND && size >= sizeof(spdm_chunk_send_request_t)) {
+      sequence = chunk_sequence(bytes);
+      state->send_count++;
+      state->handle = bytes[3];
+      state->last_sequence = sequence;
+      state->last_send_final =
+        (bytes[2] & SPDM_CHUNK_SEND_REQUEST_ATTRIBUTE_LAST_CHUNK) != 0;
+      if (state->missing) {
+        candidate = (bytes[2] & SPDM_CHUNK_SEND_REQUEST_ATTRIBUTE_LAST_CHUNK) != 0;
+        if (candidate && (sequence == 0 || state->ack_count == 0)) {
+          state->invalid = true;
+        }
+      } else if (state->oversized) {
+        candidate = state->send_count == 1 && sequence == 0;
+      } else if (b5 && !state->backend_probe) {
+        size_t header = sizeof(spdm_chunk_send_request_t) + (sequence == 0 ? 4 : 0);
+        size_t payload = libspdm_read_uint32(bytes + 8);
+        if (!state->certificate_target_valid || sequence != state->send_count - 1 ||
+            size < header || payload != size - header ||
+            state->certificate_sent > state->certificate_request_size ||
+            payload > state->certificate_request_size - state->certificate_sent ||
+            (sequence == 0 && (libspdm_read_uint32(bytes + 12) !=
+              state->certificate_request_size || payload < 4 ||
+              bytes[17] != SPDM_SET_CERTIFICATE)) ||
+            state->last_send_final !=
+              (payload == state->certificate_request_size - state->certificate_sent)) {
+          state->invalid = true;
+          return LIBSPDM_STATUS_SEND_FAIL;
+        }
+        candidate = state->certificate_target >= state->certificate_sent &&
+          state->certificate_target - state->certificate_sent < payload;
+        if (candidate) {
+          target_in_chunk = header + state->certificate_target - state->certificate_sent;
+          if (bytes[target_in_chunk] != state->certificate_original) {
+            state->invalid = true;
+            return LIBSPDM_STATUS_SEND_FAIL;
+          }
+        }
+        state->certificate_sent += payload;
+      }
+    } else if (state->abandon && bytes[1] == SPDM_CHUNK_GET &&
+               size >= sizeof(spdm_chunk_get_request_t)) {
+      /* A validated non-final CHUNK_RESPONSE, not an absolute occurrence,
+       * proves an actual partial GET_CERTIFICATE transfer is active. */
+      candidate = state->partial_response && bytes[3] == state->handle &&
+          chunk_sequence(bytes) == state->next_get_sequence;
+    }
+  }
+
+  if (candidate && !state->selected) {
+    if (b5) {
+      /* Candidate-slice FI framing: real CHUNK_SEND selector plus exactly the
+       * DER-selected byte. offset=12 addresses this slice, NOT a wire offset.
+       * FI owns the XOR and audit; copy back only its one verified changed bit. */
+      uint8_t slice[13] = {0};
+      slice[2] = TEEIO_FAULT_DOE_TYPE_PLAIN_SPDM;
+      libspdm_write_uint32(slice + 4, 4);
+      memcpy(slice + 8, bytes, 4);
+      slice[12] = bytes[target_in_chunk];
+      result = teeio_fault_apply(slice, sizeof(slice), sizeof(slice));
+      if (size + 8 > TEEIO_FAULT_MAX_MESSAGE_SIZE ||
+          result.disposition != TEEIO_FAULT_DISPOSITION_MUTATE ||
+          result.message_size != sizeof(slice) ||
+          memcmp(result.message, slice, 12) != 0 ||
+          (result.message[12] ^ slice[12]) != 1 || teeio_fault_fire_count() != 1) {
+        state->invalid = true;
+        return LIBSPDM_STATUS_SEND_FAIL;
+      }
+      memcpy(state->frame + 8, message, size);
+      state->frame[8 + target_in_chunk] = result.message[12];
+      state->selected = true;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO,
+        "B5 target: non-root cert index=1 ECDSA r LSB request_offset=%zu chunk=%u wire_offset=%zu bits=1\n",
+        state->certificate_target, sequence, target_in_chunk + 8));
+      return libspdm_transport_pci_doe_encode_message(spdm, session_id, app,
+        request, size, state->frame + 8, transport_size, transport);
+    }
+    if (size + 8 + 4 > TEEIO_FAULT_MAX_MESSAGE_SIZE) {
+      state->invalid = true;
+      return LIBSPDM_STATUS_SEND_FAIL;
+    }
+    memset(state->frame, 0, 8);
+    state->frame[2] = TEEIO_FAULT_DOE_TYPE_PLAIN_SPDM;
+    libspdm_write_uint32(state->frame + 4, (uint32_t)((size + 11) / 4));
+    memcpy(state->frame + 8, message, size);
+    result = teeio_fault_apply(state->frame, size + 8,
+                               TEEIO_FAULT_MAX_MESSAGE_SIZE - 3);
+    if (result.disposition != TEEIO_FAULT_DISPOSITION_PASS) {
+      state->selected = true;
+      if (state->abandon || state->missing) {
+        if (result.disposition != (state->abandon ?
+              TEEIO_FAULT_DISPOSITION_ABANDON : TEEIO_FAULT_DISPOSITION_DROP)) {
+          state->invalid = true;
+        }
+        teeio_fault_record_actual(state->abandon ?
+          "chunk_transfer_abandoned" : "final_chunk_withheld");
+        /* Fail the send locally: no hardware transmission or receive timeout,
+         * and no attempt to send a non-chunk request before GET_VERSION. */
+        return LIBSPDM_STATUS_SEND_FAIL;
+      }
+      if (result.disposition != TEEIO_FAULT_DISPOSITION_MUTATE ||
+          result.message_size < 8 ||
+          result.message_size > TEEIO_FAULT_MAX_MESSAGE_SIZE - 3) {
+        state->invalid = true;
+        return LIBSPDM_STATUS_SEND_FAIL;
+      }
+      if (state->oversized &&
+          (sequence != 0 || size != state->data_transfer_size ||
+           result.message_size != size + 12 ||
+           result.message_size - 8 <= state->data_transfer_size ||
+           memcmp(result.message + 8, message, size) != 0)) {
+        /* Fail closed if the configured mutation does not exceed the peer's
+         * actual receive limit (the local limit may be smaller). */
+        state->invalid = true;
+        return LIBSPDM_STATUS_SEND_FAIL;
+      }
+      if (!state->oversized) {
+        size_t index;
+        size_t changed_bits = 0;
+        /* Config validation at the point of application: this must be one
+         * certificate-payload bit, never a chunk header or resized message. */
+        if (sequence == 0 || result.message_size != size + 8 ||
+            memcmp(result.message + 8, message,
+                   sizeof(spdm_chunk_send_request_t)) != 0) {
+          state->invalid = true;
+          return LIBSPDM_STATUS_SEND_FAIL;
+        }
+        for (index = sizeof(spdm_chunk_send_request_t); index < size; index++) {
+          uint8_t difference = result.message[8 + index] ^ bytes[index];
+          while (difference != 0) {
+            changed_bits += difference & 1;
+            difference >>= 1;
+          }
+        }
+        if (changed_bits != 1) {
+          state->invalid = true;
+          return LIBSPDM_STATUS_SEND_FAIL;
+        }
+      }
+      memcpy(state->frame, result.message, result.message_size);
+      message = state->frame + 8;
+      size = result.message_size - 8;
+    }
+  }
+  status = libspdm_transport_pci_doe_encode_message(
+    spdm, session_id, app, request, size, message, transport_size, transport);
+  if (state->armed && state->oversized && state->selected &&
+      !LIBSPDM_STATUS_IS_ERROR(status) &&
+      (*transport_size < size + 8 ||
+       (libspdm_read_uint32((uint8_t *)*transport + 4) & 0x3ffff) * 4 !=
+         *transport_size)) {
+    state->invalid = true;
+    return LIBSPDM_STATUS_SEND_FAIL;
+  }
+  return status;
+}
+
+static libspdm_return_t chunk_decode(
+  void *spdm, uint32_t **session_id, bool *app, bool request,
+  size_t transport_size, void *transport, size_t *size, void **message)
+{
+  teeio_fault_test_buffer_t *state =
+    ((libspdm_context_t *)spdm)->app_context_data_ptr;
+  libspdm_return_t status;
+  const uint8_t *bytes;
+  size_t header_size;
+  bool terminal_error_size;
+
+  /* Keep the existing observer: its first recorded actual must survive all
+   * recovery traffic. Inspect the same unmodified decoded response below. */
+  status = state->saved_decode(spdm, session_id, app, request,
+                               transport_size, transport, size, message);
+  if (LIBSPDM_STATUS_IS_ERROR(status) || *app ||
+      (!state->armed && !state->backend_probe) || *size < 4) {
+    return status;
+  }
+  bytes = *message;
+  if (bytes[0] != state->version) {
+    state->invalid = true;
+    return status;
+  }
+  if (state->abandon && bytes[1] == SPDM_CHUNK_RESPONSE &&
+      *size >= sizeof(spdm_chunk_response_response_t) + 4 &&
+      chunk_sequence(bytes) == 0 &&
+      !(bytes[2] & SPDM_CHUNK_GET_RESPONSE_ATTRIBUTE_LAST_CHUNK)) {
+    uint32_t payload = libspdm_read_uint32(bytes + 8);
+    uint32_t total = libspdm_read_uint32(bytes + 12);
+    /* First response must actually carry part of CERTIFICATE, not a chunk
+     * from GET_DIGESTS, setup, or session establishment. */
+    state->partial_response = payload >= 4 && payload < total &&
+      payload <= *size - 16 && bytes[17] == SPDM_CERTIFICATE;
+    if (state->partial_response) {
+      state->handle = bytes[3];
+      state->next_get_sequence = chunk_sequence(bytes) + 1;
+    }
+  }
+  if (bytes[1] != SPDM_CHUNK_SEND_ACK) {
+    return status;
+  }
+  state->ack_count++;
+  header_size = bytes[0] >= SPDM_MESSAGE_VERSION_14 ?
+    sizeof(spdm_chunk_send_ack_response_14_t) : sizeof(spdm_chunk_send_ack_response_t);
+  if (*size < header_size || bytes[3] != state->handle ||
+      chunk_sequence(bytes) != state->last_sequence) {
+    state->invalid = true;
+    return status;
+  }
+  if (state->oversized && state->selected && state->ack_count == 1 &&
+      state->send_count == 1 && chunk_sequence(bytes) == 0 &&
+      bytes[2] == SPDM_CHUNK_SEND_ACK_RESPONSE_ATTRIBUTE_EARLY_ERROR_DETECTED &&
+      *size >= header_size + sizeof(spdm_error_response_t) &&
+      bytes[header_size] == bytes[0] && bytes[header_size + 1] == SPDM_ERROR &&
+      bytes[header_size + 2] == SPDM_ERROR_CODE_INVALID_REQUEST &&
+      bytes[header_size + 3] == 0) {
+    state->first_early_invalid_request = true;
+  }
+  /* DOE exposes up to three zero alignment bytes (notably 1.2's six-byte ACK). */
+  terminal_error_size = *size >= header_size + sizeof(spdm_error_response_t) &&
+    *size <= ((header_size + sizeof(spdm_error_response_t) + 3) & ~(size_t)3);
+  if (terminal_error_size) {
+    size_t i;
+    for (i = header_size + sizeof(spdm_error_response_t); i < *size; i++)
+      terminal_error_size &= bytes[i] == 0;
+  }
+  if (state->last_send_final && bytes[2] == 0 && terminal_error_size &&
+      bytes[header_size] == state->version && bytes[header_size + 3] == 0 &&
+      bytes[header_size + 1] == SPDM_ERROR &&
+      bytes[header_size + 2] == SPDM_ERROR_CODE_OPERATION_FAILED) {
+    state->backend_rejection = true;
+  }
+  if (!state->oversized && state->selected && state->last_send_final &&
+      bytes[2] == 0 && terminal_error_size &&
+      bytes[header_size] == state->version && bytes[header_size + 3] == 0 &&
+      bytes[header_size + 1] == SPDM_ERROR &&
+      bytes[header_size + 2] == SPDM_ERROR_CODE_UNSPECIFIED) {
+    state->terminal_certificate_rejection = true;
+  }
+  return status;
+}
+
+static bool chunk_install(teeio_spdm_test_context_t *context)
+{
+  libspdm_context_t *spdm = context->spdm_context;
+  teeio_fault_test_buffer_t *state = (void *)context->test_scratch_buffer;
+
+  if (sizeof(*state) > sizeof(context->test_scratch_buffer) ||
+      spdm->transport_encode_message != teeio_fault_transport_encode_message ||
+      spdm->transport_decode_message != teeio_fault_transport_decode_message) {
+    return false;
+  }
+  memset(state, 0, sizeof(*state));
+  context->test_scratch_buffer_size = sizeof(*state);
+  state->frame = malloc(TEEIO_FAULT_MAX_MESSAGE_SIZE);
+  if (state->frame == NULL) {
+    return false;
+  }
+  state->saved_encode = spdm->transport_encode_message;
+  state->saved_decode = spdm->transport_decode_message;
+  state->saved_app = spdm->app_context_data_ptr;
+  state->abandon = teeio_fault_scenario_is(TEEIO_FAULT_ABANDON_SCENARIO);
+  state->missing = teeio_fault_scenario_is(TEEIO_FAULT_MISSING_SCENARIO);
+  state->oversized = teeio_fault_scenario_is(TEEIO_FAULT_OVERSIZED_CHUNK_SCENARIO);
+  state->installed = true;
+  spdm->app_context_data_ptr = state;
+  spdm->transport_encode_message = chunk_encode;
+  spdm->transport_decode_message = chunk_decode;
+  return true;
+}
 
 static bool set_local_data(void *spdm_context, libspdm_data_type_t data_type,
                            const void *data, size_t data_size)
@@ -93,6 +539,13 @@ static bool select_alias_immutable_chain(void *cert_chain,
 
 bool spdm_test_case_fault_setup(void *test_context)
 {
+  if (is_key_exchange_scenario()) {
+    return spdm_test_case_fault_key_exchange_setup(test_context);
+  }
+  if (teeio_fault_scenario_is("B5_invalid_finish_signature")) {
+    return spdm_test_case_fault_mut_auth_setup(test_context);
+  }
+
   teeio_spdm_test_context_t *context = test_context;
   teeio_fault_test_buffer_t *test_buffer;
   libspdm_data_parameter_t parameter;
@@ -106,7 +559,9 @@ bool spdm_test_case_fault_setup(void *test_context)
   uint16_t data16;
   uint8_t data8;
 
-  if (!teeio_fault_scenario_is(TEEIO_FAULT_SET_CERTIFICATE_SCENARIO) ||
+  if (!is_set_certificate_scenario() ||
+      teeio_fault_same_session_recovery_configured() ||
+      !chunk_install(context) ||
       !teeio_spdm_apply_version_override(context->spdm_context)) {
     return false;
   }
@@ -188,7 +643,8 @@ bool spdm_test_case_fault_setup(void *test_context)
   if (!get_connection_data(context->spdm_context,
                            LIBSPDM_DATA_CAPABILITY_FLAGS,
                            &capabilities, sizeof(capabilities)) ||
-      (capabilities & SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_SET_CERT_CAP) == 0 ||
+      (!teeio_fault_scenario_is(TEEIO_FAULT_ABANDON_SCENARIO) &&
+       (capabilities & SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_SET_CERT_CAP) == 0) ||
       (capabilities & SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_CHUNK_CAP) == 0) {
     return false;
   }
@@ -209,9 +665,6 @@ bool spdm_test_case_fault_setup(void *test_context)
   if (sizeof(context->test_scratch_buffer) < sizeof(*test_buffer)) {
     return false;
   }
-  libspdm_zero_mem(test_buffer, sizeof(*test_buffer));
-  context->test_scratch_buffer_size = sizeof(*test_buffer);
-
   status = libspdm_start_session(
     context->spdm_context, false, NULL, 0,
     SPDM_KEY_EXCHANGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH, 0,
@@ -230,11 +683,84 @@ bool spdm_test_case_fault_setup(void *test_context)
     return false;
   }
   test_buffer->version = (uint8_t)(version >> SPDM_VERSION_NUMBER_SHIFT_BIT);
-  return true;
+  /* A raw-DOE/mis-scoped config must not corrupt setup unnoticed. */
+  return !teeio_fault_scenario_fired();
+}
+
+static bool chunk_recover(teeio_spdm_test_context_t *context)
+{
+  teeio_fault_test_buffer_t *state = (void *)context->test_scratch_buffer;
+  libspdm_context_t *spdm = context->spdm_context;
+  libspdm_return_t status;
+  uint8_t *chain;
+  size_t chain_size;
+  size_t index;
+  bool old_sessions_gone = true;
+
+  state->armed = false;
+  /* No END_SESSION/HEARTBEAT on the old session while a transfer is active.
+   * GET_VERSION is the sole legal interrupt; init_connection uses the SAME
+   * allocated context and resets its sessions before negotiating anew. */
+  state->session_id = 0;
+  status = libspdm_init_connection(spdm, false);
+  chunk_assert(10, !LIBSPDM_STATUS_IS_ERROR(status),
+               "GET_VERSION abort and fresh connection on the same context");
+  if (LIBSPDM_STATUS_IS_ERROR(status)) {
+    return false;
+  }
+  for (index = 0; index < LIBSPDM_MAX_SESSION_COUNT; index++) {
+    old_sessions_gone &= spdm->session_info[index].session_id == INVALID_SESSION_ID;
+  }
+  chunk_assert(11, old_sessions_gone,
+               "no old local session survives GET_VERSION reset");
+  if (!old_sessions_gone) {
+    return false;
+  }
+  chain = malloc(LIBSPDM_MAX_CERT_CHAIN_SIZE);
+  if (chain == NULL) {
+    chunk_assert(12, false, "recovery certificate allocation");
+    return false;
+  }
+  chain_size = LIBSPDM_MAX_CERT_CHAIN_SIZE;
+  status = libspdm_get_certificate(spdm, NULL, 0, &chain_size, chain);
+  free(chain);
+  chunk_assert(12, !LIBSPDM_STATUS_IS_ERROR(status),
+               "complete certificate refetch after abandoned transfer");
+  if (LIBSPDM_STATUS_IS_ERROR(status)) {
+    return false;
+  }
+  status = libspdm_start_session(
+    spdm, false, NULL, 0, SPDM_KEY_EXCHANGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH, 0,
+    SPDM_KEY_EXCHANGE_REQUEST_SESSION_POLICY_TERMINATION_POLICY_RUNTIME_UPDATE,
+    &state->session_id, &state->heartbeat_period, NULL);
+  chunk_assert(13, !LIBSPDM_STATUS_IS_ERROR(status),
+               "fresh authenticated session after connection reset");
+  if (LIBSPDM_STATUS_IS_ERROR(status)) {
+    state->session_id = 0;
+    return false;
+  }
+  status = libspdm_heartbeat(spdm, state->session_id);
+  chunk_assert(14, !LIBSPDM_STATUS_IS_ERROR(status), "fresh-session HEARTBEAT");
+  if (LIBSPDM_STATUS_IS_ERROR(status)) {
+    return false;
+  }
+  status = libspdm_stop_session(spdm, state->session_id, 0);
+  chunk_assert(15, !LIBSPDM_STATUS_IS_ERROR(status), "fresh-session END_SESSION");
+  state->session_id = 0;
+  return !LIBSPDM_STATUS_IS_ERROR(status);
 }
 
 void spdm_test_case_fault_run(void *test_context)
 {
+  if (is_key_exchange_scenario()) {
+    spdm_test_case_fault_key_exchange_run(test_context);
+    return;
+  }
+  if (teeio_fault_scenario_is("B5_invalid_finish_signature")) {
+    spdm_test_case_fault_mut_auth_run(test_context);
+    return;
+  }
+
   teeio_spdm_test_context_t *context = test_context;
   teeio_fault_test_buffer_t *test_buffer;
   libspdm_return_t status;
@@ -281,6 +807,28 @@ void spdm_test_case_fault_run(void *test_context)
   cert_chain_size = LIBSPDM_MAX_CERT_CHAIN_SIZE;
   status = libspdm_get_certificate(context->spdm_context, NULL, 0,
                                    &cert_chain_size, cert_chain);
+  if (test_buffer->abandon) {
+    /* Setup and this prefetch are FI-free. Now start an actual new transfer,
+     * abandon only after its first non-final CERTIFICATE chunk, and recover. */
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+      free(cert_chain);
+      chunk_assert(1, false, "GET_CERTIFICATE positive control failed");
+      return;
+    }
+    test_buffer->armed = true;
+    cert_chain_size = LIBSPDM_MAX_CERT_CHAIN_SIZE;
+    status = libspdm_get_certificate(context->spdm_context, NULL, 0,
+                                     &cert_chain_size, cert_chain);
+    free(cert_chain);
+    chunk_assert(1, test_buffer->partial_response && test_buffer->selected &&
+      !test_buffer->invalid && teeio_fault_fire_count() == 1 &&
+      LIBSPDM_STATUS_IS_ERROR(status),
+      "partial GET_CERTIFICATE received, next CHUNK_GET deliberately abandoned");
+    /* Freeze even an unexpected/no-response outcome before recovery. */
+    teeio_fault_record_actual("abandon_driver_failed");
+    chunk_recover(context);
+    return;
+  }
   if (LIBSPDM_STATUS_IS_ERROR(status) ||
       ((capabilities & SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_ALIAS_CERT_CAP) != 0 &&
        !select_alias_immutable_chain(cert_chain, &cert_chain_size,
@@ -295,28 +843,101 @@ void spdm_test_case_fault_run(void *test_context)
     return;
   }
 
+  test_buffer->data_transfer_size = data_transfer_size;
+  if (!test_buffer->missing && !test_buffer->oversized) {
+    /* UNSPECIFIED (0x05) alone is ambiguous when the responder's update
+     * callback is a stub. Require the identical unmodified chain to succeed.
+     * Do not fabricate a positive or accept UNSUPPORTED_REQUEST here. */
+    status = libspdm_set_certificate(context->spdm_context, NULL, 0,
+                                     cert_chain, cert_chain_size);
+    chunk_assert(2, status == LIBSPDM_STATUS_SUCCESS,
+      "B5 provenance: unmodified SET_CERTIFICATE must succeed; a rejecting/stub callback leaves B5 unresolved");
+    if (status != LIBSPDM_STATUS_SUCCESS) {
+      free(cert_chain);
+      chunk_recover(context);
+      return;
+    }
+    /* The parser does not check RootHash against DER. A hash-only mismatch
+     * therefore exercises the identity backend, without invalidating X.509.
+     * Require distinct wire provenance before trusting a later 0x05. */
+    test_buffer->backend_probe = true;
+    ((uint8_t *)cert_chain)[sizeof(spdm_cert_chain_t)] ^= 1;
+    status = libspdm_set_certificate(context->spdm_context, NULL, 0,
+                                     cert_chain, cert_chain_size);
+    ((uint8_t *)cert_chain)[sizeof(spdm_cert_chain_t)] ^= 1;
+    test_buffer->backend_probe = false;
+    chunk_assert(4, LIBSPDM_STATUS_IS_ERROR(status) && test_buffer->backend_rejection,
+      "B5 provenance: backend-only rejection must be OperationFailed 0x44, not ambiguous 0x05");
+    if (!LIBSPDM_STATUS_IS_ERROR(status) || !test_buffer->backend_rejection ||
+        !certificate_signature_target(test_buffer, cert_chain, cert_chain_size, base_hash_algo)) {
+      chunk_assert(5, false, "B5 requires backend provenance and a parsed non-root ECDSA signature");
+      free(cert_chain);
+      chunk_recover(context);
+      return;
+    }
+    test_buffer->send_count = test_buffer->ack_count = 0;
+    test_buffer->backend_rejection = false;
+  }
+  test_buffer->armed = true;
   status = libspdm_set_certificate(
     context->spdm_context, NULL, 0,
     cert_chain, cert_chain_size);
   free(cert_chain);
 
+  if (test_buffer->oversized) {
+    chunk_assert(3, test_buffer->first_early_invalid_request &&
+                   !test_buffer->invalid && test_buffer->send_count == 1 &&
+                   test_buffer->ack_count == 1,
+      "FIRST CHUNK_SEND_ACK: EARLY_ERROR_DETECTED with embedded InvalidRequest 0x01 (not terminal SET_CERTIFICATE 0x05)");
+  } else if (test_buffer->missing) {
+    chunk_assert(3, test_buffer->selected && test_buffer->last_send_final &&
+                   test_buffer->ack_count > 0 && !test_buffer->invalid,
+      "LAST_CHUNK withheld only after an acknowledged partial SET_CERTIFICATE transfer");
+  }
   teeio_record_assertion_result(
     SPDM_TEST_CASE_FAULT, 1, TEEIO_FAULT_SET_CERTIFICATE_ASSERTION_ID,
     IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-    teeio_fault_scenario_fired() && LIBSPDM_STATUS_IS_ERROR(status) ?
+    test_buffer->selected && !test_buffer->invalid &&
+    teeio_fault_fire_count() == 1 && LIBSPDM_STATUS_IS_ERROR(status) &&
+    (test_buffer->oversized ? test_buffer->first_early_invalid_request :
+     test_buffer->missing ? test_buffer->ack_count > 0 :
+    (test_buffer->terminal_certificate_rejection && !test_buffer->backend_rejection)) ?
       TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
     "corrupted SET_CERTIFICATE status - 0x%x", (uint32_t)status);
+  teeio_fault_record_actual("chunk_driver_no_expected_response");
+  chunk_recover(context);
 }
 
 void spdm_test_case_fault_teardown(void *test_context)
 {
+  if (is_key_exchange_scenario()) {
+    spdm_test_case_fault_key_exchange_teardown(test_context);
+    return;
+  }
+  if (teeio_fault_scenario_is("B5_invalid_finish_signature")) {
+    /* The mut-auth driver restores its callbacks within each operation.
+     * Its scratch is NOT a chunk driver state, including on setup failure. */
+    spdm_test_case_common_teardown(test_context);
+    return;
+  }
+
   teeio_spdm_test_context_t *context = test_context;
   teeio_fault_test_buffer_t *test_buffer;
 
   test_buffer = (void *)context->test_scratch_buffer;
   if (context->test_scratch_buffer_size == sizeof(*test_buffer) &&
-      test_buffer->session_id != 0) {
-    libspdm_stop_session(context->spdm_context, test_buffer->session_id, 0);
+      test_buffer->installed) {
+    libspdm_context_t *spdm = context->spdm_context;
+    test_buffer->armed = false;
+    if (test_buffer->session_id != 0) {
+      libspdm_stop_session(spdm, test_buffer->session_id, 0);
+    }
+    spdm->transport_encode_message = test_buffer->saved_encode;
+    spdm->transport_decode_message = test_buffer->saved_decode;
+    spdm->app_context_data_ptr = test_buffer->saved_app;
+    free(test_buffer->frame);
+    test_buffer->frame = NULL;
+    test_buffer->installed = false;
   }
   spdm_test_case_common_teardown(test_context);
 }

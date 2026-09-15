@@ -4,6 +4,9 @@
  *  License: BSD 3-Clause License.
  **/
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -15,6 +18,8 @@
 #include "library/spdm_transport_pcidoe_lib.h"
 #include "teeio_spdmlib.h"
 #include "helperlib.h"
+#include "spdm_test_lib.h"
+#include "teeio_fault_fixture.h"
 
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
@@ -120,7 +125,7 @@ void *spdm_init_client(void)
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_init_client\n"));
   teeio_fault_transport_reset();
 
-  spdm_context = (void *)malloc(libspdm_get_context_size());
+  spdm_context = (void *)malloc(libspdm_get_context_size() + TEEIO_FAULT_ROOT_CAPACITY);
   if (spdm_context == NULL) {
     return NULL;
   }
@@ -212,6 +217,24 @@ bool spdm_test_group_setup(void *test_context)
 
   context->spdm_doe.spdm_context = spdm_context;
 
+  /* Only dedicated Fault.1 B4/B5 sessions opt into this TEST trust store.
+   * Other groups ignore the environment, including positive/recovery runs. */
+  if (teeio_fault_fixture_root_required(context->common.case_class == SPDM_TEST_CASE_FAULT) &&
+      !teeio_fault_fixture_install_root(
+        spdm_context, (uint8_t *)spdm_context + libspdm_get_context_size())) {
+    void *scratch;
+    size_t scratch_size;
+    libspdm_get_scratch_buffer(spdm_context, &scratch, &scratch_size);
+    free(scratch);
+    free(spdm_context);
+    context->spdm_doe.spdm_context = NULL;
+    spdm_close_dev_port(&context->common.lower_port);
+    spdm_close_root_port(context);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED,
+      "Fault.1 requires absolute TEEIO_FAULT_FIXTURE_DIR with a responder root.");
+    return false;
+  }
+
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
 
   teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_PASS, "");
@@ -226,6 +249,10 @@ bool spdm_test_group_teardown(void *test_context)
 
   // close spdm_session and free spdm_context
   if(context->spdm_doe.spdm_context != NULL) {
+    void *scratch;
+    size_t scratch_size;
+    libspdm_get_scratch_buffer(context->spdm_doe.spdm_context, &scratch, &scratch_size);
+    free(scratch);
     free(context->spdm_doe.spdm_context);
     context->spdm_doe.spdm_context = NULL;
     context->spdm_doe.session_id = 0;

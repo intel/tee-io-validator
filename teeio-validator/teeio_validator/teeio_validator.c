@@ -51,7 +51,7 @@ extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char* ide_test_ini);
 bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage, uint8_t* debug_level);
 void print_usage();
-bool run(IDE_TEST_CONFIG *test_config);
+bool run(IDE_TEST_CONFIG *test_config, bool *control_passed);
 bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case, TEEIO_TEST_CATEGORY test_category);
 bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category);
 
@@ -75,6 +75,9 @@ int main(int argc, char *argv[])
     bool to_print_usage = false;
     int ret = -1;
     uint8_t debug_level = TEEIO_DEBUG_NUM;
+    bool control_passed = false;
+    bool drivers_passed;
+    bool b4_control_passed;
 
     if (!log_file_init(LOGFILE)){
         TEEIO_PRINT(("Failed to init log file!\n"));
@@ -165,18 +168,27 @@ int main(int argc, char *argv[])
 
     srand((unsigned int)time(NULL));
 
-    run(&ide_test_config);
+    drivers_passed = run(&ide_test_config, &control_passed);
+    /* A passing B4 positive control legitimately fires no rule. */
+    b4_control_passed = ide_test_config.fault_injection.rule_count == 1 &&
+        teeio_fault_scenario_is("B4_key_exchange_before_certificate") &&
+        teeio_fault_fire_count() == 0 && control_passed;
 
         if (ide_test_config.fault_injection.rule_count > 0) {
             TEEIO_PRINT(("Fault scenario result: %s\n",
                                      teeio_fault_result_record()));
         }
-        if (ide_test_config.fault_injection.rule_count > 0 &&
-                !teeio_fault_scenario_fired()) {
+        if (!drivers_passed) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                 "Dedicated fault driver assertions failed or did not run.\n"));
+            ret = -1;
+        } else if (ide_test_config.fault_injection.rule_count > 0 &&
+            !teeio_fault_scenario_fired() && !b4_control_passed) {
             TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
                                      "Fault scenario never fired.\n"));
             ret = -1;
-        } else if (!teeio_fault_all_rules_fired(unfired_rules,
+        } else if (!b4_control_passed &&
+                   !teeio_fault_all_rules_fired(unfired_rules,
                                                 sizeof(unfired_rules))) {
             TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
                          "Fault rules never fired: %s\n", unfired_rules));
