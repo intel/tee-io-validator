@@ -54,6 +54,22 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id);
 */
 bool spdm_stop(void *spdm_context, uint32_t session_id);
 
+/**
+ * start a new spdm session
+*/
+bool spdm_start_session(void *spdm_context, uint32_t *session_id);
+
+/**
+ * start a new spdm psk session
+*/
+bool spdm_start_psk_session(void *spdm_context, const void *psk_hint,
+                            uint16_t psk_hint_size, uint32_t *session_id);
+
+/**
+ * end an spdm session
+*/
+bool spdm_end_session(void *spdm_context, uint32_t session_id);
+
 libspdm_return_t device_doe_receive_message(
     void *spdm_context,
     size_t *response_size,
