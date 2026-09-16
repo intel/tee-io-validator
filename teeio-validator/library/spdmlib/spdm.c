@@ -436,3 +436,45 @@ bool spdm_stop(void *spdm_context, uint32_t session_id)
 
     return true;
 }
+
+bool spdm_start_session(void *spdm_context, uint32_t *session_id)
+{
+    libspdm_return_t status = libspdm_start_session(
+                spdm_context, false,
+                NULL, 0,
+                SPDM_CHALLENGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH,
+                0,
+                SPDM_KEY_EXCHANGE_REQUEST_SESSION_POLICY_TERMINATION_POLICY_RUNTIME_UPDATE,
+                session_id,
+                NULL, NULL);
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_start_session: libspdm_start_session - %x\n", (uint32_t)status));
+        return false;
+    }
+
+    return true;
+}
+
+bool spdm_start_psk_session(void *spdm_context, const void *psk_hint,
+                            uint16_t psk_hint_size, uint32_t *session_id)
+{
+    libspdm_return_t status = libspdm_start_session(
+                spdm_context, true,
+                psk_hint, psk_hint_size,
+                SPDM_KEY_EXCHANGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH,
+                0,
+                SPDM_KEY_EXCHANGE_REQUEST_SESSION_POLICY_TERMINATION_POLICY_RUNTIME_UPDATE,
+                session_id,
+                NULL, NULL);
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_start_psk_session: libspdm_start_session - %x\n", (uint32_t)status));
+        return false;
+    }
+
+    return true;
+}
+
+bool spdm_end_session(void *spdm_context, uint32_t session_id)
+{
+    return spdm_stop(spdm_context, session_id);
+}
