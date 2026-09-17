@@ -77,6 +77,9 @@ else:
         assert rule["doe_type"] == "plain_spdm"
         assert rule["occurrence"] == "1"
         assert rule["action"] == action and rule["spdm_code"] == code
+        if name == "B6_chunk_exceeds_transfer_size":
+            assert rule["size"] == "8"
+            assert rule["pattern"] == "0000000000000000"
         assert "blocked_reason" not in rule and "runnable" not in rule
         assert rule.get("recovery", "none") == "none"
     print("PASS: three strict B6 configurations")

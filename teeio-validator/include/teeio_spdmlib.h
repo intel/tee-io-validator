@@ -114,7 +114,7 @@ void spdm_device_release_receiver_buffer (
 #endif
 
 #ifndef LIBSPDM_SENDER_BUFFER_SIZE
-#define LIBSPDM_SENDER_BUFFER_SIZE (0x1100 + \
+#define LIBSPDM_SENDER_BUFFER_SIZE (0x1108 + \
                                     LIBSPDM_TRANSPORT_ADDITIONAL_SIZE)
 #endif
 #ifndef LIBSPDM_RECEIVER_BUFFER_SIZE
