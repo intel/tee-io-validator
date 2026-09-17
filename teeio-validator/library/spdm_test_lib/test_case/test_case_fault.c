@@ -346,6 +346,12 @@ static libspdm_return_t chunk_encode(
       size = result.message_size - 8;
     }
   }
+  if (state->armed && state->oversized && state->selected) {
+    /* The normal libspdm path passes the negotiated DataTransferSize as the
+     * output capacity. B6 deliberately exceeds that logical limit, so expose
+     * the larger physical DOE buffer to the encoder only for this mutation. */
+    *transport_size = LIBSPDM_RECEIVER_BUFFER_SIZE;
+  }
   status = libspdm_transport_pci_doe_encode_message(
     spdm, session_id, app, request, size, message, transport_size, transport);
   if (state->armed && state->oversized && state->selected &&
