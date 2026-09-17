@@ -310,7 +310,7 @@ static libspdm_return_t chunk_encode(
       }
       if (state->oversized &&
           (sequence != 0 || size != state->data_transfer_size ||
-           result.message_size != size + 12 ||
+           result.message_size != size + 16 ||
            result.message_size - 8 <= state->data_transfer_size ||
            memcmp(result.message + 8, message, size) != 0)) {
         /* Fail closed if the configured mutation does not exceed the peer's
