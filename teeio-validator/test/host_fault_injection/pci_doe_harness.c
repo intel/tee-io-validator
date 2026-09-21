@@ -75,6 +75,17 @@ void libspdm_zero_mem(void *buffer, size_t length)
     memset(buffer, 0, length);
 }
 
+uint16_t libspdm_read_uint16(const uint8_t *buffer)
+{
+    return (uint16_t)(buffer[0] | (buffer[1] << 8));
+}
+
+uint32_t libspdm_read_uint32(const uint8_t *buffer)
+{
+    return (uint32_t)buffer[0] | ((uint32_t)buffer[1] << 8) |
+           ((uint32_t)buffer[2] << 16) | ((uint32_t)buffer[3] << 24);
+}
+
 void append_pcap_packet_data(const void *header, size_t header_size,
                              const void *data, size_t size)
 {

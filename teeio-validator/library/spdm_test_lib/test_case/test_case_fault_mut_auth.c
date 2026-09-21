@@ -279,6 +279,8 @@ static bool b5_connect_and_get_certificate(void *spdm)
       data32 != B5_HASH ||
       !b5_get(spdm, LIBSPDM_DATA_REQ_PQC_ASYM_ALG, &data32, sizeof(data32)) ||
       data32 != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+      "B5 FINISH prerequisites unavailable: require negotiated MUT_AUTH, requester P-384 and SHA-384; no signature mutation performed\n"));
     return false;
   }
   teeio_spdm_log_negotiated_version(spdm);

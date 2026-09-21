@@ -23,6 +23,12 @@ for line in flags_file.read_text().splitlines():
 flags = [flag for flag in flags if flag not in ("-flto", "-DUSING_LTO")]
 out = here / ".build"
 out.mkdir(exist_ok=True)
+pci_binary = out / "pci_io_test"
+subprocess.run(["gcc", *flags,
+                "-I" + str(validator / "library/helperlib/include"),
+                "-Wl,--gc-sections", str(here / "pci_io_test.c"),
+                "-o", str(pci_binary)], check=True)
+subprocess.run([str(pci_binary)], check=True, timeout=10)
 sources = [
     here / "chunk_fault_test.c",
     validator / "library/helperlib/fault_injection.c",
@@ -35,6 +41,7 @@ for source in sources:
     subprocess.run(["gcc", *flags, "-c", str(source), "-o", str(obj)], check=True)
     objects.append(str(obj))
 libs = [str(build / "lib" / ("lib" + name + ".a")) for name in (
+    "spdm_requester_lib",
     "spdm_transport_pcidoe_lib", "spdm_secured_message_lib", "spdm_common_lib",
     "spdm_crypt_lib", "spdm_crypt_ext_lib", "cryptlib_openssl", "memlib",
     "debuglib", "malloclib", "rnglib", "platform_lib_null",
@@ -47,6 +54,24 @@ binary = out / "chunk_fault_test"
 subprocess.run(["gcc", "-Wl,--gc-sections", *objects, "-Wl,--start-group", *libs,
                 str(crypto), "-Wl,--end-group", "-ldl", "-lpthread", "-o", str(binary)], check=True)
 subprocess.run([str(binary)], check=True, timeout=60)
+
+# Separate executable: production libspdm_send_request -> chunk_encode ->
+# device_doe_send_message -> second FI -> PCI DWORD writes -> PCAP sink.
+doe_objects = []
+for source in (here / "doe_send_test.c",
+               validator / "library/spdmlib/pci_doe.c",
+               libspdm / "library/spdm_requester_lib/libspdm_req_send_receive.c",
+               libspdm / "library/spdm_requester_lib/libspdm_req_handle_error_response.c"):
+    obj = out / (source.stem + ".o")
+    subprocess.run(["gcc", *flags,
+                    "-I" + str(validator / "library/helperlib/include"),
+                    "-c", str(source), "-o", str(obj)], check=True)
+    doe_objects.append(str(obj))
+doe_binary = out / "doe_send_test"
+subprocess.run(["gcc", "-Wl,--gc-sections", *doe_objects, *objects[1:],
+                "-Wl,--start-group", *libs, str(crypto), "-Wl,--end-group",
+                "-ldl", "-lpthread", "-o", str(doe_binary)], check=True)
+subprocess.run([str(doe_binary)], check=True, timeout=60)
 
 # Campaign INIs live with the campaign, outside the validator.
 catalog = os.environ.get("TEEIO_FAULT_CATALOG_DIR")

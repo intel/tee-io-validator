@@ -8,6 +8,7 @@
 #include "teeio_spdmlib.h"
 #include "teeio_fault_injection.h"
 #include "pcap.h"
+#include "internal/libspdm_common_lib.h"
 
 /* PCI Express - begin */
 #define PCI_EXPRESS_EXTENDED_CAPABILITY_DOE_ID 0x002E
@@ -311,6 +312,59 @@ void trigger_doe_go(){
     device_pci_doe_control_write_32 (doe_control);
 }
 
+/* Completed syscalls and callback bytes are not an independent PCI bus trace. */
+static void trace_b6_doe(bool sending, size_t callback_size,
+                         const void *message, size_t size, uint32_t write_calls)
+{
+    const uint8_t *doe = message;
+    const uint8_t *spdm;
+    uint32_t sequence, doe_dw, payload;
+    size_t header_size;
+    int embedded_error = -1;
+
+    if (!teeio_fault_scenario_is("B6_chunk_exceeds_transfer_size") ||
+        doe == NULL || size < sizeof(pci_doe_data_object_header_t) + 4 ||
+        doe[2] != PCI_DOE_DATA_OBJECT_TYPE_SPDM) {
+        return;
+    }
+    spdm = doe + sizeof(pci_doe_data_object_header_t);
+    doe_dw = libspdm_read_uint32(doe + 4) & 0x3ffff;
+    if (doe_dw == 0) doe_dw = 0x40000;
+    if (sending) {
+        if (spdm[1] != SPDM_CHUNK_SEND ||
+            size < sizeof(pci_doe_data_object_header_t) + sizeof(spdm_chunk_send_request_t)) {
+            return;
+        }
+        sequence = spdm[0] >= SPDM_MESSAGE_VERSION_14 ?
+            libspdm_read_uint32(spdm + 4) : libspdm_read_uint16(spdm + 4);
+        payload = libspdm_read_uint32(spdm + 8);
+        header_size = sizeof(pci_doe_data_object_header_t) +
+                      sizeof(spdm_chunk_send_request_t) + (sequence == 0 ? 4 : 0);
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN,
+            "B6 DOE tx: callback=%zu final=%zu doe_dw=%u writes_completed=%u version=0x%02x handle=%u seq=%u chunk_size=%u trailing=%zu fits=%u\n",
+            callback_size, size, doe_dw, write_calls, spdm[0], spdm[3], sequence,
+            payload, size >= header_size && payload <= size - header_size ?
+                size - header_size - payload : 0,
+            size >= header_size && payload <= size - header_size));
+    } else {
+        header_size = spdm[0] >= SPDM_MESSAGE_VERSION_14 ?
+            sizeof(spdm_chunk_send_ack_response_14_t) : sizeof(spdm_chunk_send_ack_response_t);
+        if (spdm[1] != SPDM_CHUNK_SEND_ACK ||
+            size < sizeof(pci_doe_data_object_header_t) + header_size) {
+            return;
+        }
+        sequence = spdm[0] >= SPDM_MESSAGE_VERSION_14 ?
+            libspdm_read_uint32(spdm + 4) : libspdm_read_uint16(spdm + 4);
+        if (size >= sizeof(pci_doe_data_object_header_t) + header_size +
+                    sizeof(spdm_error_response_t) && spdm[header_size + 1] == SPDM_ERROR) {
+            embedded_error = spdm[header_size + 2];
+        }
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN,
+            "B6 DOE rx: final=%zu doe_dw=%u version=0x%02x handle=%u seq=%u flags=0x%02x embedded_error=%d\n",
+            size, doe_dw, spdm[0], spdm[3], sequence, spdm[2], embedded_error));
+    }
+}
+
 libspdm_return_t device_doe_send_message(
     void *spdm_context,
     size_t request_size,
@@ -325,6 +379,7 @@ libspdm_return_t device_doe_send_message(
     const uint8_t *data_object_bytes;
     teeio_fault_result_t fault_result;
     bool raw_secured_fault;
+    size_t callback_request_size = request_size;
 
     check_pcie_advance_error();
 
@@ -415,6 +470,8 @@ libspdm_return_t device_doe_send_message(
                                                             data_object_bytes[3]));
             }
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"\n"));
+
+            trace_b6_doe(true, callback_request_size, request, request_size, index);
 
             /* Write 1b to the DOE Go bit. */
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Set 'DOE Go' bit, the instance start consuming the data object.\n"));
@@ -589,6 +646,7 @@ libspdm_return_t device_doe_receive_message(
             libspdm_sleep(1000*1000);
         } else {
             append_pcap_packet_data(NULL, 0, (const void *)*response, *response_size);
+            trace_b6_doe(false, 0, *response, *response_size, 0);
             status = LIBSPDM_STATUS_SUCCESS;
         }
     }

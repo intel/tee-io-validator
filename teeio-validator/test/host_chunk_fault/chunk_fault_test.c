@@ -121,7 +121,9 @@ libspdm_return_t libspdm_responder_handle_response_state(libspdm_context_t *spdm
   return LIBSPDM_STATUS_INVALID_STATE_LOCAL;
 }
 
-/* Stand-in for the common observer, using the REAL transport decoder. */
+#ifndef TEEIO_CHUNK_FAULT_REAL_DOE
+/* Stand-in for the common observer, using the REAL transport decoder.
+ * The separate mailbox-boundary executable instead links production pci_doe.c. */
 libspdm_return_t teeio_fault_transport_decode_message(void *spdm,
   uint32_t **session, bool *app, bool request, size_t transport_size,
   void *transport, size_t *size, void **message)
@@ -148,6 +150,7 @@ libspdm_return_t teeio_fault_transport_encode_message(void *spdm,
   assert(!"unscoped plaintext injector called");
   return LIBSPDM_STATUS_SEND_FAIL;
 }
+#endif
 
 static libspdm_return_t recovery_call(void *spdm, unsigned step)
 {
@@ -235,8 +238,9 @@ static teeio_fault_test_buffer_t *fixture(teeio_spdm_test_context_t *test,
   config.rules[0].spdm_code = code;
   config.rules[0].occurrence = 1;
   config.rules[0].action = action;
-  config.rules[0].size = 4;
-  config.rules[0].pattern_size = 4;
+  config.rules[0].size = strcmp(scenario, "B6_chunk_exceeds_transfer_size") == 0 ? 8 : 4;
+  config.rules[0].pattern_size = config.rules[0].size;
+  memset(config.rules[0].pattern, 0, config.rules[0].pattern_size);
   teeio_fault_init(&config);
   assert(chunk_install(test));
   ((teeio_fault_test_buffer_t *)(void *)test->test_scratch_buffer)->version =
@@ -273,7 +277,7 @@ static void make_send(uint8_t *message, uint8_t version, uint32_t sequence,
   }
 }
 
-static void observe(teeio_spdm_test_context_t *test, const uint8_t *message, size_t size)
+static libspdm_return_t observe(teeio_spdm_test_context_t *test, const uint8_t *message, size_t size)
 {
   uint8_t storage[512];
   void *transport = storage;
@@ -281,12 +285,31 @@ static void observe(teeio_spdm_test_context_t *test, const uint8_t *message, siz
   size_t transport_size = sizeof(storage), decoded_size = sizeof(storage);
   uint32_t *session = NULL;
   bool app = false;
+  libspdm_return_t status;
   memcpy(storage + 8, message, size);
   assert(!LIBSPDM_STATUS_IS_ERROR(libspdm_transport_pci_doe_encode_message(
     test->spdm_context, NULL, false, false, size, storage + 8,
     &transport_size, &transport)));
-  assert(!LIBSPDM_STATUS_IS_ERROR(chunk_decode(test->spdm_context, &session,
-    &app, false, transport_size, transport, &decoded_size, &decoded)));
+  status = chunk_decode(test->spdm_context, &session,
+    &app, false, transport_size, transport, &decoded_size, &decoded);
+  if (!((teeio_fault_test_buffer_t *)(void *)test->test_scratch_buffer)->oversized)
+    assert(!LIBSPDM_STATUS_IS_ERROR(status));
+  return status;
+}
+
+static void prepare_large_send(void *context, const uint8_t *first, uint8_t *large)
+{
+  libspdm_chunk_info_t *send = &((libspdm_context_t *)context)->chunk_context.send;
+  uint32_t payload = libspdm_read_uint32(first + 8);
+  size_t total = libspdm_read_uint32(first + 12);
+  size_t i;
+  assert(total == 4096 && payload + 8 < total);
+  for (i = 0; i < total; i++) large[i] = (uint8_t)(i * 17 + 3);
+  memcpy(large, first + 16, payload);
+  send->chunk_in_use = true;
+  send->large_message = large;
+  send->large_message_size = send->large_message_capacity = total;
+  send->chunk_bytes_transferred = payload;
 }
 
 static void oversized(uint8_t version)
@@ -294,7 +317,7 @@ static void oversized(uint8_t version)
   teeio_spdm_test_context_t test;
   teeio_fault_test_buffer_t *state = fixture(&test,
     TEEIO_FAULT_OVERSIZED_CHUNK_SCENARIO, SPDM_CHUNK_SEND, TEEIO_FAULT_ACTION_EXTEND);
-  uint8_t storage[640], response[64];
+  uint8_t storage[640], response[64], large[4096];
   void *transport = storage, *plain;
   size_t transport_size = sizeof(storage), plain_size = sizeof(storage);
   size_t response_size = sizeof(response);
@@ -327,18 +350,21 @@ static void oversized(uint8_t version)
   assert(teeio_fault_fire_count() == 0 && config.rules[0].match_count == 0);
   state->armed = true;
   state->data_transfer_size = 256;
+  prepare_large_send(test.spdm_context, storage + 8, large);
   transport_size = sizeof(storage);
   assert(!LIBSPDM_STATUS_IS_ERROR(chunk_encode(test.spdm_context, NULL, false,
     true, 256, storage + 8, &transport_size, &transport)));
-  assert(transport_size == 268);
-  assert(libspdm_read_uint32((uint8_t *)transport + 4) == 67);
+  assert(transport_size == 272);
+  assert(libspdm_read_uint32((uint8_t *)transport + 4) == 68);
   assert(!LIBSPDM_STATUS_IS_ERROR(libspdm_transport_pci_doe_decode_message(
     test.spdm_context, &session, &app, true, transport_size, transport, &plain_size, &plain)));
-  assert(plain_size == 260); /* appended bytes are actually visible to SPDM */
+  assert(plain_size == 264);
+  assert(libspdm_read_uint32((uint8_t *)plain + 8) == 248);
+  assert(memcmp((uint8_t *)plain + 16, large, 248) == 0);
   response_size = sizeof(response);
   assert(!LIBSPDM_STATUS_IS_ERROR(libspdm_get_response_chunk_send(responder,
     plain_size, plain, &response_size, response)));
-  observe(&test, response, response_size);
+  assert(observe(&test, response, response_size) == LIBSPDM_STATUS_SUCCESS);
   assert(state->first_early_invalid_request && !state->invalid);
   assert(teeio_fault_fire_count() == 1 && !responder->chunk_context.send.chunk_in_use);
   assert(strstr(teeio_fault_result_record(), "spdm_error_0x01"));
@@ -349,7 +375,7 @@ static void oversized(uint8_t version)
   state->ack_count = 0;
   response[2] = 0;
   response[(version >= SPDM_MESSAGE_VERSION_14 ? 8 : 6) + 2] = 5;
-  observe(&test, response, response_size);
+  assert(LIBSPDM_STATUS_IS_ERROR(observe(&test, response, response_size)));
   assert(!state->first_early_invalid_request);
   response[2] = 1;
   response[(version >= SPDM_MESSAGE_VERSION_14 ? 8 : 6) + 2] = 1;

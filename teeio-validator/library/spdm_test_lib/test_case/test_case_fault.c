@@ -342,6 +342,26 @@ static libspdm_return_t chunk_encode(
         }
       }
       memcpy(state->frame, result.message, result.message_size);
+      if (state->oversized) {
+        libspdm_chunk_info_t *send = &((libspdm_context_t *)spdm)->chunk_context.send;
+        size_t header = sizeof(spdm_chunk_send_request_t) + sizeof(uint32_t);
+        uint32_t payload = libspdm_read_uint32(bytes + 8);
+        if (size < header || payload != size - header ||
+            !send->chunk_in_use || send->large_message == NULL ||
+            send->large_message_size > send->large_message_capacity ||
+            send->large_message_size != libspdm_read_uint32(bytes + 12) ||
+            send->large_message_size <= (size_t)payload + 8 ||
+            send->chunk_bytes_transferred != payload ||
+            memcmp(bytes + header, send->large_message, payload) != 0) {
+          state->invalid = true;
+          return LIBSPDM_STATUS_SEND_FAIL;
+        }
+        /* Extend the declared chunk with its real continuation, not transport junk. */
+        memcpy(state->frame + 8 + size,
+               (const uint8_t *)send->large_message + payload, 8);
+        libspdm_write_uint32(state->frame + 8 + 8, payload + 8);
+        send->chunk_bytes_transferred += 8;
+      }
       message = state->frame + 8;
       size = result.message_size - 8;
     }
@@ -354,6 +374,17 @@ static libspdm_return_t chunk_encode(
   }
   status = libspdm_transport_pci_doe_encode_message(
     spdm, session_id, app, request, size, message, transport_size, transport);
+  if (state->armed && state->oversized && state->selected &&
+      !LIBSPDM_STATUS_IS_ERROR(status) &&
+      size > state->data_transfer_size) {
+    TEEIO_DEBUG((TEEIO_DEBUG_WARN,
+      "B6 encode: plain=%zu transport=%zu doe_dw=%u doe_type=%u session=%u app=%u limit=%u chunk_size=%u\n",
+      size, *transport_size,
+      libspdm_read_uint32((const uint8_t *)*transport + 4) & 0x3ffff,
+      ((const uint8_t *)*transport)[2], session_id != NULL, app,
+      state->data_transfer_size,
+      ((const spdm_chunk_send_request_t *)message)->chunk_size));
+  }
   if (state->armed && state->oversized && state->selected &&
       !LIBSPDM_STATUS_IS_ERROR(status) &&
       (*transport_size < size + 8 ||
@@ -423,6 +454,13 @@ static libspdm_return_t chunk_decode(
       bytes[header_size + 2] == SPDM_ERROR_CODE_INVALID_REQUEST &&
       bytes[header_size + 3] == 0) {
     state->first_early_invalid_request = true;
+  }
+  if (state->oversized && state->selected && state->ack_count == 1 &&
+      !state->first_early_invalid_request) {
+    teeio_fault_record_actual("first_chunk_not_early_invalid_request");
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+      "B6: first ACK is not early InvalidRequest; stopping before further chunks\n"));
+    return LIBSPDM_STATUS_ERROR_PEER;
   }
   /* DOE exposes up to three zero alignment bytes (notably 1.2's six-byte ACK). */
   terminal_error_size = *size >= header_size + sizeof(spdm_error_response_t) &&

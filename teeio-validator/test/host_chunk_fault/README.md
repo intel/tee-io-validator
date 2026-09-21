@@ -15,8 +15,8 @@ INI directory.
 - Real libspdm CHUNK_SEND responder and error response generator, compiled
   directly from the current sources. A valid control chunk is accepted before
   testing the oversized variant. Both SPDM 1.2 and 1.4 wire layouts are covered.
-- Oversized plaintext is 260 bytes for a 256-byte receive limit; encoded DOE
-  length is 67 DWORDs. The responder must reject in the first CHUNK_SEND_ACK
+- Oversized plaintext is 264 bytes for a 256-byte receive limit; encoded DOE
+  length is 68 DWORDs. The responder must reject in the first CHUNK_SEND_ACK
   with EARLY_ERROR_DETECTED / embedded InvalidRequest 0x01. Terminal 0x05,
   late 0x01, wrong sequence, and short errors cannot satisfy that predicate.
 - Dynamic final-chunk selection for 2 through 9 chunks in both wire versions.
@@ -27,6 +27,34 @@ INI directory.
 - B5's real run function with a rejecting positive-control callback: assertion
   fails, no mutation fires, and no certificate-verification provenance is claimed.
 - Callback and application-context restoration, and strict B6 INI expectations.
+
+## Final requester/DOE boundary
+
+The separate `doe_send_test` executable uses production `libspdm_send_request`,
+the actual `chunk_encode` driver, and production `device_doe_send_message`,
+including its second FI call. Only PCI register access and the PCAP sink are
+replaced. It checks each DWORD written before GO and byte-for-byte equality
+between those writes and the PCAP buffer. SPDM 1.2/1.4, limits 256/476, and both
+unmodified and oversized first chunks are covered (eight combinations).
+For limit 476 the mutation must produce 492 bytes / 123 DWORDs and increase
+ChunkSize from 460 to 468 with the next eight bytes of the same large request.
+LargeMessageSize and original request contents remain unchanged; there are no
+trailing bytes. Historical final6 appended zero bytes without changing ChunkSize.
+Eight further cases exercise the real requester chunk loop with a 1607-byte
+request and scripted first ACKs; an ordinary first ACK stops further chunks.
+The second FI
+must not fire: the plaintext rule selects internal type 0xfd, not DOE type 1.
+The real decoder and CHUNK_SEND handler then consume the mailbox sink bytes.
+This does not emulate the physical mailbox or a device receive/dispatch path.
+
+For hardware diagnosis, `B6 encode` is the pre-send encoder observation;
+`B6 DOE tx` is after the final FI and the DWORD write loop; `B6 DOE rx` describes
+the actual received ACK before the response decoder. These log metadata only
+and remain enabled with `libspdm_log=0`. `writes_completed` counts successful
+full PCI32 syscall returns, not independent PCI bus completions. Failed or short
+PCI32 operations terminate the tool with offset/count/errno; fourteen syscall
+mock cases cover read/write success, EINTR, failures and short transfers.
+The PCAP similarly records the callback buffer, not an independent bus capture.
 
 ## Integration requirements / limits
 
