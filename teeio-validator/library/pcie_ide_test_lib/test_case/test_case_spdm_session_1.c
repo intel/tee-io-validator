@@ -53,6 +53,7 @@ bool pcie_ide_test_spdm_session_1_setup(void *test_context)
   }
 
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer = {0};
+  key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
   uint8_t kp_ack_status = 0;
   status = pci_ide_km_key_prog(doe_context, spdm_context, &session_id_x,
                                group_context->stream_id,
@@ -60,6 +61,10 @@ bool pcie_ide_test_spdm_session_1_setup(void *test_context)
                                0, &key_buffer, &kp_ack_status);
   if (LIBSPDM_STATUS_IS_ERROR(status)) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SpdmSession.1 setup: key_prog on Session-x failed with 0x%x\n", status));
+    return false;
+  }
+  if (kp_ack_status != PCI_IDE_KM_KP_ACK_STATUS_SUCCESS) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SpdmSession.1 setup: key_prog on Session-x rejected with kp_ack_status=0x%x\n", kp_ack_status));
     return false;
   }
 
@@ -104,19 +109,20 @@ void pcie_ide_test_spdm_session_1_run(void *test_context)
   libspdm_return_t status = pci_ide_km_query(doe_context, spdm_context, &session_id_y,
                                              0, &dev_func_num, &bus_num, &segment,
                                              &max_port_index, ide_reg_block, &ide_reg_block_count);
-  res = LIBSPDM_STATUS_IS_ERROR(status);
+  res = (status == LIBSPDM_STATUS_RECEIVE_FAIL);
   assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
   teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result,
                                 "IdeKmMessage == NULL (QUERY on Session-y), status = 0x%x", status);
 
   // Assertion 5.1.2: KEY_PROG on Session-y shall be discarded (no valid response).
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer = {0};
+  key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
   uint8_t kp_ack_status = 0;
   status = pci_ide_km_key_prog(doe_context, spdm_context, &session_id_y,
                                group_context->stream_id,
                                PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR,
                                0, &key_buffer, &kp_ack_status);
-  res = LIBSPDM_STATUS_IS_ERROR(status);
+  res = (status == LIBSPDM_STATUS_RECEIVE_FAIL);
   assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
   teeio_record_assertion_result(case_class, case_id, 2, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result,
                                 "IdeKmMessage == NULL (KEY_PROG on Session-y), status = 0x%x", status);

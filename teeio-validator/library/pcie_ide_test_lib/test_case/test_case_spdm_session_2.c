@@ -53,6 +53,7 @@ bool pcie_ide_test_spdm_session_2_setup(void *test_context)
   }
 
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer = {0};
+  key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
   uint8_t kp_ack_status = 0;
   status = pci_ide_km_key_prog(doe_context, spdm_context, &session_id_x,
                                group_context->stream_id,
@@ -60,6 +61,10 @@ bool pcie_ide_test_spdm_session_2_setup(void *test_context)
                                0, &key_buffer, &kp_ack_status);
   if (LIBSPDM_STATUS_IS_ERROR(status)) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SpdmSession.2 setup: key_prog on Session-x failed with 0x%x\n", status));
+    return false;
+  }
+  if (kp_ack_status != PCI_IDE_KM_KP_ACK_STATUS_SUCCESS) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "SpdmSession.2 setup: key_prog on Session-x rejected with kp_ack_status=0x%x\n", kp_ack_status));
     return false;
   }
 
@@ -107,7 +112,7 @@ void pcie_ide_test_spdm_session_2_run(void *test_context)
   uint8_t expected_dev_func = ((group_context->common.lower_port.port->device & 0x1f) << 3) |
                               (group_context->common.lower_port.port->function & 0x7);
   uint8_t expected_bus = group_context->common.lower_port.port->bus;
-  uint8_t expected_segment = 0;
+  uint8_t expected_segment = group_context->common.lower_port.port->segment;
 
   // QUERY on Session-y.
   uint8_t dev_func_num = 0, bus_num = 0, segment = 0, max_port_index = 0;
@@ -141,6 +146,7 @@ void pcie_ide_test_spdm_session_2_run(void *test_context)
 
   // KEY_PROG on Session-y.
   pci_ide_km_aes_256_gcm_key_buffer_t key_buffer = {0};
+  key_buffer.iv[1] = PCIE_IDE_IV_INIT_VALUE;
   uint8_t kp_ack_status = 0;
   uint8_t key_sub_stream = PCI_IDE_KM_KEY_SET_K0 | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR;
   status = pci_ide_km_key_prog(doe_context, spdm_context, &session_id_y,

@@ -55,18 +55,29 @@ bool spdm_connect (void *spdm_context, uint32_t *session_id);
 bool spdm_stop(void *spdm_context, uint32_t session_id);
 
 /**
- * start a new spdm session
+ * Start a new certificate-based SPDM session using slot 0 on an existing
+ * connection with the responder certificate already available in spdm_context.
+ * Unlike spdm_connect(), this only starts the session; it does not retrieve
+ * certificates or measurements, or write them to files. It can be used to
+ * open an additional session without ending existing sessions.
 */
 bool spdm_start_session(void *spdm_context, uint32_t *session_id);
 
 /**
- * start a new spdm psk session
+ * Start a new PSK-based SPDM session on an existing connection using the
+ * supplied PSK hint and a preconfigured PSK.
+ * Unlike spdm_connect(), this uses PSK authentication rather than a certificate
+ * and does not retrieve certificates or measurements, or write them to files.
+ * It can be used to open an additional session without ending existing sessions.
 */
 bool spdm_start_psk_session(void *spdm_context, const void *psk_hint,
                             uint16_t psk_hint_size, uint32_t *session_id);
 
 /**
- * end an spdm session
+ * End only the specified SPDM session by delegating to spdm_stop().
+ * The existing connection and context remain available for other sessions.
+ * This does not perform the session setup or certificate and measurement
+ * retrieval performed by spdm_connect().
 */
 bool spdm_end_session(void *spdm_context, uint32_t session_id);
 
