@@ -15,6 +15,7 @@
 #include "cxl_tsp_test_lib.h"
 #include "tdisp_test_lib.h"
 #include "spdm_test_lib.h"
+#include "teeio_fault_injection.h"
 
 const char *m_ide_test_topology_name[] = {
   "SelectiveIDE",
@@ -177,7 +178,6 @@ ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int*
   bool hit = false;
   strncpy(buf2, test_case->names, MAX_LINE_LENGTH);
   char *ptr2 = buf2;
-  int j = 0;
 
   pos = find_char_in_str(ptr2, ',');
 
@@ -196,11 +196,10 @@ ide_test_case_name_t* get_test_case_from_string(const char* test_case_name, int*
 
     ptr2 += (pos + 1);
     pos = find_char_in_str(ptr2, ',');
-    j++;
   } while(true);
 
   if(index != NULL) {
-    *index = j;
+    *index = hit ? atoi(ptr1) - 1 : -1;
   }
 
   return hit ? test_case : NULL;
@@ -699,10 +698,23 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
 
   if(test_case->setup_func != NULL) {
     if(!test_case->setup_func(context)) {
+      teeio_fault_record_actual("test_setup_failed");
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s setup failed. So skipped.\n", test_case->name));
       case_context->action = IDE_COMMON_TEST_ACTION_SKIP;
       goto TestCaseDone;
     }
+  }
+
+  if(test_category == TEEIO_TEST_CATEGORY_SPDM &&
+      teeio_fault_same_session_recovery_configured() &&
+      !spdm_test_same_session_preflight(context)) {
+    teeio_record_assertion_result(
+      test_case->class_id, test_case->case_id,
+      TEEIO_FAULT_ASSERTION_PREFLIGHT_ID,
+      IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+      TEEIO_TEST_RESULT_FAILED,
+      "same-session preflight HEARTBEAT failed");
+    goto TestCaseDone;
   }
 
   // again check if the case to be skipped after setup
@@ -715,6 +727,19 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
 
   if(test_case->run_func != NULL) {
     test_case->run_func(context);
+  }
+
+  if(test_category == TEEIO_TEST_CATEGORY_SPDM &&
+      teeio_fault_scenario_fired() &&
+      teeio_fault_same_session_recovery_configured()) {
+    bool recovery_succeeded = spdm_test_same_session_recovery(context);
+    teeio_record_assertion_result(
+      test_case->class_id, test_case->case_id,
+      TEEIO_FAULT_ASSERTION_RECOVERY_ID,
+      IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+      recovery_succeeded ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+      "same-session recovery HEARTBEAT %s",
+      recovery_succeeded ? "passed" : "failed");
   }
 
   if(test_case->config_check_required) {

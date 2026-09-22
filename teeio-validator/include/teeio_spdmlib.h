@@ -45,6 +45,21 @@ bool teeio_spdm_apply_version_override(void *spdm_context);
 void teeio_spdm_log_negotiated_version(void *spdm_context);
 
 /**
+ * reset deferred DOE fault-injection messages
+ */
+void teeio_fault_transport_reset(void);
+
+libspdm_return_t teeio_fault_transport_encode_message(
+    void *spdm_context, const uint32_t *session_id, bool is_app_message,
+    bool is_request_message, size_t message_size, void *message,
+    size_t *transport_message_size, void **transport_message);
+
+libspdm_return_t teeio_fault_transport_decode_message(
+    void *spdm_context, uint32_t **session_id, bool *is_app_message,
+    bool is_request_message, size_t transport_message_size,
+    void *transport_message, size_t *message_size, void **message);
+
+/**
  * setup spdm connection
 */
 bool spdm_connect (void *spdm_context, uint32_t *session_id);

@@ -6,6 +6,7 @@
 
 #include "teeio_validator.h"
 #include "teeio_spdmlib.h"
+#include "teeio_fault_injection.h"
 #include "pcap.h"
 
 /* PCI Express - begin */
@@ -45,6 +46,180 @@ uint8_t m_pci_doe_data_object_type[] = {
 bool m_send_receive_buffer_acquired = false;
 uint8_t m_send_receive_buffer[LIBSPDM_RECEIVER_BUFFER_SIZE];
 size_t m_send_receive_buffer_size;
+static bool m_fault_skip_receive;
+static uint8_t m_fault_deferred_send[TEEIO_FAULT_MAX_MESSAGE_SIZE];
+static size_t m_fault_deferred_send_size;
+static uint8_t m_fault_plain_send[TEEIO_FAULT_MAX_MESSAGE_SIZE];
+static uint8_t m_fault_duplicate_response[TEEIO_FAULT_MAX_MESSAGE_SIZE];
+static bool m_fault_draining_duplicate;
+static void *m_fault_secured_message_context;
+static uint8_t m_fault_session_keys[TEEIO_FAULT_MAX_MESSAGE_SIZE];
+static size_t m_fault_session_keys_size;
+
+static void snapshot_fault_session(void *spdm_context,
+                                   const uint32_t *session_id)
+{
+    m_fault_secured_message_context = NULL;
+    m_fault_session_keys_size = 0;
+    if (session_id == NULL ||
+        !teeio_fault_same_session_recovery_configured()) {
+        return;
+    }
+    m_fault_secured_message_context =
+        libspdm_get_secured_message_context_via_session_id(spdm_context,
+                                                            *session_id);
+    if (m_fault_secured_message_context == NULL) {
+        return;
+    }
+    libspdm_secured_message_export_session_keys(
+        m_fault_secured_message_context, NULL, &m_fault_session_keys_size);
+    if (m_fault_session_keys_size > sizeof(m_fault_session_keys) ||
+        !libspdm_secured_message_export_session_keys(
+            m_fault_secured_message_context, m_fault_session_keys,
+            &m_fault_session_keys_size)) {
+        m_fault_secured_message_context = NULL;
+        m_fault_session_keys_size = 0;
+    }
+}
+
+static bool restore_fault_session(void)
+{
+    if (m_fault_secured_message_context == NULL ||
+        m_fault_session_keys_size == 0) {
+        return false;
+    }
+    return libspdm_secured_message_import_session_keys(
+        m_fault_secured_message_context, m_fault_session_keys,
+        m_fault_session_keys_size);
+}
+
+static void record_spdm_actual(const uint8_t *message, size_t message_size)
+{
+    char actual[64];
+    size_t chunk_header_size;
+
+    if (message == NULL || message_size < sizeof(spdm_message_header_t)) {
+        return;
+    }
+    if (message[1] == SPDM_CHUNK_SEND_ACK) {
+        chunk_header_size = message[0] >= SPDM_MESSAGE_VERSION_14 ?
+            sizeof(spdm_chunk_send_ack_response_14_t) :
+            sizeof(spdm_chunk_send_ack_response_t);
+        if (message_size <= chunk_header_size) {
+            return;
+        }
+        message += chunk_header_size;
+        message_size -= chunk_header_size;
+        if (message_size < sizeof(spdm_message_header_t)) {
+            return;
+        }
+    }
+    if (message[1] == SPDM_ERROR) {
+        snprintf(actual, sizeof(actual), "spdm_error_0x%02x", message[2]);
+    } else {
+        snprintf(actual, sizeof(actual), "spdm_response_0x%02x", message[1]);
+    }
+    teeio_fault_record_actual(actual);
+}
+
+static void set_fault_plain_header(uint8_t *message, size_t message_size,
+                                   bool secured)
+{
+    uint32_t dword_length = (uint32_t)((message_size + 3) / 4);
+
+    memset(message, 0, sizeof(pci_doe_data_object_header_t));
+    message[2] = secured ? TEEIO_FAULT_DOE_TYPE_PLAIN_SECURED_SPDM :
+                           TEEIO_FAULT_DOE_TYPE_PLAIN_SPDM;
+    message[4] = (uint8_t)dword_length;
+    message[5] = (uint8_t)(dword_length >> 8);
+    message[6] = (uint8_t)(dword_length >> 16);
+    message[7] = (uint8_t)(dword_length >> 24);
+}
+
+static bool apply_plain_send_fault(bool secured, void **message,
+                                   size_t *message_size, uint8_t *plain_buffer)
+{
+    teeio_fault_result_t result;
+    size_t framed_size;
+
+    framed_size = *message_size + sizeof(pci_doe_data_object_header_t);
+    if (framed_size > TEEIO_FAULT_MAX_MESSAGE_SIZE) {
+        return false;
+    }
+    set_fault_plain_header(plain_buffer, framed_size, secured);
+    memcpy(plain_buffer + sizeof(pci_doe_data_object_header_t),
+           *message, *message_size);
+    result = teeio_fault_apply(plain_buffer, framed_size,
+                               TEEIO_FAULT_MAX_MESSAGE_SIZE);
+    if (result.disposition == TEEIO_FAULT_DISPOSITION_PASS) {
+        return true;
+    }
+    if ((result.disposition != TEEIO_FAULT_DISPOSITION_MUTATE &&
+         result.disposition != TEEIO_FAULT_DISPOSITION_REPLAY) ||
+        result.message_size < sizeof(pci_doe_data_object_header_t)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                     "Unsupported plaintext fault disposition: %s\n",
+                     teeio_fault_audit_record()));
+        return false;
+    }
+
+    TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Plaintext fault injection: %s\n",
+                 teeio_fault_audit_record()));
+    memcpy(plain_buffer, result.message, result.message_size);
+    *message = plain_buffer + sizeof(pci_doe_data_object_header_t);
+    *message_size = result.message_size - sizeof(pci_doe_data_object_header_t);
+    return true;
+}
+
+libspdm_return_t teeio_fault_transport_encode_message(
+    void *spdm_context, const uint32_t *session_id, bool is_app_message,
+    bool is_request_message, size_t message_size, void *message,
+    size_t *transport_message_size, void **transport_message)
+{
+    if (!is_app_message &&
+        !apply_plain_send_fault(session_id != NULL, &message, &message_size,
+                                m_fault_plain_send)) {
+        return LIBSPDM_STATUS_SEND_FAIL;
+    }
+    snapshot_fault_session(spdm_context, session_id);
+    return libspdm_transport_pci_doe_encode_message(
+        spdm_context, session_id, is_app_message, is_request_message,
+        message_size, message, transport_message_size, transport_message);
+}
+
+libspdm_return_t teeio_fault_transport_decode_message(
+    void *spdm_context, uint32_t **session_id, bool *is_app_message,
+    bool is_request_message, size_t transport_message_size,
+    void *transport_message, size_t *message_size, void **message)
+{
+    libspdm_return_t status;
+
+    status = libspdm_transport_pci_doe_decode_message(
+        spdm_context, session_id, is_app_message, is_request_message,
+        transport_message_size, transport_message, message_size, message);
+    if (LIBSPDM_STATUS_IS_ERROR(status)) {
+        teeio_fault_record_actual("decode_failed");
+        return status;
+    }
+    if (!*is_app_message && teeio_fault_should_record_response()) {
+        record_spdm_actual(*message, *message_size);
+    }
+    return LIBSPDM_STATUS_SUCCESS;
+}
+
+void teeio_fault_transport_reset(void)
+{
+    teeio_fault_reset();
+    m_fault_skip_receive = false;
+    m_fault_deferred_send_size = 0;
+    memset(m_fault_deferred_send, 0, sizeof(m_fault_deferred_send));
+    memset(m_fault_plain_send, 0, sizeof(m_fault_plain_send));
+    memset(m_fault_duplicate_response, 0, sizeof(m_fault_duplicate_response));
+    m_fault_draining_duplicate = false;
+    m_fault_secured_message_context = NULL;
+    m_fault_session_keys_size = 0;
+    memset(m_fault_session_keys, 0, sizeof(m_fault_session_keys));
+}
 
 #define TEEIO_DOE_DEBUG(expression) \
     do {                            \
@@ -146,7 +321,10 @@ libspdm_return_t device_doe_send_message(
     uint32_t index;
     uint64_t delay;
     uint32_t data_object_count;
-    uint32_t *data_object_buffer;
+    const uint32_t *data_object_buffer;
+    const uint8_t *data_object_bytes;
+    teeio_fault_result_t fault_result;
+    bool raw_secured_fault;
 
     check_pcie_advance_error();
 
@@ -161,6 +339,47 @@ libspdm_return_t device_doe_send_message(
         return LIBSPDM_STATUS_INVALID_PARAMETER;
     }
 
+    if (m_fault_deferred_send_size != 0) {
+        request = m_fault_deferred_send;
+        request_size = m_fault_deferred_send_size;
+        m_fault_deferred_send_size = 0;
+    } else {
+        raw_secured_fault = request_size >= sizeof(pci_doe_data_object_header_t) &&
+                            ((const uint8_t *)request)[2] ==
+                                PCI_DOE_DATA_OBJECT_TYPE_SECURED_SPDM;
+        fault_result = teeio_fault_apply(request, request_size,
+                                         TEEIO_FAULT_MAX_MESSAGE_SIZE);
+        if (fault_result.disposition == TEEIO_FAULT_DISPOSITION_ERROR) {
+            teeio_fault_record_actual("injection_rejected");
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Fault injection rejected: %s\n",
+                         teeio_fault_audit_record()));
+            return LIBSPDM_STATUS_SEND_FAIL;
+        }
+        if (fault_result.rule_id >= 0) {
+            TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Fault injection: %s\n",
+                         teeio_fault_audit_record()));
+            if (raw_secured_fault &&
+                teeio_fault_same_session_recovery_configured() &&
+                !restore_fault_session()) {
+                teeio_fault_record_actual("session_state_restore_failed");
+                return LIBSPDM_STATUS_SEND_FAIL;
+            }
+        }
+        if (fault_result.disposition == TEEIO_FAULT_DISPOSITION_DROP ||
+            fault_result.disposition == TEEIO_FAULT_DISPOSITION_ABANDON ||
+            fault_result.disposition == TEEIO_FAULT_DISPOSITION_HOLD) {
+            m_fault_skip_receive = true;
+            return LIBSPDM_STATUS_SUCCESS;
+        }
+        request = fault_result.message;
+        request_size = fault_result.message_size;
+        if (fault_result.secondary_message_size != 0) {
+            memcpy(m_fault_deferred_send, fault_result.secondary_message,
+                   fault_result.secondary_message_size);
+            m_fault_deferred_send_size = fault_result.secondary_message_size;
+        }
+    }
+
     TEEIO_ASSERT((request_size & 3) == 0);
     data_object_count = (uint32_t)(request_size / sizeof(uint32_t));
     data_object_buffer = (uint32_t *)(uintptr_t)request; // cast discards ‘const’ qualifier from pointer target type
@@ -168,10 +387,10 @@ libspdm_return_t device_doe_send_message(
     TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_send_message] Start ... \n"));
 
     if (timeout == 0) {
-      timeout = PCI_EXPRESS_DOE_MAILBOX_TIMEOUT;
+        timeout = PCI_EXPRESS_DOE_MAILBOX_TIMEOUT;
     }
 
-    delay = timeout / 30 + 1;
+        delay = timeout / 30 + 1;
 
     if (is_doe_error_asserted()) {
         TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_send_message] 'DOE Error' bit is set before sending message. Clear error bit and wait 1 second.\n"));
@@ -188,11 +407,12 @@ libspdm_return_t device_doe_send_message(
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE, "Requester: \n"));
             for (index = 0; index < data_object_count; index++) { 
                 device_pci_doe_write_mailbox_write_32 (data_object_buffer[index]);
+                data_object_bytes = (const uint8_t *)(data_object_buffer + index);
                 TEEIO_DOE_DEBUG((TEEIO_DEBUG_VERBOSE, "mailbox: 0x%08x\n", data_object_buffer[index]));
-                TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", *((uint8_t*)(data_object_buffer + index) + 0),
-                                                            *((uint8_t*)(data_object_buffer + index) + 1),
-                                                            *((uint8_t*)(data_object_buffer + index) + 2),
-                                                            *((uint8_t*)(data_object_buffer + index) + 3)));
+                TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"%02x %02x %02x %02x \n", data_object_bytes[0],
+                                                            data_object_bytes[1],
+                                                            data_object_bytes[2],
+                                                            data_object_bytes[3]));
             }
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_VERBOSE,"\n"));
 
@@ -214,12 +434,14 @@ libspdm_return_t device_doe_send_message(
     } while (delay != 0);
 
     if (delay == 0) {
+        teeio_fault_record_actual("send_timeout");
         status = LIBSPDM_STATUS_SEND_FAIL;
     } else {
         /* check ERROR bit again */
         if (is_doe_error_asserted()) {
+            teeio_fault_record_actual("doe_error");
             status = LIBSPDM_STATUS_SEND_FAIL;
-            TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_send_message] 'DOE Error' bit is set. Send failedl. Clear error bit and wait 1 second.\n"));
+            TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_send_message] 'DOE Error' bit is set. Send failed. Clear error bit and wait 1 second.\n"));
             /* Write 1b to the DOE Abort bit and wait 1 second. */
             trigger_doe_abort();
             libspdm_sleep(1000*1000);
@@ -250,17 +472,18 @@ libspdm_return_t device_doe_receive_message(
 
     check_pcie_advance_error();
 
+    if (response_size == NULL || response == NULL || *response == NULL) {
+        return LIBSPDM_STATUS_INVALID_PARAMETER;
+    }
+
     TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Start ... \n"));
     TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] Response_size = 0x%x \n", *response_size));
 
-    if (*response == NULL) {
-        return LIBSPDM_STATUS_INVALID_PARAMETER;
+    if (m_fault_skip_receive) {
+        m_fault_skip_receive = false;
+        teeio_fault_record_actual("controlled_drop");
+        return LIBSPDM_STATUS_RECEIVE_FAIL;
     }
-
-    if (response_size == NULL) {
-        return LIBSPDM_STATUS_INVALID_PARAMETER;
-    }
-
     if (timeout == 0) {
         timeout = PCI_EXPRESS_DOE_MAILBOX_TIMEOUT;
     }
@@ -330,6 +553,8 @@ libspdm_return_t device_doe_receive_message(
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO,"\n"));
 
             break;
+        } else if (m_fault_draining_duplicate) {
+            status = LIBSPDM_STATUS_SUCCESS;
         } else {
             /* Stall for 30 microseconds.. */
             TEEIO_DOE_DEBUG ((TEEIO_DEBUG_INFO, "[device_doe_receive_message] 'Data Object Ready' bit is not set! Waiting ...\n"));
@@ -343,10 +568,12 @@ libspdm_return_t device_doe_receive_message(
     } while (delay != 0);
 
     if (delay == 0) {
+        teeio_fault_record_actual("transport_receive_timeout");
         status = LIBSPDM_STATUS_RECEIVE_FAIL;
     } else {
         /* check ERROR bit again */
         if (is_doe_error_asserted()) {
+            teeio_fault_record_actual("transport_receive_failed");
             status = LIBSPDM_STATUS_RECEIVE_FAIL;
             TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "[device_doe_receive_message] 'DOE Error' bit is set. Receive failed. Clear error bit and wait 1 second.\n"));
             /* Write 1b to the DOE Abort bit and wait 1 second. */
@@ -355,6 +582,37 @@ libspdm_return_t device_doe_receive_message(
         } else {
             append_pcap_packet_data(NULL, 0, (const void *)*response, *response_size);
             status = LIBSPDM_STATUS_SUCCESS;
+        }
+    }
+
+    if (!LIBSPDM_STATUS_IS_ERROR(status) && !m_fault_draining_duplicate &&
+        m_fault_deferred_send_size != 0) {
+        void *duplicate_response = m_fault_duplicate_response;
+        size_t duplicate_response_size = sizeof(m_fault_duplicate_response);
+        libspdm_return_t duplicate_status;
+
+        duplicate_status = device_doe_send_message(
+            spdm_context, m_fault_deferred_send_size,
+            m_fault_deferred_send, timeout);
+        if (!LIBSPDM_STATUS_IS_ERROR(duplicate_status)) {
+            m_fault_draining_duplicate = true;
+            duplicate_status = device_doe_receive_message(
+                spdm_context, &duplicate_response_size,
+                &duplicate_response, timeout);
+            m_fault_draining_duplicate = false;
+        }
+        if (LIBSPDM_STATUS_IS_ERROR(duplicate_status)) {
+            teeio_fault_record_actual("duplicate_exchange_failed");
+        } else if (duplicate_response_size >=
+                   sizeof(pci_doe_data_object_header_t) +
+                   sizeof(spdm_message_header_t)) {
+            record_spdm_actual(
+                m_fault_duplicate_response +
+                sizeof(pci_doe_data_object_header_t),
+                duplicate_response_size -
+                sizeof(pci_doe_data_object_header_t));
+        } else {
+            teeio_fault_record_actual("duplicate_exchange_complete");
         }
     }
 
