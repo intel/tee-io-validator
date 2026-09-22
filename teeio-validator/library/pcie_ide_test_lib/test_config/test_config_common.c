@@ -44,7 +44,8 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
   TEEIO_ASSERT(group_context);
   TEEIO_ASSERT(group_context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
-  ide_common_test_port_context_t *port = &group_context->common.upper_port;
+  ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
+  ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
   TEST_IDE_TYPE ide_type = TEST_IDE_TYPE_SEL_IDE;
   if (group_context->common.top->type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE)
   {
@@ -55,30 +56,52 @@ bool test_config_check_common(void *test_context, const char* assertion_msg)
     NOT_IMPLEMENTED("selective_and_link_ide topology");
   }
 
-  uint32_t data = read_stream_status_in_rp_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, port->ide_id);
-  PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
-  uint8_t state = stream_status.state;
-  IDE_STREAM_STATUS_TYPE status = IDE_STREAM_STATUS_TYPE_UNKNOWN;
-  if (state == IDE_STREAM_STATUS_SECURE)
-  {
-    status = IDE_STREAM_STATUS_TYPE_SECURE;
-  }
-  else if (state == IDE_STREAM_STATUS_INSECURE)
-  {
-    status = IDE_STREAM_STATUS_TYPE_INSECURE;
-  }
-
   const char *ide_type_name = IDE_TEST_IDE_TYPE_NAMES[ide_type];
 
-  TEEIO_DEBUG((
-      TEEIO_DEBUG_INFO,
-      "%s: %s status register - BIT_3:0 (%s state) - %s(%d)\n",
-      assertion_msg,
-      ide_type_name, ide_type_name,
-      IDE_STREAM_STATUS_NAME[status],
-      state));
+  // the stream is only trustworthy if both the host (upper_port) and the
+  // device (lower_port) report Secure. Checking only one side allows a
+  // device whose own IDE stream never activated to still pass.
+  bool upper_secure = false;
+  bool lower_secure = false;
+  ide_common_test_port_context_t *ports[2] = {upper_port, lower_port};
+  bool *secure_flags[2] = {&upper_secure, &lower_secure};
+  const char *side_names[2] = {"host", "device"};
 
-  bool res = status == IDE_STREAM_STATUS_TYPE_SECURE;
+  for (int i = 0; i < 2; i++)
+  {
+    ide_common_test_port_context_t *port = ports[i];
+    uint32_t data = read_stream_status_in_rp_ecap(port->cfg_space_fd, port->ecap_offset, ide_type, port->ide_id);
+    PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = data};
+    uint8_t state = stream_status.state;
+    IDE_STREAM_STATUS_TYPE status = IDE_STREAM_STATUS_TYPE_UNKNOWN;
+    if (state == IDE_STREAM_STATUS_SECURE)
+    {
+      status = IDE_STREAM_STATUS_TYPE_SECURE;
+    }
+    else if (state == IDE_STREAM_STATUS_INSECURE)
+    {
+      status = IDE_STREAM_STATUS_TYPE_INSECURE;
+    }
+
+    TEEIO_DEBUG((
+        TEEIO_DEBUG_INFO,
+        "%s: %s(%s) status register - BIT_3:0 (%s state) - %s(%d)\n",
+        assertion_msg,
+        ide_type_name, side_names[i], ide_type_name,
+        IDE_STREAM_STATUS_NAME[status],
+        state));
+
+    *secure_flags[i] = status == IDE_STREAM_STATUS_TYPE_SECURE;
+  }
+
+  bool res = upper_secure && lower_secure;
+  if (!res)
+  {
+    TEEIO_DEBUG((
+        TEEIO_DEBUG_ERROR,
+        "%s: stream is not secure on both sides - host=%d, device=%d\n",
+        assertion_msg, upper_secure, lower_secure));
+  }
   teeio_record_config_item_result(IDE_TEST_CONFIGURATION_TYPE_DEFAULT, TEEIO_TEST_CONFIG_FUNC_CHECK, res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED); 
   return res;
 }
