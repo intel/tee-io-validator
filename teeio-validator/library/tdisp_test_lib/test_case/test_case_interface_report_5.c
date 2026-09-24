@@ -110,6 +110,12 @@ void tdisp_test_interface_report_5_run (void *test_context)
 		interface_report_buffer, &buffer_size)) {
 		return;
 	}
+	if (buffer_size < 20) {
+		teeio_record_assertion_result (case_class, case_id, 6,
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
+			"Device interface report is shorter than its fixed header.");
+		return;
+	}
 
 	READ_DATA16 data16 = {.byte0 = interface_report_buffer[0], .byte1 = interface_report_buffer[1]};
 	uint16_t interface_info = data16.raw;
@@ -120,6 +126,12 @@ void tdisp_test_interface_report_5_run (void *test_context)
 		.byte3 = interface_report_buffer[15]
 	};
 	uint32_t mmio_range_count = data32.raw;
+	if (mmio_range_count > (buffer_size - 20) / 16) {
+		teeio_record_assertion_result (case_class, case_id, 6,
+			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
+			"MMIO range count exceeds the report buffer.");
+		return;
+	}
 
 	data32.byte0 = interface_report_buffer[16 +
 			mmio_range_count * 16];
