@@ -35,7 +35,7 @@ extern common_test_case_t m_spdm_test_group_end_session_ack[];
 
 // SPDM_TEST_CASE_xxx maps to SPDM_RESPONDER_TEST_GROUP_xxx
 // refer to "library/spdm_responder_conformance_test_lib.h"
-teeio_map_to_spdm_responder_test_group_t m_teeio_map_spdm_responder_test_groups[SPDM_TEST_CASE_NUM] = {
+teeio_map_to_spdm_responder_test_group_t m_teeio_map_spdm_responder_test_groups[] = {
   {SPDM_TEST_CASE_VERSION,          SPDM_RESPONDER_TEST_GROUP_VERSION,          m_spdm_test_group_version           },
   {SPDM_TEST_CASE_CAPABILITIES,     SPDM_RESPONDER_TEST_GROUP_CAPABILITIES,     m_spdm_test_group_capabilities      },
   {SPDM_TEST_CASE_ALGORITHMS,       SPDM_RESPONDER_TEST_GROUP_ALGORITHMS,       m_spdm_test_group_algorithms        },
@@ -64,6 +64,7 @@ ide_test_case_name_t m_spdm_test_case_names[] = {
   {"HeartbeatAck",      NULL,    SPDM_TEST_CASE_HEARTBEAT_ACK    },
   {"KeyUpdateAck",      NULL,    SPDM_TEST_CASE_KEY_UPDATE_ACK   },
   {"EndSessionAck",     NULL,    SPDM_TEST_CASE_END_SESSION_ACK  },
+  {"Fault",             NULL,    SPDM_TEST_CASE_FAULT            },
   {NULL,                NULL,    SPDM_TEST_CASE_NUM              }
 };
 
@@ -78,35 +79,34 @@ static bool gen_teeio_spdm_test_case_from_responder_test_case(
   char buf[MAX_LINE_LENGTH] = {0};
   int buf_offset = 0;
   int max_val = 0;
-  int i = 0;
+  int case_count = 0;
 
   common_test_case_t* ptr_responder = responder_spdm_test_case;
   while(ptr_responder->case_id != COMMON_TEST_ID_END) {
-    i++;
-    ptr_responder = responder_spdm_test_case + i;
+    if(ptr_responder->case_id > max_val) {
+      max_val = ptr_responder->case_id;
+    }
+    case_count++;
+    ptr_responder = responder_spdm_test_case + case_count;
   }
 
-  if(i == 0) {
+  if(case_count == 0) {
     TEEIO_ASSERT(false);
     return false;
   }
 
-  ide_test_case_funcs_t* teeio_tc_funcs = (ide_test_case_funcs_t*)malloc(sizeof(ide_test_case_funcs_t) * i);
-  memset(teeio_tc_funcs, 0, sizeof(ide_test_case_funcs_t) * i);
+  ide_test_case_funcs_t* teeio_tc_funcs = (ide_test_case_funcs_t*)malloc(sizeof(ide_test_case_funcs_t) * max_val);
+  memset(teeio_tc_funcs, 0, sizeof(ide_test_case_funcs_t) * max_val);
 
-  i = 0;
+  int i = 0;
   ptr_responder = responder_spdm_test_case;
 
   while(ptr_responder->case_id != COMMON_TEST_ID_END) {
-    ide_test_case_funcs_t* ptr_teeio = teeio_tc_funcs + i;
+    ide_test_case_funcs_t* ptr_teeio = teeio_tc_funcs + ptr_responder->case_id - 1;
     ptr_teeio->config_check_required = false;
     ptr_teeio->run = ptr_responder->case_func;
     ptr_teeio->setup = ptr_responder->case_setup_func;
     ptr_teeio->teardown = ptr_responder->case_teardown_func;
-
-    if(ptr_responder->case_id > max_val) {
-      max_val = ptr_responder->case_id;     
-    }
 
     if(buf_offset + strlen(buf) + 4 + 1 > sizeof(buf)) {
       TEEIO_ASSERT(false);
@@ -142,7 +142,10 @@ void spdm_test_lib_init_test_cases()
   int max_case_id = 0;
 
   // Walk thru m_teeio_map_spdm_responder_test_groups
-  for(int i = 0; i < SPDM_TEST_CASE_NUM; i++) {
+  for(size_t i = 0;
+      i < sizeof(m_teeio_map_spdm_responder_test_groups) /
+          sizeof(m_teeio_map_spdm_responder_test_groups[0]);
+      i++) {
     TEEIO_TEST_CASES *teeio_test_cases = m_spdm_test_case_funcs + i;
     ide_test_case_name_t *teeio_test_case_name = m_spdm_test_case_names + i;
     teeio_map_to_spdm_responder_test_group_t *teeio_map_responder = m_teeio_map_spdm_responder_test_groups + i;
@@ -159,6 +162,20 @@ void spdm_test_lib_init_test_cases()
       TEEIO_ASSERT(false);
     }
   }
+
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs =
+    (ide_test_case_funcs_t *)calloc(1, sizeof(ide_test_case_funcs_t));
+  TEEIO_ASSERT(m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs != NULL);
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].cnt = 1;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].setup =
+    spdm_test_case_fault_setup;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].run =
+    spdm_test_case_fault_run;
+  m_spdm_test_case_funcs[SPDM_TEST_CASE_FAULT].funcs[0].teardown =
+    spdm_test_case_fault_teardown;
+  m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names = malloc(2);
+  TEEIO_ASSERT(m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names != NULL);
+  strcpy(m_spdm_test_case_names[SPDM_TEST_CASE_FAULT].names, "1");
 }
 
 void spdm_test_lib_clean(void)
@@ -182,7 +199,10 @@ void spdm_test_lib_clean(void)
 int spdm_test_lib_get_case_class(int responder_group_id)
 {
   int case_class = SPDM_TEST_CASE_NUM;
-  for(int i = 0; i < SPDM_TEST_CASE_NUM; i++) {
+  for(size_t i = 0;
+      i < sizeof(m_teeio_map_spdm_responder_test_groups) /
+          sizeof(m_teeio_map_spdm_responder_test_groups[0]);
+      i++) {
     if (m_teeio_map_spdm_responder_test_groups[i].spdm_responder_group_id == responder_group_id) {
       case_class = m_teeio_map_spdm_responder_test_groups[i].teeio_spdm_case_class;
       break;
