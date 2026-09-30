@@ -16,6 +16,7 @@
 #include "spdm_test.h"
 #include "intel_keyp.h"
 #include "teeio_debug.h"
+#include "teeio_fault_injection.h"
 
 #define NOT_IMPLEMENTED(msg) \
   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not implemented - %s\n", msg)); \
@@ -252,6 +253,7 @@ typedef struct {
   IDE_TEST_TOPOLOGYS topologies;
   IDE_TEST_CONFIGURATIONS configurations;
   IDE_TEST_SUITES test_suites;
+  IDE_TEST_FAULT_CONFIG fault_injection;
 } IDE_TEST_CONFIG;
 
 /*
