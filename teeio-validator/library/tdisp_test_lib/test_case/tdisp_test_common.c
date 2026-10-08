@@ -128,7 +128,7 @@ bool tdisp_test_lock_interface (void *test_context, uint32_t function_id,
 
 	libspdm_zero_mem (&lock_interface_param, sizeof (lock_interface_param));
 	lock_interface_param.flags = lock_interface_flags_supported;
-	lock_interface_param.default_stream_id = 0;
+	lock_interface_param.default_stream_id = group_context->common.top->stream_id;
 	lock_interface_param.mmio_reporting_offset = TDISP_MMIO_REPORTING_OFFSET;
 	lock_interface_param.bind_p2p_address_mask = 0;
 

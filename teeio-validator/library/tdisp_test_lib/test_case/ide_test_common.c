@@ -27,7 +27,7 @@ bool tdisp_test_set_ide_stream (void *test_context, uint8_t ks)
 	void *spdm_context = group_context->spdm_doe.spdm_context;
 	uint32_t *session_id = &group_context->spdm_doe.session_id;
 	uint8_t *kcbar_addr = group_context->common.upper_port.mapped_kcbar_addr;
-	uint8_t stream_id = 0;	// Default
+	uint8_t stream_id = group_context->stream_id;
 	ide_key_set_t *k_set = &group_context->k_set;
 	uint8_t rp_stream_index = group_context->rp_stream_index;
 	uint8_t port_index = 0;
