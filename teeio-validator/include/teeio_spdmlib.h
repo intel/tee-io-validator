@@ -45,6 +45,54 @@ bool teeio_spdm_apply_version_override(void *spdm_context);
 void teeio_spdm_log_negotiated_version(void *spdm_context);
 
 /**
+ * select the classical (default) or PQC algorithm profile
+ */
+void teeio_spdm_set_pqc_profile(bool pqc);
+
+bool teeio_spdm_pqc_profile(void);
+
+/**
+ * additionally offer ML-DSA-87 and ML-KEM-1024 when the PQC profile is selected
+ */
+bool teeio_spdm_apply_algorithm_profile(void *spdm_context);
+
+/**
+ * check the negotiated asymmetric and key-exchange algorithms against the profile
+ */
+bool teeio_spdm_negotiated_profile_matches(void *spdm_context);
+
+typedef struct {
+  uint8_t version;
+  uint32_t base_asym_algo;
+  uint32_t base_hash_algo;
+  uint32_t pqc_asym_algo;
+  uint16_t dhe;
+  uint16_t kem;
+  uint16_t aead;
+} teeio_spdm_negotiated_algorithms_t;
+
+/**
+ * parse the selections of a plaintext SPDM ALGORITHMS response
+ */
+bool teeio_spdm_parse_algorithms_response(const uint8_t *message, size_t size,
+                                          teeio_spdm_negotiated_algorithms_t *algorithms);
+
+/**
+ * reset deferred DOE fault-injection messages
+ */
+void teeio_fault_transport_reset(void);
+
+libspdm_return_t teeio_fault_transport_encode_message(
+    void *spdm_context, const uint32_t *session_id, bool is_app_message,
+    bool is_request_message, size_t message_size, void *message,
+    size_t *transport_message_size, void **transport_message);
+
+libspdm_return_t teeio_fault_transport_decode_message(
+    void *spdm_context, uint32_t **session_id, bool *is_app_message,
+    bool is_request_message, size_t transport_message_size,
+    void *transport_message, size_t *message_size, void **message);
+
+/**
  * setup spdm connection
 */
 bool spdm_connect (void *spdm_context, uint32_t *session_id);
@@ -126,7 +174,7 @@ void spdm_device_release_receiver_buffer (
 #endif
 
 #ifndef LIBSPDM_SENDER_BUFFER_SIZE
-#define LIBSPDM_SENDER_BUFFER_SIZE (0x1100 + \
+#define LIBSPDM_SENDER_BUFFER_SIZE (0x1108 + \
                                     LIBSPDM_TRANSPORT_ADDITIONAL_SIZE)
 #endif
 #ifndef LIBSPDM_RECEIVER_BUFFER_SIZE

@@ -10,6 +10,7 @@
 void *m_spdm_context;
 void *m_scratch_buffer;
 static uint8_t m_requested_spdm_version;
+static bool m_pqc_profile;
 
 bool libspdm_write_output_file(const char *file_name, const void *file_data,
                                size_t file_size);
@@ -111,6 +112,72 @@ void teeio_spdm_log_negotiated_version(void *spdm_context)
                  negotiated_version));
 }
 
+void teeio_spdm_set_pqc_profile(bool pqc)
+{
+    m_pqc_profile = pqc;
+}
+
+bool teeio_spdm_pqc_profile(void)
+{
+    return m_pqc_profile;
+}
+
+bool teeio_spdm_apply_algorithm_profile(void *spdm_context)
+{
+    libspdm_data_parameter_t parameter;
+    uint32_t pqc_asym_algo = SPDM_ALGORITHMS_PQC_ASYM_ALGO_ML_DSA_87;
+    uint32_t kem_alg = SPDM_ALGORITHMS_KEM_ALG_ML_KEM_1024;
+
+    if (!m_pqc_profile) {
+        return true;
+    }
+    libspdm_zero_mem(&parameter, sizeof(parameter));
+    parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
+    if (LIBSPDM_STATUS_IS_ERROR(libspdm_set_data(spdm_context, LIBSPDM_DATA_PQC_ASYM_ALGO,
+                                                 &parameter, &pqc_asym_algo,
+                                                 sizeof(pqc_asym_algo))) ||
+        LIBSPDM_STATUS_IS_ERROR(libspdm_set_data(spdm_context, LIBSPDM_DATA_KEM_ALG,
+                                                 &parameter, &kem_alg, sizeof(kem_alg)))) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Failed to request the PQC algorithm profile\n"));
+        return false;
+    }
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Requested algorithm profile: pqc (ML-DSA-87, ML-KEM-1024)\n"));
+    return true;
+}
+
+bool teeio_spdm_negotiated_profile_matches(void *spdm_context)
+{
+    libspdm_data_parameter_t parameter;
+    uint32_t base_asym_algo = 0;
+    uint32_t pqc_asym_algo = 0;
+    uint32_t kem_alg = 0;
+    size_t data_size;
+    bool matches;
+
+    libspdm_zero_mem(&parameter, sizeof(parameter));
+    parameter.location = LIBSPDM_DATA_LOCATION_CONNECTION;
+    data_size = sizeof(base_asym_algo);
+    libspdm_get_data(spdm_context, LIBSPDM_DATA_BASE_ASYM_ALGO, &parameter,
+                     &base_asym_algo, &data_size);
+    data_size = sizeof(pqc_asym_algo);
+    libspdm_get_data(spdm_context, LIBSPDM_DATA_PQC_ASYM_ALGO, &parameter,
+                     &pqc_asym_algo, &data_size);
+    data_size = sizeof(kem_alg);
+    libspdm_get_data(spdm_context, LIBSPDM_DATA_KEM_ALG, &parameter, &kem_alg, &data_size);
+
+    matches = m_pqc_profile ?
+              base_asym_algo == 0 &&
+              pqc_asym_algo == SPDM_ALGORITHMS_PQC_ASYM_ALGO_ML_DSA_87 &&
+              kem_alg == SPDM_ALGORITHMS_KEM_ALG_ML_KEM_1024 :
+              base_asym_algo != 0 && pqc_asym_algo == 0 && kem_alg == 0;
+    if (!matches) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                     "Negotiated algorithms do not match the %s profile: base_asym=0x%08x pqc_asym=0x%08x kem=0x%08x\n",
+                     m_pqc_profile ? "pqc" : "classical", base_asym_algo, pqc_asym_algo, kem_alg));
+    }
+    return matches;
+}
+
 void *spdm_client_init(void)
 {
     void *spdm_context;
@@ -122,6 +189,7 @@ void *spdm_client_init(void)
     size_t scratch_buffer_size;
 
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_client_init\n"));
+    teeio_fault_transport_reset();
 
     m_spdm_context = (void *)malloc(libspdm_get_context_size());
     if (m_spdm_context == NULL) {
@@ -132,13 +200,23 @@ void *spdm_client_init(void)
 
     libspdm_register_device_io_func(spdm_context, device_doe_send_message,
                                     device_doe_receive_message);
-    libspdm_register_transport_layer_func(
-            spdm_context,
-            LIBSPDM_MAX_SPDM_MSG_SIZE,
-            LIBSPDM_TRANSPORT_HEADER_SIZE,
-            LIBSPDM_TRANSPORT_TAIL_SIZE,
-            libspdm_transport_pci_doe_encode_message,
-            libspdm_transport_pci_doe_decode_message);
+    if (teeio_fault_is_enabled()) {
+        libspdm_register_transport_layer_func(
+                spdm_context,
+                LIBSPDM_MAX_SPDM_MSG_SIZE,
+                LIBSPDM_TRANSPORT_HEADER_SIZE,
+                LIBSPDM_TRANSPORT_TAIL_SIZE,
+                teeio_fault_transport_encode_message,
+                teeio_fault_transport_decode_message);
+    } else {
+        libspdm_register_transport_layer_func(
+                spdm_context,
+                LIBSPDM_MAX_SPDM_MSG_SIZE,
+                LIBSPDM_TRANSPORT_HEADER_SIZE,
+                LIBSPDM_TRANSPORT_TAIL_SIZE,
+                libspdm_transport_pci_doe_encode_message,
+                libspdm_transport_pci_doe_decode_message);
+    }
     libspdm_register_device_buffer_func(spdm_context,
                                         LIBSPDM_SENDER_BUFFER_SIZE,
                                         LIBSPDM_RECEIVER_BUFFER_SIZE,
