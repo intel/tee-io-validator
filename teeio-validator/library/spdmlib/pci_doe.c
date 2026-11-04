@@ -225,6 +225,7 @@ libspdm_return_t device_doe_send_message(
             libspdm_sleep(1000*1000);
         } else {
             append_pcap_packet_data(NULL, 0, (const void *)request, request_size);
+            teeio_spdm_trace_on_send(request, request_size);
             status = LIBSPDM_STATUS_SUCCESS;
         }
     }
@@ -354,6 +355,7 @@ libspdm_return_t device_doe_receive_message(
             libspdm_sleep(1000*1000);
         } else {
             append_pcap_packet_data(NULL, 0, (const void *)*response, *response_size);
+            teeio_spdm_trace_on_receive(*response, *response_size);
             status = LIBSPDM_STATUS_SUCCESS;
         }
     }
