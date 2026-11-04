@@ -355,6 +355,16 @@ typedef enum {
   IDE_COMMON_TEST_CASE_ASSERTION_TYPE_SEPARATOR
 } ide_common_test_case_assertion_type_t;
 
+// Why a case did not run because its setup returned false.
+typedef enum {
+  TEEIO_CASE_SKIP_NONE = 0,
+  // A precondition of the case is not met, for example the responder does not
+  // offer an SPDM version the case applies to. This is an expected skip.
+  TEEIO_CASE_SKIP_PRECONDITION,
+  // The setup failed unexpectedly, for example the responder rejected a request.
+  TEEIO_CASE_SKIP_SETUP_FAILED
+} teeio_case_skip_kind_t;
+
 typedef struct _ide_run_test_case_assertion_result_t ide_run_test_case_assertion_result_t;
 struct _ide_run_test_case_assertion_result_t{
   ide_run_test_case_assertion_result_t* next;
@@ -400,6 +410,22 @@ struct _ide_run_test_case_result_t {
 
   ide_run_test_config_item_result_t *config_item_result;
   ide_run_test_case_assertion_result_t *assertion_result;
+
+  // Optional diagnostic context attached by the test library when the case
+  // fails (e.g. SPDM version applicability vs. negotiated version). It is
+  // informational only and never changes the pass/fail verdict.
+  char diagnostic_note[MAX_LINE_LENGTH];
+
+  // Set when a failed assertion is attributable to a known limitation of the
+  // bundled test suite rather than (necessarily) to the device under test.
+  // The underlying assertion result is left untouched.
+  bool suite_coverage_gap;
+  char suite_coverage_gap_note[MAX_LINE_LENGTH];
+
+  // Why the case did not run when its setup failed. The case is still reported
+  // as skipped; this only explains the skip.
+  teeio_case_skip_kind_t skip_kind;
+  char skip_reason[MAX_LINE_LENGTH];
 };
 
 typedef struct {

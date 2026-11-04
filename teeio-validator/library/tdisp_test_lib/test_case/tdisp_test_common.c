@@ -128,7 +128,7 @@ bool tdisp_test_lock_interface (void *test_context, uint32_t function_id,
 
 	libspdm_zero_mem (&lock_interface_param, sizeof (lock_interface_param));
 	lock_interface_param.flags = lock_interface_flags_supported;
-	lock_interface_param.default_stream_id = 0;
+	lock_interface_param.default_stream_id = group_context->common.top->stream_id;
 	lock_interface_param.mmio_reporting_offset = TDISP_MMIO_REPORTING_OFFSET;
 	lock_interface_param.bind_p2p_address_mask = 0;
 
@@ -273,6 +273,13 @@ bool tdisp_test_get_interface_report (void *test_context, uint32_t function_id,
 		if (!res) {
 			return false;
 		}
+		if (response.portion_length > *interface_report_size ||
+			offset > *interface_report_size - response.portion_length) {
+			teeio_record_assertion_result (case_class, case_id, 6,
+				IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_FAILED,
+				"Interface report portion exceeds the output buffer.");
+			return false;
+		}
 
 		res = (response.header.version == PCI_TDISP_MESSAGE_VERSION_10);
 		assertion_result = res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED;
@@ -295,8 +302,12 @@ bool tdisp_test_get_interface_report (void *test_context, uint32_t function_id,
 			IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, assertion_result, mAssertion[5], response.portion_length);
 
 		if (offset == 0) {
+			if (response.remainder_length > UINT32_MAX - response.portion_length) {
+				return false;
+			}
 			total_report_length = response.portion_length + response.remainder_length;
-			if (total_report_length > *interface_report_size) {
+			if (total_report_length > *interface_report_size ||
+				total_report_length > LIBTDISP_INTERFACE_REPORT_MAX_SIZE) {
 				*interface_report_size = total_report_length;
 				TEEIO_DEBUG ((TEEIO_DEBUG_ERROR,
 					"Not enough buffer size for interface report.\n"));
@@ -308,6 +319,9 @@ bool tdisp_test_get_interface_report (void *test_context, uint32_t function_id,
 			}
 		}
 		else {
+			if (offset > UINT16_MAX - response.portion_length) {
+				return false;
+			}
 			if (total_report_length !=
 				(uint32_t) (offset + response.portion_length + response.remainder_length)) {
 				teeio_record_assertion_result (case_class, case_id, 6, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,

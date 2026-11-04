@@ -23,6 +23,12 @@ jobs:
       - name: Checkout Sources
         uses: actions/checkout@v4
 
+      # CMake 4.x drops compatibility with cmake_minimum_required < 3.5
+      - name: Setup CMake 3.x
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.31.x'
+
       - name: Initialize and update submodules
         run: git submodule update --init --recursive
 

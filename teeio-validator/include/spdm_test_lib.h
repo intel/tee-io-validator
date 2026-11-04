@@ -23,4 +23,17 @@ void spdm_test_lib_clean();
 
 void* spdm_test_get_spdm_context_from_test_context(void *test_context);
 
+/**
+ * Called by the test runner before a case's setup. It clears the SPDM traffic
+ * trace so the setup of this case can be analysed on its own.
+ */
+void spdm_test_case_begin(void);
+
+/**
+ * Called by the test runner when an SPDM case's setup returned false. It records,
+ * for the currently running case, why the case did not run. The case is still
+ * reported as skipped.
+ */
+void spdm_test_case_setup_failed(int case_class, int case_id);
+
 #endif

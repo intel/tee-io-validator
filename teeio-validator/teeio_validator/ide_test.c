@@ -698,8 +698,14 @@ bool do_run_test_case(ide_run_test_case_t *test_case, ide_run_test_config_t *run
   }
 
   if(test_case->setup_func != NULL) {
+    if(test_category == TEEIO_TEST_CATEGORY_SPDM) {
+      spdm_test_case_begin();
+    }
     if(!test_case->setup_func(context)) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s setup failed. So skipped.\n", test_case->name));
+      if(test_category == TEEIO_TEST_CATEGORY_SPDM) {
+        spdm_test_case_setup_failed(test_case->class_id, test_case->case_id);
+      }
       case_context->action = IDE_COMMON_TEST_ACTION_SKIP;
       goto TestCaseDone;
     }
@@ -1020,9 +1026,20 @@ bool print_test_results(ide_run_test_suite_t *run_test_suite, bool detail)
           if(detail) {
             TEEIO_PRINT(("       TestCase %s: %s\n", case_result->name, m_test_case_result_str[test_result]));
             print_test_case_assertion_result(case_result->assertion_result);
+            if(test_result == TEEIO_TEST_RESULT_FAILED && case_result->diagnostic_note[0] != '\0') {
+              TEEIO_PRINT(("           Note: %s\n", case_result->diagnostic_note));
+            }
+            if(case_result->skip_reason[0] != '\0') {
+              TEEIO_PRINT(("           Skip reason: %s\n", case_result->skip_reason));
+            }
+            if(case_result->suite_coverage_gap) {
+              TEEIO_PRINT(("           [SUITE COVERAGE GAP] %s\n", case_result->suite_coverage_gap_note));
+            }
             TEEIO_PRINT(("\n"));
           } else {
-            TEEIO_PRINT(("       TestCase %s: %s (pass: %d, fail: %d)\n", case_result->name, m_test_case_result_str[test_result], case_result->total_passed, case_result->total_failed));
+            TEEIO_PRINT(("       TestCase %s: %s (pass: %d, fail: %d)%s%s\n", case_result->name, m_test_case_result_str[test_result], case_result->total_passed, case_result->total_failed,
+                        case_result->skip_kind == TEEIO_CASE_SKIP_SETUP_FAILED ? " [setup failed]" : "",
+                        case_result->suite_coverage_gap ? " [suite coverage gap]" : ""));
           }
           case_result = case_result->next;
         }
