@@ -59,6 +59,12 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    # CMake 4.x drops compatibility with cmake_minimum_required < 3.5
+    - name: Setup CMake 3.x
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.31.x'
+
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
