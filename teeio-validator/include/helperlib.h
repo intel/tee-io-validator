@@ -115,6 +115,46 @@ bool teeio_record_config_item_result(
   teeio_test_result_t result
   );
 
+/**
+ * Check whether a diagnostic note has already been attached to the
+ * currently running case.
+ */
+bool teeio_case_has_diagnostic_note(
+  int case_class,
+  int case_id
+  );
+
+/**
+ * Attach informational diagnostic context to the currently running case.
+ * It is printed for failed cases and does not affect the verdict.
+ */
+bool teeio_record_case_diagnostic_note(
+  int case_class,
+  int case_id,
+  const char *message_format,
+  ...);
+
+/**
+ * Record why the currently running case did not run because its setup failed.
+ * It does not change the case's reported result.
+ */
+bool teeio_record_case_skip_reason(
+  int case_class,
+  int case_id,
+  teeio_case_skip_kind_t kind,
+  const char *message_format,
+  ...);
+
+/**
+ * Flag the currently running case as hitting a known coverage gap of the
+ * bundled test suite. Assertion results are not modified.
+ */
+bool teeio_flag_suite_coverage_gap(
+  int case_class,
+  int case_id,
+  const char *message_format,
+  ...);
+
 bool teeio_record_group_result(
   teeio_test_group_func_t func,
   teeio_test_result_t result,

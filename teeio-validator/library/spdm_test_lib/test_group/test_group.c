@@ -15,6 +15,7 @@
 #include "library/spdm_transport_pcidoe_lib.h"
 #include "teeio_spdmlib.h"
 #include "helperlib.h"
+#include "spdm_test_common.h"
 
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
@@ -111,6 +112,16 @@ bool spdm_close_root_port(spdm_test_group_context_t *group_context)
   return true;
 }
 
+/**
+ * Without CHUNK_CAP, the SPDM 1.2+ GET_CAPABILITIES request must carry
+ * MaxSPDMmsgSize == DataTransferSize, and a responder answers anything else with
+ * ERROR(InvalidRequest). The upstream conformance cases clear CHUNK_CAP in their
+ * setup, so the requester must be registered with a max message size equal to the
+ * data transfer size, which libspdm derives from the receiver buffer.
+ */
+#define SPDM_TEST_GROUP_MAX_SPDM_MSG_SIZE \
+  (LIBSPDM_RECEIVER_BUFFER_SIZE - (LIBSPDM_TRANSPORT_HEADER_SIZE + LIBSPDM_TRANSPORT_TAIL_SIZE))
+
 void *spdm_init_client(void)
 {
   void *spdm_context;
@@ -129,7 +140,7 @@ void *spdm_init_client(void)
 
   libspdm_register_transport_layer_func(
     spdm_context,
-    LIBSPDM_MAX_SPDM_MSG_SIZE,
+    SPDM_TEST_GROUP_MAX_SPDM_MSG_SIZE,
     LIBSPDM_TRANSPORT_HEADER_SIZE,
     LIBSPDM_TRANSPORT_TAIL_SIZE,
     libspdm_transport_pci_doe_encode_message,
@@ -194,6 +205,7 @@ bool spdm_test_group_setup(void *test_context)
   }
 
   context->spdm_doe.spdm_context = spdm_context;
+  spdm_test_set_active_context(spdm_context, context->common.suite_context->test_config->main_config.spdm_version);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
 
@@ -208,6 +220,7 @@ bool spdm_test_group_teardown(void *test_context)
   TEEIO_ASSERT(context->common.signature == GROUP_CONTEXT_SIGNATURE);
 
   // close spdm_session and free spdm_context
+  spdm_test_clear_active_context();
   if(context->spdm_doe.spdm_context != NULL) {
     free(context->spdm_doe.spdm_context);
     context->spdm_doe.spdm_context = NULL;
