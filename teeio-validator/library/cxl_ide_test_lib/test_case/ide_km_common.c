@@ -424,6 +424,14 @@ bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
+bool cxl_check_ide_stream_status(cxl_ide_test_group_context_t *group_context, uint8_t expected_ide_status)
+{
+  bool host_res = cxl_check_ide_status("host", &group_context->common.upper_port.cxl_data.memcache, expected_ide_status);
+  bool dev_res = cxl_check_ide_status("device", &group_context->common.lower_port.cxl_data.memcache, expected_ide_status);
+
+  return host_res && dev_res;
+}
+
 bool cxl_teardown_ide_stream(void *test_context)
 {
   bool ret = false;
@@ -465,5 +473,23 @@ bool cxl_teardown_ide_stream(void *test_context)
   // clear LinkEncEnable on the RootPort side
   cxl_cfg_rp_linkenc_enable(kcbar_ptr, false);
 
-  return true;
+  // wait for 10 ms for the ports to get to Insecure State
+  libspdm_sleep(10 * 1000);
+
+  bool insecure = cxl_check_ide_status("host", &upper_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE);
+  if(dev_caps.k_set_stop_capable == 1) {
+    insecure = cxl_check_ide_status("device", &lower_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE) && insecure;
+  } else {
+    // Only CXL_K_SET_STOP moves an active port to Insecure State without logging an error (CXL 3.1 Section 11.4.6).
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetStop is not supported. Skip CXL IDE Status check on device.\n"));
+  }
+
+  if(case_context->action != IDE_COMMON_TEST_ACTION_SKIP) {
+    teeio_record_assertion_result(case_context->test_case->class_id, case_context->test_case->case_id, 2,
+                                  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                  insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                  insecure ? "CXL-IDE Stream is torn down." : "CXL-IDE Stream is not in Insecure State after teardown.");
+  }
+
+  return insecure;
 }

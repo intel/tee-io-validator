@@ -194,6 +194,17 @@ bool pcie_ide_teardown_common(void *test_context, uint8_t ks)
                          upper_port->mapped_kcbar_addr,
                          group_context->rp_stream_index, false);
 
+  // PCIe 6.2 Sections 7.9.26.4.2 / 7.9.26.5.3: Stream State must be Insecure once Stream Enable is Cleared
+  bool insecure = is_ide_stream_in_state(IDE_STREAM_STATUS_INSECURE, ide_type,
+                                         upper_port->cfg_space_fd, upper_port->ecap_offset, upper_port->ide_id,
+                                         lower_port->cfg_space_fd, lower_port->ecap_offset, lower_port->ide_id);
+  if(case_context->action != IDE_COMMON_TEST_ACTION_SKIP) {
+    teeio_record_assertion_result(case_context->test_case->class_id, case_context->test_case->case_id, 2,
+                                  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                  insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                  insecure ? "PCIE-IDE Stream is torn down." : "PCIE-IDE Stream is not in Insecure State after teardown.");
+  }
+
   void* doe_context = group_context->spdm_doe.doe_context;
   void* spdm_context = group_context->spdm_doe.spdm_context;
   uint32_t session_id = group_context->spdm_doe.session_id;
