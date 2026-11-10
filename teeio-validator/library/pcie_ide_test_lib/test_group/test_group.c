@@ -49,6 +49,18 @@ bool scan_devices(void *test_context)
   return ret;
 }
 
+// IDE_KM QUERY_RESP Segment is 0 for non-Root Ports (PCIe 6.2 sec 6.33.3)
+static bool ide_query_segment_match(uint8_t port_index, uint8_t segment, uint8_t target_segment)
+{
+  if (segment == 0 && target_segment != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Port %d reports segment=0x%x, expected segment=0x%x. Skip segment check.\n",
+                 port_index, segment, target_segment));
+    return true;
+  }
+
+  return segment == target_segment;
+}
+
 // use ide_km to query the port_index matching with BDF of lower port
 bool ide_query_port_index(void *test_context)
 {
@@ -81,7 +93,7 @@ bool ide_query_port_index(void *test_context)
   TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "pci_ide_km_query result: port_index=%d dev_func=0x%x bus=0x%x segment=0x%x max_port_index=%d\n",
                port_index, dev_func, bus, segment, max_port_index));
 
-  if (target_dev_func == dev_func && target_bus == bus && target_segment == segment) {
+  if (target_dev_func == dev_func && target_bus == bus && ide_query_segment_match(port_index, segment, target_segment)) {
     context->common.lower_port.port->port_index = port_index;
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
     found = true;
@@ -100,7 +112,7 @@ bool ide_query_port_index(void *test_context)
       TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "pci_ide_km_query result: port_index=%d dev_func=0x%x bus=0x%x segment=0x%x max_port_index=%d\n",
                   port_index, dev_func, bus, segment, max_port_index));
 
-      if (target_dev_func == dev_func && target_bus == bus && target_segment == segment) {
+      if (target_dev_func == dev_func && target_bus == bus && ide_query_segment_match(port_index, segment, target_segment)) {
         context->common.lower_port.port->port_index = port_index;
         TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
         found = true;

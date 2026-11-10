@@ -212,7 +212,18 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
                  port_index, dev_func, bus, segment, *max_port_index));
 
     // Check if this port matches the target device
-    return (dev_func == target_dev_func && bus == target_bus && segment == target_segment);
+    if (dev_func != target_dev_func || bus != target_bus) {
+        return false;
+    }
+
+    // Device does not capture its segment in non-Flit mode and reports 0
+    if (segment == 0 && target_segment != 0) {
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Port %d reports segment=0x%02x, expected segment=0x%02x. Skip segment check.\n",
+                     port_index, segment, target_segment));
+        return true;
+    }
+
+    return segment == target_segment;
 }
 
 // Query the port index with device function and bus number
