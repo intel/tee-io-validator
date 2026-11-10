@@ -11,6 +11,8 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <stdarg.h>
+#include <stdint.h>
+#include <inttypes.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <sys/mman.h>
@@ -189,10 +191,51 @@ void prime_rc_ide_keys(
     }
 }
 
+// Split addr into its offset within a page and the mmap() length covering KCBAR.
+// Works for both the physical KCBAR address and the returned virtual pointer,
+// because mmap() preserves the in-page offset.
+static bool get_kcbar_map_layout(uint64_t addr, uint64_t *page_offset, size_t *map_len)
+{
+    long page_size = sysconf(_SC_PAGE_SIZE);
+    if (page_size <= 0 || ((uint64_t)page_size & ((uint64_t)page_size - 1)) != 0) {
+        TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Invalid system page size %ld\n", page_size));
+        return false;
+    }
+
+    if (addr > UINT64_MAX - KCBAR_MEMORY_SIZE) {
+        TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Invalid kcbar address 0x%" PRIx64 "\n", addr));
+        return false;
+    }
+
+    *page_offset = addr & ((uint64_t)page_size - 1);
+    if (*page_offset > SIZE_MAX - KCBAR_MEMORY_SIZE) {
+        return false;
+    }
+    *map_len = (size_t)*page_offset + KCBAR_MEMORY_SIZE;
+
+    return true;
+}
+
 uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd)
 {
+    uint64_t page_offset = 0;
+    size_t map_len = 0;
+
     // we need to map the kcbar_addr to user space
-    if(addr == 0) {
+    if(addr == 0 || mapped_fd == NULL) {
+        return NULL;
+    }
+    *mapped_fd = -1;
+
+    if (!get_kcbar_map_layout(addr, &page_offset, &map_len)) {
+        return NULL;
+    }
+
+    // mmap() requires a page-aligned offset
+    uint64_t map_base = addr - page_offset;
+    off_t map_offset = (off_t)map_base;
+    if (map_offset < 0 || (uint64_t)map_offset != map_base) {
+        TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "kcbar address 0x%" PRIx64 " out of off_t range\n", addr));
         return NULL;
     }
 
@@ -201,7 +244,7 @@ uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd)
         TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Failed to open /dev/mem\n"));
         return NULL;
     }
-    uint8_t * mem_ptr = (uint8_t *)mmap(NULL, KCBAR_MEMORY_SIZE, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, addr);
+    void *mem_ptr = mmap(NULL, map_len, PROT_READ | PROT_WRITE, MAP_SHARED, mem_fd, map_offset);
     if (mem_ptr == MAP_FAILED) {
         TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Failed to mmap kcbar\n"));
         close(mem_fd);
@@ -210,15 +253,27 @@ uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd)
 
     *mapped_fd = mem_fd;
 
-    return mem_ptr;
+    return (uint8_t *)mem_ptr + page_offset;
 }
 
 bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr)
 {
+    uint64_t page_offset = 0;
+    size_t map_len = 0;
+    bool ret = true;
+
     if(kcbar_mem_fd > 0 && mapped_kcbar_addr != NULL){
-        munmap(mapped_kcbar_addr, KCBAR_MEMORY_SIZE);
+        // Recover the page-aligned pointer and length originally passed to mmap()
+        if (get_kcbar_map_layout((uint64_t)(uintptr_t)mapped_kcbar_addr, &page_offset, &map_len)) {
+            if (munmap(mapped_kcbar_addr - page_offset, map_len) != 0) {
+                TEEIO_DEBUG ((TEEIO_DEBUG_ERROR, "Failed to munmap kcbar\n"));
+                ret = false;
+            }
+        } else {
+            ret = false;
+        }
         close(kcbar_mem_fd);
-        return true;
+        return ret;
     }
 
     return false;
