@@ -612,7 +612,7 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
 
 }
 
-void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
+static uint8_t* cxl_find_ide_cap(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
 {
   // walk thru to find CXL IDE Capability
   int i = 0;
@@ -624,16 +624,26 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
 
   if(i == cap_headers_cnt) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Cannot find CXL IDE Capability!\n"));
+    return NULL;
+  }
+
+  return mapped_memcache_reg_block + cap_header[i].pointer;
+}
+
+void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
+{
+  uint8_t* ide_cap_ptr = cxl_find_ide_cap(cap_header, cap_headers_cnt, mapped_memcache_reg_block);
+  if(ide_cap_ptr == NULL) {
     return;
   }
 
-  uint8_t* ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
+  uint8_t* ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
   CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ptr)};
 
-  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
+  ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
   CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
 
-  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, control);
+  ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, control);
   CXL_IDE_CONTROL ide_control = {.raw = mmio_read_reg32(ptr)};
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL IDE Status\n"));
@@ -649,6 +659,79 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "  ide_control : 0x%08x\n", ide_control.raw));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    pcrc_disable=0x%02x, ide_stop_enable=0x%02x\n",
                                   ide_control.pcrc_disable, ide_control.ide_stop_enable));
+}
+
+// CXL 3.1 Section 8.2.4.22.3
+static const char* cxl_ide_status_name(uint8_t ide_status)
+{
+  switch(ide_status) {
+    case CXL_IDE_STATUS_ACTIVE_CONTAINMENT:
+      return "Active Containment mode";
+    case CXL_IDE_STATUS_ACTIVE_SKID:
+      return "Active Skid mode";
+    case CXL_IDE_STATUS_INSECURE:
+      return "Insecure State";
+    default:
+      return "Reserved";
+  }
+}
+
+// CXL 3.1 Section 8.2.4.22.4
+static const char* m_cxl_ide_rx_error_names[] = {
+  "No Error",
+  "Integrity failure on received secure traffic",
+  "MAC or Truncated MAC received when the link is not in secure mode",
+  "MAC header received when not expected",
+  "MAC header is not received when expected",
+  "Truncated MAC flit is received when not expected",
+  "After early MAC termination, protocol flit received before the truncation delay",
+  "Protocol flit received earlier than expected after key change or IDE Termination Handshake",
+  "CXL.cachemem IDE Establishment Security error"
+};
+
+bool cxl_check_ide_status(const char* port_name, CXL_PRIV_DATA_MEMCACHE_REG_DATA* memcache, uint8_t expected_ide_status)
+{
+  uint8_t* ide_cap_ptr = cxl_find_ide_cap(memcache->cap_headers, memcache->cap_headers_cnt, memcache->mapped_memcache_reg_block);
+  if(ide_cap_ptr == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: cannot check CXL IDE Status.\n", port_name));
+    return false;
+  }
+
+  CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status))};
+  CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status))};
+  bool res = true;
+
+  if(ide_status.rx_ide_status != expected_ide_status) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Rx IDE Status is 0x%x (%s), expected 0x%x (%s).\n",
+                 port_name, ide_status.rx_ide_status, cxl_ide_status_name(ide_status.rx_ide_status),
+                 expected_ide_status, cxl_ide_status_name(expected_ide_status)));
+    res = false;
+  }
+
+  if(ide_status.tx_ide_status != expected_ide_status) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Tx IDE Status is 0x%x (%s), expected 0x%x (%s).\n",
+                 port_name, ide_status.tx_ide_status, cxl_ide_status_name(ide_status.tx_ide_status),
+                 expected_ide_status, cxl_ide_status_name(expected_ide_status)));
+    res = false;
+  }
+
+  if(error_status.rx_error_status != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Rx Error Status is 0x%x (%s).\n", port_name, error_status.rx_error_status,
+                 error_status.rx_error_status < LIBSPDM_ARRAY_SIZE(m_cxl_ide_rx_error_names) ? m_cxl_ide_rx_error_names[error_status.rx_error_status] : "Reserved"));
+    res = false;
+  }
+
+  if(error_status.tx_error_status != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Tx Error Status is 0x%x (Reserved).\n", port_name, error_status.tx_error_status));
+    res = false;
+  }
+
+  if(error_status.unexpected_ide_stop_received != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Unexpected IDE.Stop Received is set.\n", port_name));
+    res = false;
+  }
+
+  return res;
 }
 
 

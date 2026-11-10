@@ -97,6 +97,12 @@ void cxl_dump_caps_in_ecap(CXL_PRIV_DATA_ECAP* ecap);
 void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block);
 void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block);
 
+/*
+ * Check that Rx/Tx IDE Status equal expected_ide_status (CXL_IDE_STATUS_xxx)
+ * and that no error is logged in CXL IDE Error Status.
+ */
+bool cxl_check_ide_status(const char* port_name, CXL_PRIV_DATA_MEMCACHE_REG_DATA* memcache, uint8_t expected_ide_status);
+
 bool cxl_ide_set_key_refresh_control_reg(ide_common_test_port_context_t* host_port, ide_common_test_port_context_t* dev_port);
 bool cxl_ide_set_truncation_transmit_control_reg(ide_common_test_port_context_t* host_port, ide_common_test_port_context_t* dev_port);
 
