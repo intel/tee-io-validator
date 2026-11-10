@@ -87,10 +87,18 @@ void cxl_ide_test_full_ide_stream_run(void *test_context)
   // dump CXL IDE Capability in memcache reg block
   cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
 
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(group_context->common.suite_context->test_config, group_context->common.config_id);
+  TEEIO_ASSERT(configuration);
+  uint8_t expected_ide_status = configuration->priv_data.cxl_ide.ide_mode == CXL_IDE_MODE_CONTAINMENT ?
+                                CXL_IDE_STATUS_ACTIVE_CONTAINMENT : CXL_IDE_STATUS_ACTIVE_SKID;
+  bool res = cxl_check_ide_stream_status(group_context, expected_ide_status);
+
   TEEIO_PRINT(("ide_stream is setup. Press any key to continue.\n"));
   getchar();
 
-  teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST, TEEIO_TEST_RESULT_PASS, "CXL-IDE Stream is setup.");
+  teeio_record_assertion_result(case_class, case_id, 1, IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                res ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                res ? "CXL-IDE Stream is setup." : "CXL-IDE Stream is not active on both ports.");
 }
 
 void cxl_ide_test_full_ide_stream_teardown(void *test_context)
