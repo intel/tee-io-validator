@@ -1779,12 +1779,15 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
     while(configuration_priv_names[i]) {
       sprintf(entry_name, "%s", configuration_priv_names[i]);
       if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value)) {
-        parse_test_configuration_priv_names(entry_name, (const char*)entry_value, config.test_category, &config);
+        if(!parse_test_configuration_priv_names(entry_name, (const char*)entry_value, config.test_category, &config)) {
+          return false;
+        }
       }
       i++;
     }
   }
 
+  i = 0;
   const char* configuration_name;
   while(true) {
     configuration_name = get_test_configuration_name(i, config.test_category);
