@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ide_test.h"
+#include "os_include.h"
 #include "command.h"
 #include "teeio_spdmlib.h"
 
@@ -70,7 +71,9 @@ static TEEIO_TEST_CATEGORY get_test_category_from_configuration(IDE_TEST_CONFIG*
 int main(int argc, char *argv[])
 {
     char ide_test_ini_file[MAX_FILE_NAME] = {0};
+    char unfired_rules[TEEIO_FAULT_UNFIRED_RULES_SIZE] = {0};
     bool to_print_usage = false;
+    bool tests_passed;
     int ret = -1;
     uint8_t debug_level = TEEIO_DEBUG_NUM;
 
@@ -114,6 +117,7 @@ int main(int argc, char *argv[])
     g_libspdm_log = ide_test_config.main_config.libspdm_log;
     g_doe_log = ide_test_config.main_config.doe_log;
     teeio_spdm_set_version(ide_test_config.main_config.spdm_version);
+    teeio_fault_init(&ide_test_config.fault_injection);
 
     if(debug_level == TEEIO_DEBUG_NUM) {
         g_debug_level = ide_test_config.main_config.debug_level;
@@ -162,9 +166,44 @@ int main(int argc, char *argv[])
 
     srand((unsigned int)time(NULL));
 
-    run(&ide_test_config);
+    tests_passed = run(&ide_test_config);
 
-    ret = 0;
+        if (ide_test_config.fault_injection.rule_count > 0) {
+            TEEIO_PRINT(("Fault scenario result: %s\n",
+                                     teeio_fault_result_record()));
+        }
+        if (ide_test_config.fault_injection.rule_count > 0 &&
+                !teeio_fault_scenario_fired()) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                                     "Fault scenario never fired.\n"));
+            ret = -1;
+        } else if (!teeio_fault_all_rules_fired(unfired_rules,
+                                                sizeof(unfired_rules))) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Fault rules never fired: %s\n", unfired_rules));
+            ret = -1;
+        } else if (teeio_fault_same_session_recovery_configured() &&
+                   !teeio_fault_same_session_recovery_succeeded()) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Same-session recovery failed or did not run.\n"));
+            ret = -1;
+        } else if (teeio_fault_classification_configured()) {
+            /* The injected fault is meant to break the driver; allowed_actual decides. */
+            if (!teeio_fault_actual_allowed()) {
+                TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                             "Fault scenario actual outcome is not allowed.\n"));
+                ret = -1;
+            } else {
+                ret = 0;
+            }
+        } else if (ide_test_config.fault_injection.rule_count > 0 &&
+                   !tests_passed) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Test assertions failed or no test case passed.\n"));
+            ret = -1;
+        } else {
+            ret = 0;
+        }
 
     // Close pcap file
     if (ide_test_config.main_config.pcap_enable) {
