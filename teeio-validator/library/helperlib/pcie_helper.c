@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <errno.h>
 #include "pcie.h"
 #include "teeio_debug.h"
 #include "helperlib.h"
@@ -157,14 +158,37 @@ IDE_TEST_DEVICES_INFO *get_device_info_by_fd(int fd)
     return NULL;
 }
 
+static void pci_config_transfer32(int fd, uint32_t offset, uint32_t *value,
+                                  bool writing)
+{
+    ssize_t count;
+    int error;
+
+    do {
+        count = -1;
+        if (lseek(fd, offset, SEEK_SET) == (off_t)offset) {
+            count = writing ? write(fd, value, sizeof(*value)) :
+                              read(fd, value, sizeof(*value));
+        }
+    } while (count < 0 && errno == EINTR);
+    if (count == sizeof(*value)) {
+        return;
+    }
+    error = count < 0 ? errno : 0;
+    fprintf(stderr, "PCI config %s failed: fd=%d offset=0x%x bytes=%zd/4 errno=%d (%s)\n",
+            writing ? "write" : "read", fd, offset, count, error,
+            error ? strerror(error) : "short transfer");
+    /* Legacy callers cannot propagate failure; never continue a partial DOE write. */
+    exit(EXIT_FAILURE);
+}
+
 uint32_t device_pci_read_32(uint32_t off_to_the_cfg_start, int fd){
     uint32_t data;
     IDE_TEST_DEVICES_INFO *device = NULL;
 
     TEEIO_ASSERT (fd > 0);
 
-    lseek(fd,off_to_the_cfg_start,SEEK_SET);
-    read(fd, &data, 4);
+    pci_config_transfer32(fd, off_to_the_cfg_start, &data, false);
 
     if(g_pci_log) {
         device = get_device_info_by_fd(fd);
@@ -181,8 +205,7 @@ void device_pci_write_32(uint32_t off_to_the_cfg_start, uint32_t value, int fd){
 
     TEEIO_ASSERT (fd > 0);
 
-    lseek(fd,off_to_the_cfg_start,SEEK_SET);
-    write(fd, &value, 4);
+    pci_config_transfer32(fd, off_to_the_cfg_start, &value, true);
 
     if(g_pci_log) {
         device = get_device_info_by_fd(fd);

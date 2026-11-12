@@ -22,5 +22,7 @@ bool spdm_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs);
 void spdm_test_lib_clean();
 
 void* spdm_test_get_spdm_context_from_test_context(void *test_context);
+bool spdm_test_same_session_preflight(void *test_context);
+bool spdm_test_same_session_recovery(void *test_context);
 
 #endif

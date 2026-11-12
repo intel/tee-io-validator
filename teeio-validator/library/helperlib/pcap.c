@@ -11,6 +11,7 @@
 #include <industry_standard/pcap.h>
 #include <industry_standard/link_type_ex.h>
 #include "pcap.h"
+#include "os_include.h"
 #include "command.h"
 #include "teeio_debug.h"
 
