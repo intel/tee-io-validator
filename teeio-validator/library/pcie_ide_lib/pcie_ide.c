@@ -943,6 +943,25 @@ OpenDevFail:
   return false;
 }
 
+static void populate_dev_assoc_reg_blocks(ide_common_test_port_context_t *port_context,
+                                         IDE_PORT *root_port, bool linux_ep_association)
+{
+  port_context->linux_ep_association = linux_ep_association;
+  port_context->rid_assoc_reg_block = m_rid_assoc_reg_block;
+  port_context->addr_assoc_reg_block = m_addr_assoc_reg_block;
+
+  if(linux_ep_association) {
+    uint16_t rid = ((uint16_t)root_port->bus << 8) |
+                   ((uint16_t)root_port->device << 3) | root_port->function;
+    port_context->rid_assoc_reg_block.rid_assoc1.rid_limit = rid;
+    port_context->rid_assoc_reg_block.rid_assoc2.rid_base = rid;
+    memset(&port_context->addr_assoc_reg_block, 0, sizeof(port_context->addr_assoc_reg_block));
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "EP association policy: %s\n",
+               linux_ep_association ? "root_port_rid" : "legacy"));
+}
+
 /**
  * Initialize endpoint port
  */
@@ -954,6 +973,20 @@ bool init_dev_port(pcie_ide_test_group_context_t *group_context)
   IDE_TEST_TOPOLOGY_TYPE top_type = group_context->common.top->type;
   ide_common_test_port_context_t *port_context = &group_context->common.lower_port;
   TEEIO_ASSERT(port_context != NULL);
+
+  IDE_TEST_CONFIGURATION *configuration = get_configuration_by_id(
+      group_context->common.suite_context->test_config, group_context->common.config_id);
+  if(configuration == NULL) {
+    return false;
+  }
+  bool linux_ep_association = configuration->priv_data.pcie_ide.linux_ep_association;
+  if(linux_ep_association &&
+     (top_type != IDE_TEST_TOPOLOGY_TYPE_SEL_IDE ||
+      (group_context->common.top->connection != IDE_TEST_CONNECT_DIRECT &&
+       group_context->common.top->connection != IDE_TEST_CONNECT_SWITCH))) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "root_port_rid EP association requires direct or switched Selective IDE.\n"));
+    return false;
+  }
 
   if(!open_dev_port(port_context)) {
     return false;
@@ -968,11 +1001,11 @@ bool init_dev_port(pcie_ide_test_group_context_t *group_context)
   port_context->ide_id = ide_id;
 
   // rid&addr assoc_reg_block
-  port_context->rid_assoc_reg_block.rid_assoc1.raw = m_rid_assoc_reg_block.rid_assoc1.raw;
-  port_context->rid_assoc_reg_block.rid_assoc2.raw = m_rid_assoc_reg_block.rid_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
-  port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
+  IDE_PORT *root_port = group_context->common.root_port.port;
+  if(linux_ep_association && root_port == NULL) {
+    goto InitDevFailed;
+  }
+  populate_dev_assoc_reg_blocks(port_context, root_port, linux_ep_association);
 
   // set segment base for lower port if flit mode enabled
   uint16_t segment = 0;
@@ -1033,8 +1066,6 @@ uint32_t get_ide_reg_block_offset(int fd, TEST_IDE_TYPE ide_type, uint8_t ide_id
     for (uint8_t i = num_lnk_ide; i < ide_id; i++) {
         // Calculate size of Assoc ADDR blocks
         ide_stream_cap.raw = device_pci_read_32(ide_reg_block_offset, fd);
-        // It seems num_addr_assoc_reg_blocks shall be 1
-        TEEIO_ASSERT(ide_stream_cap.num_addr_assoc_reg_blocks == 1);
 
         uint64_t size_of_assoc_block = sizeof(PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK) *
                                         ide_stream_cap.num_addr_assoc_reg_blocks;
@@ -1138,7 +1169,7 @@ uint32_t read_ide_stream_status_in_ecap(
 
 // setup the ide ecap regs
 // IDE Extended Capability is defined in [PCI-SIG IDE] Sec 7.9.99
-bool setup_ide_ecap_regs (
+static bool setup_ide_ecap_regs_common (
     int fd, TEST_IDE_TYPE ide_type,
     uint8_t ide_id, uint32_t ide_ecap_offset,
     PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg,
@@ -1146,10 +1177,15 @@ bool setup_ide_ecap_regs (
     PCIE_SEL_IDE_RID_ASSOC_2 rid_assoc_2,
     PCIE_SEL_IDE_ADDR_ASSOC_1 addr_assoc_1,
     PCIE_SEL_IDE_ADDR_ASSOC_2 addr_assoc_2,
-    PCIE_SEL_IDE_ADDR_ASSOC_3 addr_assoc_3)
+    PCIE_SEL_IDE_ADDR_ASSOC_3 addr_assoc_3, bool clear_addr_assoc)
 
 {
     uint32_t offset = get_ide_reg_block_offset(fd, ide_type, ide_id, ide_ecap_offset);
+    uint32_t num_addr_blocks = 1;
+    if(ide_type == TEST_IDE_TYPE_SEL_IDE && clear_addr_assoc) {
+        PCIE_SEL_IDE_STREAM_CAP stream_cap = {.raw = device_pci_read_32(offset, fd)};
+        num_addr_blocks = stream_cap.num_addr_assoc_reg_blocks;
+    }
 
     // For sel_ide, ide_ctrl is preceded by ide_cap.
     if(ide_type == TEST_IDE_TYPE_SEL_IDE) {
@@ -1165,17 +1201,34 @@ bool setup_ide_ecap_regs (
         offset += 4;
         device_pci_write_32(offset, rid_assoc_2.raw, fd);
 
-        offset += 4;
-        device_pci_write_32(offset, addr_assoc_1.raw, fd);
-        offset += 4;
-        device_pci_write_32(offset, addr_assoc_2.raw, fd);
-        offset += 4;
-        device_pci_write_32(offset, addr_assoc_3.raw, fd);
+        for(uint32_t block = 0; block < num_addr_blocks; block++) {
+            offset += 4;
+            device_pci_write_32(offset, clear_addr_assoc ? 0 : addr_assoc_1.raw, fd);
+            offset += 4;
+            device_pci_write_32(offset, clear_addr_assoc ? 0 : addr_assoc_2.raw, fd);
+            offset += 4;
+            device_pci_write_32(offset, clear_addr_assoc ? 0 : addr_assoc_3.raw, fd);
+        }
     }
 
     device_pci_write_32(ctrl_offset, stream_ctrl_reg.raw, fd);
 
     return true;
+}
+
+bool setup_ide_ecap_regs (
+    int fd, TEST_IDE_TYPE ide_type,
+    uint8_t ide_id, uint32_t ide_ecap_offset,
+    PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg,
+    PCIE_SEL_IDE_RID_ASSOC_1 rid_assoc_1,
+    PCIE_SEL_IDE_RID_ASSOC_2 rid_assoc_2,
+    PCIE_SEL_IDE_ADDR_ASSOC_1 addr_assoc_1,
+    PCIE_SEL_IDE_ADDR_ASSOC_2 addr_assoc_2,
+    PCIE_SEL_IDE_ADDR_ASSOC_3 addr_assoc_3)
+{
+    return setup_ide_ecap_regs_common(fd, ide_type, ide_id, ide_ecap_offset,
+                                      stream_ctrl_reg, rid_assoc_1, rid_assoc_2,
+                                      addr_assoc_1, addr_assoc_2, addr_assoc_3, false);
 }
 
 bool reset_ide_registers(
@@ -1208,7 +1261,7 @@ bool reset_ide_registers(
   PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg = {.raw = 0};
   stream_ctrl_reg.stream_id = stream_id;
 
-  return setup_ide_ecap_regs(
+  return setup_ide_ecap_regs_common(
       port_context->cfg_space_fd,
       ide_type,
       port_context->ide_id,
@@ -1218,7 +1271,8 @@ bool reset_ide_registers(
       port_context->rid_assoc_reg_block.rid_assoc2,
       port_context->addr_assoc_reg_block.addr_assoc1,
       port_context->addr_assoc_reg_block.addr_assoc2,
-      port_context->addr_assoc_reg_block.addr_assoc3);
+      port_context->addr_assoc_reg_block.addr_assoc3,
+      port_context->linux_ep_association);
 }
 
 void prime_rp_ide_key_set(
