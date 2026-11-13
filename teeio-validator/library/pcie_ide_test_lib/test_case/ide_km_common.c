@@ -200,29 +200,38 @@ libspdm_return_t ide_km_key_set_go(const void *pci_doe_context,
     return LIBSPDM_STATUS_SUCCESS;
 }
 
-bool is_ide_stream_secure(TEST_IDE_TYPE ide_type,
-                          int rp_cfg_space_fd, uint32_t rp_ecap_offset, uint8_t rp_ide_id,
-                          int ep_cfg_space_fd, uint32_t ep_ecap_offset, uint8_t ep_ide_id)
+bool is_ide_stream_in_state(uint8_t expected_state, TEST_IDE_TYPE ide_type,
+                            int rp_cfg_space_fd, uint32_t rp_ecap_offset, uint8_t rp_ide_id,
+                            int ep_cfg_space_fd, uint32_t ep_ecap_offset, uint8_t ep_ide_id)
 {
   PCIE_SEL_IDE_STREAM_STATUS stream_status;
 
   // Check IDE stream status on root port
   stream_status.raw = read_stream_status_in_rp_ecap(rp_cfg_space_fd, rp_ecap_offset, ide_type, rp_ide_id);
-  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
+  if (stream_status.state != expected_state)
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "RP ide_stream state is %x.\n", stream_status.state));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "RP ide_stream state is %x, expected %x.\n", stream_status.state, expected_state));
     return false;
   }
 
   // Check IDE stream status on the device
   stream_status.raw = read_ide_stream_status_in_ecap(ep_cfg_space_fd, ide_type, ep_ide_id, ep_ecap_offset);
-  if (stream_status.state != IDE_STREAM_STATUS_SECURE)
+  if (stream_status.state != expected_state)
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "EP ide_stream state is %x.\n", stream_status.state));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "EP ide_stream state is %x, expected %x.\n", stream_status.state, expected_state));
     return false;
   }
 
   return true;
+}
+
+bool is_ide_stream_secure(TEST_IDE_TYPE ide_type,
+                          int rp_cfg_space_fd, uint32_t rp_ecap_offset, uint8_t rp_ide_id,
+                          int ep_cfg_space_fd, uint32_t ep_ecap_offset, uint8_t ep_ide_id)
+{
+  return is_ide_stream_in_state(IDE_STREAM_STATUS_SECURE, ide_type,
+                                rp_cfg_space_fd, rp_ecap_offset, rp_ide_id,
+                                ep_cfg_space_fd, ep_ecap_offset, ep_ide_id);
 }
 
 // setup ide stream

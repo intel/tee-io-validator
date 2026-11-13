@@ -82,6 +82,8 @@ void cxl_ide_test_keyrefresh_run(void *test_context)
 
   int cmd = 0;
   bool res = true;
+  uint8_t expected_ide_status = configuration->priv_data.cxl_ide.ide_mode == CXL_IDE_MODE_CONTAINMENT ?
+                                CXL_IDE_STATUS_ACTIVE_CONTAINMENT : CXL_IDE_STATUS_ACTIVE_SKID;
 
   while(true){
     TEEIO_PRINT(("\n"));
@@ -94,6 +96,12 @@ void cxl_ide_test_keyrefresh_run(void *test_context)
     TEEIO_PRINT(("Print device registers.\n"));
     // dump CXL IDE Capability in memcache reg block
     cxl_dump_ide_status(lower_port->cxl_data.memcache.cap_headers, lower_port->cxl_data.memcache.cap_headers_cnt, lower_port->cxl_data.memcache.mapped_memcache_reg_block);
+
+    // The stream must stay active in the configured mode across key refresh
+    res = cxl_check_ide_stream_status(group_context, expected_ide_status);
+    if(!res) {
+      break;
+    }
 
     TEEIO_PRINT(("Press 'q' to quit test or any other keys to key_refresh.\n"));
     cmd = getchar();

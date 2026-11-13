@@ -80,6 +80,9 @@ bool cxl_ide_generate_key(const void *pci_doe_context,
 // teardown cxl ide stream
 bool cxl_teardown_ide_stream(void *test_context);
 
+// check CXL IDE Status and IDE Error Status on both host and device
+bool cxl_check_ide_stream_status(cxl_ide_test_group_context_t *group_context, uint8_t expected_ide_status);
+
 typedef void(*cxl_ide_test_key_prog_t)(const void *doe_context,
                                    void *spdm_context, const uint32_t *session_id, int stream_id,
                                    uint8_t key_sub_stream, uint8_t port_index,

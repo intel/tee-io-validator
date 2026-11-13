@@ -366,6 +366,10 @@ typedef union {
   uint32_t raw;
 } CXL_IDE_STATUS;
 
+#define CXL_IDE_STATUS_ACTIVE_CONTAINMENT 0x1
+#define CXL_IDE_STATUS_ACTIVE_SKID        0x2
+#define CXL_IDE_STATUS_INSECURE           0x4
+
 // Section 8.2.4.22.4
 // CXL IDE Error Status
 typedef union {
