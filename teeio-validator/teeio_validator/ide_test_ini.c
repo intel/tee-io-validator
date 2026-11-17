@@ -68,12 +68,18 @@ const char *IDE_TEST_TOPOLOGY_TYPE_NAMES[] = {
     "link_ide",
     "selective_and_link_ide"};
 
+const char *IDE_TEST_STREAM_TYPE_NAMES[] = {
+    "link_ide",
+    "selective_ide",
+    "cxl_cm_ide"};
+
 const char *TEEIO_TEST_CATEGORY_NAMES[] = {
     "pcie-ide",
     "cxl-ide",
     "cxl-tsp",
     "tdisp",
-    "spdm"
+    "spdm",
+    "multi-ide"
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -1606,6 +1612,9 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
       return false;
     }
     test_suite.type = get_topology_type_from_name(entry_value);
+  } else if(test_suite.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE) {
+    // The streams are listed in Topology_x. Its type shall be selective_and_link_ide.
+    test_suite.type = IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE;
   } else {
     // Other test category either not care the type or use fixed LINK_IDE (like CXL).
     test_suite.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
@@ -1628,6 +1637,19 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] topology_%d type doesnot match test_suite.type\n", section_name, data32));
     return false;
+  }
+  if (test_suite.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE)
+  {
+    if (top->streams_cnt == 0)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] streams is missing in topology_%d.\n", section_name, data32));
+      return false;
+    }
+    if (top->connection != IDE_TEST_CONNECT_DIRECT)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] connection of topology_%d shall be direct.\n", section_name, data32));
+      return false;
+    }
   }
   test_suite.topology_id = data32;
 
@@ -1769,6 +1791,8 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
       return false;
     }
     config.type = get_topology_type_from_name(entry_value);
+  } else if(config.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE) {
+    config.type = IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE;
   } else {
     // Other test category either not care the type or use fixed LINK_IDE (like CXL).
     config.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
@@ -2071,6 +2095,87 @@ bool ParsePathInTopologySection(void *context, char* section_name, char* entry_n
   return true;
 }
 
+// Parse the streams string in Topology_x section, for example:
+//  link_ide:1,selective_ide:2,cxl_cm_ide:0
+bool ParseStreamsInTopologySection(const char* section_name, const char* streams, IDE_TEST_TOPOLOGY* top)
+{
+  char str_buf[MAX_LINE_LENGTH] = {0};
+  char *ptr = str_buf;
+  char *end = NULL;
+  int pos = 0;
+  int sep = 0;
+  int cnt = 0;
+  int type = 0;
+  unsigned long stream_id = 0;
+
+  strncpy(str_buf, streams, MAX_LINE_LENGTH - 1);
+
+  do {
+    pos = find_char_in_str(ptr, ',');
+    if(pos != -1) {
+      ptr[pos] = '\0';
+    }
+
+    if(cnt == MAX_IDE_TEST_STREAM_NUM) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] streams shall have at most %d entries.\n", section_name, MAX_IDE_TEST_STREAM_NUM));
+      return false;
+    }
+
+    sep = find_char_in_str(ptr, ':');
+    if(sep <= 0 || ptr[sep + 1] == '\0') {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid stream (%s). Expected <type>:<stream_id>.\n", section_name, ptr));
+      return false;
+    }
+    ptr[sep] = '\0';
+
+    for(type = 0; type < IDE_TEST_STREAM_TYPE_NUM; type++) {
+      if(strcmp(ptr, IDE_TEST_STREAM_TYPE_NAMES[type]) == 0) {
+        break;
+      }
+    }
+    if(type == IDE_TEST_STREAM_TYPE_NUM) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid stream type (%s).\n", section_name, ptr));
+      return false;
+    }
+
+    stream_id = strtoul(ptr + sep + 1, &end, 10);
+    if(*end != '\0' || stream_id > MAX_STREAM_ID) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Invalid stream_id (%s) of %s.\n", section_name, ptr + sep + 1, ptr));
+      return false;
+    }
+
+    // stream id in cxl-ide is always 0 according to cxl-spec
+    if(type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE && stream_id != 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] stream_id of %s shall be 0.\n", section_name, ptr));
+      return false;
+    }
+
+    for(int i = 0; i < cnt; i++) {
+      if(top->streams[i].type == type) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Duplicated stream type (%s).\n", section_name, ptr));
+        return false;
+      }
+      if(type != IDE_TEST_STREAM_TYPE_CXL_CM_IDE && top->streams[i].type != IDE_TEST_STREAM_TYPE_CXL_CM_IDE &&
+         top->streams[i].stream_id == stream_id) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] Duplicated stream_id (%lu).\n", section_name, stream_id));
+        return false;
+      }
+    }
+
+    top->streams[cnt].type = (IDE_TEST_STREAM_TYPE)type;
+    top->streams[cnt].stream_id = (uint8_t)stream_id;
+    cnt++;
+
+    if(pos != -1) {
+      ptr += (pos + 1);
+    }
+  } while(pos != -1);
+
+  top->streams_cnt = cnt;
+
+  return true;
+}
+
 bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index)
 {
   char entry_name[MAX_ENTRY_NAME_LENGTH] = {0};
@@ -2127,11 +2232,22 @@ bool ParseTopologySection(void *context, IDE_TEST_CONFIG *test_config, int index
   }
   topology->connection = get_connection_from_name(entry_value);
 
+  // optional streams
+  sprintf(entry_name, "streams");
+  if (GetStringFromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &entry_value))
+  {
+    if(!ParseStreamsInTopologySection(section_name, (const char *)entry_value, topology)) {
+      return false;
+    }
+  }
+
   // stream_id
   sprintf(entry_name, "stream_id");
   if (!GetDecimalUint32FromDataFile(context, (uint8_t *)section_name, (uint8_t *)entry_name, &data32))
   {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] stream_id is missing.\n", section_name));
+    if(topology->streams_cnt == 0) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] stream_id is missing.\n", section_name));
+    }
   }
   if(data32 > MAX_STREAM_ID) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] stream_id(%d) shall be in [0, 255].\n", section_name, data32));
@@ -2456,6 +2572,10 @@ void dump_test_config(IDE_TEST_CONFIG *test_config)
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  upper     = %s\n", get_port_by_id(test_config, top->upper_port)->port_name));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  lower     = %s\n", get_port_by_id(test_config, top->lower_port)->port_name));
     TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  stream_id = %d\n", top->stream_id));
+    for(int j = 0; j < top->streams_cnt; j++) {
+      TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  streams[%d]= %s:%d\n", j,
+                   IDE_TEST_STREAM_TYPE_NAMES[top->streams[j].type], top->streams[j].stream_id));
+    }
     if(top->connection == IDE_TEST_CONNECT_DIRECT) {
       TEEIO_DEBUG((TEEIO_DEBUG_VERBOSE, "  path1     = %s,%s\n", get_port_by_id(test_config, top->root_port)->port_name,
                                                                      get_port_by_id(test_config, top->lower_port)->port_name));

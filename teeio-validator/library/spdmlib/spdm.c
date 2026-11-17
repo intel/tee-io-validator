@@ -478,3 +478,45 @@ bool spdm_end_session(void *spdm_context, uint32_t session_id)
 {
     return spdm_stop(spdm_context, session_id);
 }
+
+static void teeio_spdm_free_context(void *spdm_context)
+{
+    if (spdm_context == m_spdm_context) {
+        free(m_scratch_buffer);
+        m_scratch_buffer = NULL;
+        m_spdm_context = NULL;
+    }
+    free(spdm_context);
+}
+
+bool teeio_spdm_session_open(void **spdm_context, uint32_t *session_id)
+{
+    *session_id = 0;
+    *spdm_context = spdm_client_init();
+    if (*spdm_context == NULL) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_client_init failed.\n"));
+        return false;
+    }
+
+    if (!spdm_connect(*spdm_context, session_id)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "spdm_connect failed.\n"));
+        teeio_spdm_session_close(spdm_context, session_id);
+        return false;
+    }
+
+    return true;
+}
+
+void teeio_spdm_session_close(void **spdm_context, uint32_t *session_id)
+{
+    if (*spdm_context == NULL) {
+        return;
+    }
+
+    if (*session_id != 0) {
+        spdm_stop(*spdm_context, *session_id);
+    }
+    teeio_spdm_free_context(*spdm_context);
+    *spdm_context = NULL;
+    *session_id = 0;
+}

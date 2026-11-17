@@ -66,7 +66,11 @@ bool cxl_reset_ecap_registers(ide_common_test_port_context_t *port_context)
 
 bool cxl_reset_kcbar_registers(ide_common_test_port_context_t *port_context)
 {
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR* kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
+  return cxl_reset_kcbar((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr);
+}
+
+bool cxl_reset_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr)
+{
   INTEL_KEYP_CXL_LINK_ENC_CONTROL enc_ctrl = {.raw = mmio_read_reg32(&kcbar_ptr->link_enc_control)};
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "cxl_reset_kcbar_registers before link_enc_ctrl=0x%08x\n", enc_ctrl.raw));
@@ -89,11 +93,18 @@ void cxl_clear_rootport_key_ivs(ide_common_test_port_context_t* port_context)
   TEEIO_ASSERT(port_context);
   TEEIO_ASSERT(port_context->mapped_kcbar_addr);
 
+  cxl_clear_kcbar_key_ivs((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr);
+}
+
+void cxl_clear_kcbar_key_ivs(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr)
+{
+  TEEIO_ASSERT(kcbar_ptr);
+
   // clear the keys & ivs in rootport
   cxl_ide_km_aes_256_gcm_key_buffer_t keys;
   memset(&keys, 0, sizeof(cxl_ide_km_aes_256_gcm_key_buffer_t));
-  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
-  cxl_cfg_rp_link_enc_key_iv((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_TX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
+  cxl_cfg_rp_link_enc_key_iv(kcbar_ptr, CXL_IDE_KM_KEY_DIRECTION_RX, 0, (uint8_t *)keys.key, sizeof(keys.key), (uint8_t *)keys.iv, sizeof(keys.iv));
 }
 
 /**
@@ -239,6 +250,54 @@ void cxl_dump_dvsecs(IDE_TEST_CXL_PCIE_DVSEC* dvsec, int count)
 }
 
 /*
+ * Map CXL.cachemem registers and the CXL.cachemem KCBAR of rootcomplex port.
+ * fd is the opened configuration space of the port.
+ */
+bool cxl_map_root_port_regs(ide_common_test_port_context_t *port_context, int fd, uint8_t **mapped_kcbar_addr, int *kcbar_fd)
+{
+  CXL_PRIV_DATA *cxl_data = &port_context->cxl_data;
+
+  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
+  if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
+    return false;
+  }
+  cxl_data->ecap.dvsec_cnt = dvsec_cnt;
+
+  cxl_dump_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt);
+
+  // check CXL DVSECs
+  if(!cxl_check_rootport_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
+    return false;
+  }
+
+  // map cxl.memcache reg block
+  if(!cxl_init_memcache_reg_block(fd, &cxl_data->memcache, cxl_data->ecap.dvsecs, cxl_data->ecap.dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Map CXL.memcache reg block failed.\n"));
+    return false;
+  }
+  // dump CXL IDE Capability in memcache reg block
+  cxl_dump_ide_capability(cxl_data->memcache.cap_headers, cxl_data->memcache.cap_headers_cnt, cxl_data->memcache.mapped_memcache_reg_block);
+
+  // parse KEYP table and map the kcbar to user space
+  if (!map_keyp_kcbar(port_context->port, INTEL_KEYP_PROTOCOL_TYPE_CXL_MEMCACHE, mapped_kcbar_addr, kcbar_fd))
+  {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "parse_keyp_table failed.\n"));
+    cxl_unmap_memcache_reg_block(cxl_data->memcache.mapped_fd, cxl_data->memcache.mapped_memcache_reg_block);
+    cxl_data->memcache.mapped_fd = 0;
+    cxl_data->memcache.mapped_memcache_reg_block = NULL;
+    return false;
+  }
+
+  // store the Link_Enc_Global_Config in kcbar and cxl_cap/cxl_cap2/cxl_cap3 in ecap(@configuration space)
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)*mapped_kcbar_addr;
+  cxl_data->kcbar.link_enc_global_config.raw = mmio_read_reg32(&kcbar->link_enc_global_config);
+
+  return true;
+}
+
+/*
  * Open rootcomplex port
  */
 bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
@@ -260,43 +319,11 @@ bool cxl_open_root_port(ide_common_test_port_context_t *port_context)
   sprintf(str, "cxl.host : %s", port->bdf);
   set_deivce_info(fd, str);
 
-  CXL_PRIV_DATA *cxl_data = &port_context->cxl_data;
-
-  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
-  if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
-    goto InitRootPortFail;
-  }
-  cxl_data->ecap.dvsec_cnt = dvsec_cnt;
-
-  cxl_dump_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt);
-
-  // check CXL DVSECs
-  if(!cxl_check_rootport_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
-    goto InitRootPortFail;
-  }
-
-  // map cxl.memcache reg block
-  if(!cxl_init_memcache_reg_block(fd, &cxl_data->memcache, cxl_data->ecap.dvsecs, cxl_data->ecap.dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Map CXL.memcache reg block failed.\n"));
-    goto InitRootPortFail;
-  }
-  // dump CXL IDE Capability in memcache reg block
-  cxl_dump_ide_capability(cxl_data->memcache.cap_headers, cxl_data->memcache.cap_headers_cnt, cxl_data->memcache.mapped_memcache_reg_block);
-
   port_context->ecap_offset = 0;
 
-  // parse KEYP table and map the kcbar to user space
-  if (!parse_keyp_table(port_context, INTEL_KEYP_PROTOCOL_TYPE_CXL_MEMCACHE))
-  {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "parse_keyp_table failed.\n"));
+  if(!cxl_map_root_port_regs(port_context, fd, &port_context->mapped_kcbar_addr, &port_context->kcbar_fd)) {
     goto InitRootPortFail;
   }
-
-  // store the Link_Enc_Global_Config in kcbar and cxl_cap/cxl_cap2/cxl_cap3 in ecap(@configuration space)
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
-  cxl_data->kcbar.link_enc_global_config.raw = mmio_read_reg32(&kcbar->link_enc_global_config);
 
   return true;
 
@@ -612,7 +639,7 @@ void cxl_dump_ide_capability(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_head
 
 }
 
-void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
+static uint8_t* cxl_find_ide_cap(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
 {
   // walk thru to find CXL IDE Capability
   int i = 0;
@@ -624,16 +651,26 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
 
   if(i == cap_headers_cnt) {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Cannot find CXL IDE Capability!\n"));
+    return NULL;
+  }
+
+  return mapped_memcache_reg_block + cap_header[i].pointer;
+}
+
+void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_cnt, uint8_t* mapped_memcache_reg_block)
+{
+  uint8_t* ide_cap_ptr = cxl_find_ide_cap(cap_header, cap_headers_cnt, mapped_memcache_reg_block);
+  if(ide_cap_ptr == NULL) {
     return;
   }
 
-  uint8_t* ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
+  uint8_t* ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status);
   CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ptr)};
 
-  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
+  ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status);
   CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ptr)};
 
-  ptr = mapped_memcache_reg_block + cap_header[i].pointer + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, control);
+  ptr = ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, control);
   CXL_IDE_CONTROL ide_control = {.raw = mmio_read_reg32(ptr)};
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Dump CXL IDE Status\n"));
@@ -651,6 +688,114 @@ void cxl_dump_ide_status(CXL_CAPABILITY_XXX_HEADER* cap_header, int cap_headers_
                                   ide_control.pcrc_disable, ide_control.ide_stop_enable));
 }
 
+// CXL 3.1 Section 8.2.4.22.3
+static const char* cxl_ide_status_name(uint8_t ide_status)
+{
+  switch(ide_status) {
+    case CXL_IDE_STATUS_ACTIVE_CONTAINMENT:
+      return "Active Containment mode";
+    case CXL_IDE_STATUS_ACTIVE_SKID:
+      return "Active Skid mode";
+    case CXL_IDE_STATUS_INSECURE:
+      return "Insecure State";
+    default:
+      return "Reserved";
+  }
+}
+
+// CXL 3.1 Section 8.2.4.22.4
+static const char* m_cxl_ide_rx_error_names[] = {
+  "No Error",
+  "Integrity failure on received secure traffic",
+  "MAC or Truncated MAC received when the link is not in secure mode",
+  "MAC header received when not expected",
+  "MAC header is not received when expected",
+  "Truncated MAC flit is received when not expected",
+  "After early MAC termination, protocol flit received before the truncation delay",
+  "Protocol flit received earlier than expected after key change or IDE Termination Handshake",
+  "CXL.cachemem IDE Establishment Security error"
+};
+
+bool cxl_check_ide_status(const char* port_name, CXL_PRIV_DATA_MEMCACHE_REG_DATA* memcache, uint8_t expected_ide_status)
+{
+  uint8_t* ide_cap_ptr = cxl_find_ide_cap(memcache->cap_headers, memcache->cap_headers_cnt, memcache->mapped_memcache_reg_block);
+  if(ide_cap_ptr == NULL) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: cannot check CXL IDE Status.\n", port_name));
+    return false;
+  }
+
+  CXL_IDE_STATUS ide_status = {.raw = mmio_read_reg32(ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, status))};
+  CXL_IDE_ERROR_STATUS error_status = {.raw = mmio_read_reg32(ide_cap_ptr + OFFSET_OF(CXL_IDE_CAPABILITY_STRUCT, error_status))};
+  bool res = true;
+
+  if(ide_status.rx_ide_status != expected_ide_status) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Rx IDE Status is 0x%x (%s), expected 0x%x (%s).\n",
+                 port_name, ide_status.rx_ide_status, cxl_ide_status_name(ide_status.rx_ide_status),
+                 expected_ide_status, cxl_ide_status_name(expected_ide_status)));
+    res = false;
+  }
+
+  if(ide_status.tx_ide_status != expected_ide_status) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Tx IDE Status is 0x%x (%s), expected 0x%x (%s).\n",
+                 port_name, ide_status.tx_ide_status, cxl_ide_status_name(ide_status.tx_ide_status),
+                 expected_ide_status, cxl_ide_status_name(expected_ide_status)));
+    res = false;
+  }
+
+  if(error_status.rx_error_status != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Rx Error Status is 0x%x (%s).\n", port_name, error_status.rx_error_status,
+                 error_status.rx_error_status < LIBSPDM_ARRAY_SIZE(m_cxl_ide_rx_error_names) ? m_cxl_ide_rx_error_names[error_status.rx_error_status] : "Reserved"));
+    res = false;
+  }
+
+  if(error_status.tx_error_status != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Tx Error Status is 0x%x (Reserved).\n", port_name, error_status.tx_error_status));
+    res = false;
+  }
+
+  if(error_status.unexpected_ide_stop_received != 0) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s: Unexpected IDE.Stop Received is set.\n", port_name));
+    res = false;
+  }
+
+  return res;
+}
+
+
+/*
+ * Map CXL.cachemem registers of device port.
+ * fd is the opened configuration space of the port.
+ */
+bool cxl_map_dev_port_regs(ide_common_test_port_context_t *port_context, int fd)
+{
+  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
+  CXL_PRIV_DATA* cxl_data = &port_context->cxl_data;
+  if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
+    return false;
+  }
+  cxl_data->ecap.dvsec_cnt = dvsec_cnt;
+
+  cxl_dump_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt);
+
+  cxl_populate_dev_caps_in_ecap(fd, &cxl_data->ecap);
+
+  // check CXL DVSECs
+  if(!cxl_check_ep_dvsec(cxl_data->ecap.dvsecs, dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
+    return false;
+  }
+
+  if(!cxl_init_memcache_reg_block(fd, &cxl_data->memcache, cxl_data->ecap.dvsecs, cxl_data->ecap.dvsec_cnt)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Map CXL.memcache reg block failed.\n"));
+    return false;
+  }
+
+  // dump CXL IDE Capability
+  cxl_dump_ide_capability(cxl_data->memcache.cap_headers, cxl_data->memcache.cap_headers_cnt, cxl_data->memcache.mapped_memcache_reg_block);
+
+  return true;
+}
 
 /*
  * Open device port
@@ -676,31 +821,9 @@ bool cxl_open_dev_port(ide_common_test_port_context_t *port_context)
   sprintf(str, "cxl.dev : %s", port->bdf);
   set_deivce_info(fd, str);
 
-  int dvsec_cnt = MAX_IDE_TEST_DVSEC_COUNT;
-  CXL_PRIV_DATA* cxl_data = &port_context->cxl_data;
-  if(!cxl_find_dvsec_in_config_space(fd, cxl_data->ecap.dvsecs, &dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Find CXL DVSECs failed.\n"));
+  if(!cxl_map_dev_port_regs(port_context, fd)) {
     goto OpenDevFail;
   }
-  cxl_data->ecap.dvsec_cnt = dvsec_cnt;
-
-  cxl_dump_dvsecs(cxl_data->ecap.dvsecs, dvsec_cnt);
-
-  cxl_populate_dev_caps_in_ecap(fd, &cxl_data->ecap);
-
-  // check CXL DVSECs
-  if(!cxl_check_ep_dvsec(cxl_data->ecap.dvsecs, dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Check CXL DVSECs failed.\n"));
-    goto OpenDevFail;
-  }
-
-  if(!cxl_init_memcache_reg_block(fd, &cxl_data->memcache, cxl_data->ecap.dvsecs, cxl_data->ecap.dvsec_cnt)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Map CXL.memcache reg block failed.\n"));
-    goto OpenDevFail;
-  }
-
-  // dump CXL IDE Capability
-  cxl_dump_ide_capability(cxl_data->memcache.cap_headers, cxl_data->memcache.cap_headers_cnt, cxl_data->memcache.mapped_memcache_reg_block);
 
   // TODO
   // m_dev_fp indicates the device ide card. It is used in doe_read_write.c.

@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/param.h>
 #include "ide_test.h"
+#include "cxl_ide_test_lib.h"
 #include "library/cxl_ide_km_requester_lib.h"
 
 #pragma pack(1)
@@ -48,14 +49,6 @@ typedef struct {
 
 #pragma pack()
 
-// setup cxl ide stream
-bool cxl_setup_ide_stream(void *doe_context, void *spdm_context,
-                          uint32_t *session_id, uint8_t *kcbar_addr,
-                          uint8_t stream_id, uint8_t port_index,
-                          ide_common_test_port_context_t *upper_port,
-                          ide_common_test_port_context_t *lower_port,
-                          bool skip_ksetgo, uint32_t config_bitmap,
-                          CXL_IDE_MODE ide_mode, bool key_refresh);
 // stop cxl ide stream
 bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
                          uint32_t *session_id, uint8_t *kcbar_addr,
@@ -79,6 +72,9 @@ bool cxl_ide_generate_key(const void *pci_doe_context,
 
 // teardown cxl ide stream
 bool cxl_teardown_ide_stream(void *test_context);
+
+// check CXL IDE Status and IDE Error Status on both host and device
+bool cxl_check_ide_stream_status(cxl_ide_test_group_context_t *group_context, uint8_t expected_ide_status);
 
 typedef void(*cxl_ide_test_key_prog_t)(const void *doe_context,
                                    void *spdm_context, const uint32_t *session_id, int stream_id,
