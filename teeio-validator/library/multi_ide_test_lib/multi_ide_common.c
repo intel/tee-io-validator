@@ -41,12 +41,13 @@ static ide_test_group_funcs_t m_multi_ide_group_funcs = {
 };
 
 static ide_test_case_name_t m_multi_ide_test_case_names[] = {
-  {"MultiStream", "1",  MULTI_IDE_TEST_CASE_MULTI_STREAM},
-  {NULL,          NULL, MULTI_IDE_TEST_CASE_NUM}
+  {"MultiStream", "1,2", MULTI_IDE_TEST_CASE_MULTI_STREAM},
+  {NULL,          NULL,  MULTI_IDE_TEST_CASE_NUM}
 };
 
 static ide_test_case_funcs_t m_multi_ide_multi_stream_cases[MAX_MULTI_IDE_STREAM_CASE_ID] = {
   { multi_ide_test_multi_stream_1_setup, multi_ide_test_multi_stream_1_run, multi_ide_test_multi_stream_1_teardown, false },
+  { multi_ide_test_multi_stream_2_setup, multi_ide_test_multi_stream_2_run, multi_ide_test_multi_stream_2_teardown, false },
 };
 
 static TEEIO_TEST_CASES m_multi_ide_test_case_funcs[MULTI_IDE_TEST_CASE_NUM] = {

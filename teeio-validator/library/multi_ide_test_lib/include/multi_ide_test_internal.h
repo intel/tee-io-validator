@@ -9,7 +9,7 @@
 
 #include "ide_test.h"
 
-#define MAX_MULTI_IDE_STREAM_CASE_ID 1
+#define MAX_MULTI_IDE_STREAM_CASE_ID 2
 
 typedef enum {
   MULTI_IDE_CONFIGURATION_TYPE_DEFAULT = 0,
@@ -37,6 +37,10 @@ bool multi_ide_test_config_default_check(void *test_context);
 bool multi_ide_test_multi_stream_1_setup(void *test_context);
 void multi_ide_test_multi_stream_1_run(void *test_context);
 void multi_ide_test_multi_stream_1_teardown(void *test_context);
+
+bool multi_ide_test_multi_stream_2_setup(void *test_context);
+void multi_ide_test_multi_stream_2_run(void *test_context);
+void multi_ide_test_multi_stream_2_teardown(void *test_context);
 
 // open/close rootport and device port for all streams in group_context
 bool multi_ide_open_ports(multi_ide_test_group_context_t *group_context);
