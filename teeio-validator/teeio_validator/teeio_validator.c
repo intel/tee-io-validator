@@ -9,8 +9,10 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include "ide_test.h"
+#include "os_include.h"
 #include "command.h"
 #include "teeio_spdmlib.h"
+#include "spdm_test.h"
 
 char g_bdf[] = {'2','a',':','0','0','.','0','\0'};
 char g_rp_bdf[] = {'2','9',':','0','2','.','0','\0'};
@@ -50,7 +52,8 @@ extern const char *IDE_TEST_IDE_TYPE_NAMES[];
 bool parse_ide_test_init(IDE_TEST_CONFIG *test_config, const char* ide_test_ini);
 bool parse_cmdline_option(int argc, char *argv[], char* file_name, IDE_TEST_CONFIG *ide_test_config, bool* print_usage, uint8_t* debug_level);
 void print_usage();
-bool run(IDE_TEST_CONFIG *test_config);
+bool run(IDE_TEST_CONFIG *test_config, bool *control_passed,
+         bool *drivers_passed);
 bool update_test_config_with_given_top_config_id(IDE_TEST_CONFIG *test_config, int top_id, int config_id, const char* test_case, TEEIO_TEST_CATEGORY test_category);
 bool is_valid_test_case(const char* test_case_name, TEEIO_TEST_CATEGORY test_category);
 
@@ -67,12 +70,63 @@ static TEEIO_TEST_CATEGORY get_test_category_from_configuration(IDE_TEST_CONFIG*
   return TEEIO_TEST_CATEGORY_MAX;
 }
 
+/* Fault rules are global, so a Fault case must be the only SPDM case in a run;
+ * any other SPDM group could otherwise consume its rule. */
+static bool select_fault_case(IDE_TEST_CONFIG *test_config)
+{
+  uint32_t selected = 0;
+  bool other_spdm_cases = false;
+
+  for (int i = 0; i < MAX_TEST_SUITE_NUM; i++) {
+    IDE_TEST_SUITE *suite = test_config->test_suites.test_suites + i;
+    IDE_TEST_CASE *cases = suite->test_cases.cases + SPDM_TEST_CASE_FAULT;
+
+    if (suite->id == 0 || !suite->enabled ||
+        suite->test_category != TEEIO_TEST_CATEGORY_SPDM) {
+      continue;
+    }
+    for (int class_id = 0; class_id < SPDM_TEST_CASE_FAULT; class_id++) {
+      other_spdm_cases |= suite->test_cases.cases[class_id].cases_cnt != 0;
+    }
+    for (uint32_t j = 0; j < cases->cases_cnt; j++) {
+      if (selected != 0 && selected != cases->cases_id[j]) {
+        TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                     "Multiple SPDM Fault cases selected: Fault.%u and Fault.%u.\n",
+                     selected, cases->cases_id[j]));
+        return false;
+      }
+      selected = cases->cases_id[j];
+    }
+  }
+  if (selected == 0) {
+    return true;
+  }
+  if (other_spdm_cases) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                 "Fault.%u must be the only SPDM case in an invocation.\n",
+                 selected));
+    return false;
+  }
+  if (!teeio_fault_select_driver(selected)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Unknown SPDM Fault case Fault.%u.\n",
+                 selected));
+    return false;
+  }
+  return true;
+}
+
 int main(int argc, char *argv[])
 {
     char ide_test_ini_file[MAX_FILE_NAME] = {0};
+    char unfired_rules[TEEIO_FAULT_UNFIRED_RULES_SIZE] = {0};
+    char fault_error[160] = {0};
     bool to_print_usage = false;
+    bool tests_passed;
     int ret = -1;
     uint8_t debug_level = TEEIO_DEBUG_NUM;
+    bool control_passed = false;
+    bool drivers_passed;
+    bool zero_fire_control_passed;
 
     if (!log_file_init(LOGFILE)){
         TEEIO_PRINT(("Failed to init log file!\n"));
@@ -114,6 +168,7 @@ int main(int argc, char *argv[])
     g_libspdm_log = ide_test_config.main_config.libspdm_log;
     g_doe_log = ide_test_config.main_config.doe_log;
     teeio_spdm_set_version(ide_test_config.main_config.spdm_version);
+    teeio_fault_init(&ide_test_config.fault_injection);
 
     if(debug_level == TEEIO_DEBUG_NUM) {
         g_debug_level = ide_test_config.main_config.debug_level;
@@ -152,6 +207,14 @@ int main(int argc, char *argv[])
       }
     }
 
+    if (!select_fault_case(&ide_test_config)) {
+      goto MainDone;
+    }
+    if (!teeio_fault_validate_plaintext_rules(fault_error, sizeof(fault_error))) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s\n", fault_error));
+      goto MainDone;
+    }
+
     // Open pcap file
     if (ide_test_config.main_config.pcap_enable) {
        if (!pcap_file_init(PCAPFILE, SOCKET_TRANSPORT_TYPE_PCI_DOE)) {
@@ -162,9 +225,53 @@ int main(int argc, char *argv[])
 
     srand((unsigned int)time(NULL));
 
-    run(&ide_test_config);
+    tests_passed = run(&ide_test_config, &control_passed, &drivers_passed);
+    /* A passing cached-certificate control legitimately fires no rule. */
+    zero_fire_control_passed = ide_test_config.fault_injection.rule_count == 1 &&
+        teeio_fault_driver() == TEEIO_FAULT_DRIVER_KEY_EXCHANGE_CACHED_CERT &&
+        teeio_fault_fire_count() == 0 && control_passed;
 
-    ret = 0;
+        if (ide_test_config.fault_injection.rule_count > 0) {
+            TEEIO_PRINT(("Fault scenario result: %s\n",
+                                     teeio_fault_result_record()));
+        }
+        if (!drivers_passed) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                 "Dedicated fault driver assertions failed or did not run.\n"));
+            ret = -1;
+        } else if (ide_test_config.fault_injection.rule_count > 0 &&
+            !teeio_fault_scenario_fired() && !zero_fire_control_passed) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                                     "Fault scenario never fired.\n"));
+            ret = -1;
+        } else if (!zero_fire_control_passed &&
+                   !teeio_fault_all_rules_fired(unfired_rules,
+                                                sizeof(unfired_rules))) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Fault rules never fired: %s\n", unfired_rules));
+            ret = -1;
+        } else if (teeio_fault_same_session_recovery_configured() &&
+                   !teeio_fault_same_session_recovery_succeeded()) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Same-session recovery failed or did not run.\n"));
+            ret = -1;
+        } else if (teeio_fault_classification_configured()) {
+            /* The injected fault is meant to break the driver; allowed_actual decides. */
+            if (!teeio_fault_actual_allowed()) {
+                TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                             "Fault scenario actual outcome is not allowed.\n"));
+                ret = -1;
+            } else {
+                ret = 0;
+            }
+        } else if (ide_test_config.fault_injection.rule_count > 0 &&
+                   !tests_passed) {
+            TEEIO_DEBUG((TEEIO_DEBUG_ERROR,
+                         "Test assertions failed or no test case passed.\n"));
+            ret = -1;
+        } else {
+            ret = 0;
+        }
 
     // Close pcap file
     if (ide_test_config.main_config.pcap_enable) {
