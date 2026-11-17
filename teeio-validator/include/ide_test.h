@@ -45,6 +45,7 @@
 #define MAX_ENTRY_STRING_LENGTH 128
 #define MAX_STREAM_ID 255
 #define MAX_RP_STREAM_INDEX 255
+#define MAX_IDE_TEST_STREAM_NUM 3
 
 #define MAX_CASE_ID 32
 #define MAX_TEST_CASE_NUM 32
@@ -117,6 +118,14 @@ typedef enum {
   IDE_TEST_TOPOLOGY_TYPE_NUM
 } IDE_TEST_TOPOLOGY_TYPE;
 
+// type of an entry in the streams list of a topology
+typedef enum {
+  IDE_TEST_STREAM_TYPE_LINK_IDE = 0,
+  IDE_TEST_STREAM_TYPE_SEL_IDE = 1,
+  IDE_TEST_STREAM_TYPE_CXL_CM_IDE = 2,
+  IDE_TEST_STREAM_TYPE_NUM
+} IDE_TEST_STREAM_TYPE;
+
 typedef enum {
   IDE_COMMON_TEST_CASE_QUERY = 0,
   IDE_COMMON_TEST_CASE_KEYPROG,
@@ -184,6 +193,11 @@ typedef struct
 } IDE_TEST_MAIN_CONFIG;
 
 typedef struct {
+  IDE_TEST_STREAM_TYPE type;
+  uint8_t stream_id;
+} IDE_TEST_STREAM;
+
+typedef struct {
   int id;
   bool enabled;
   IDE_TEST_TOPOLOGY_TYPE type;
@@ -196,6 +210,9 @@ typedef struct {
   uint16_t segment;
   uint8_t bus;
   uint8_t stream_id;
+  // streams set up in this order within one SPDM session
+  int streams_cnt;
+  IDE_TEST_STREAM streams[MAX_IDE_TEST_STREAM_NUM];
 } IDE_TEST_TOPOLOGY;
 
 typedef struct {
