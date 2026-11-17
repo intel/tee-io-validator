@@ -21,6 +21,12 @@ bool cxl_init_root_port(cxl_ide_test_group_context_t *group_context);
 bool cxl_open_root_port(ide_common_test_port_context_t *port_context);
 
 /*
+ * Map CXL.cachemem registers and the CXL.cachemem KCBAR of rootcomplex port.
+ * fd is the opened configuration space of the port.
+ */
+bool cxl_map_root_port_regs(ide_common_test_port_context_t *port_context, int fd, uint8_t **mapped_kcbar_addr, int *kcbar_fd);
+
+/*
  * Close rootcomplex port
  */
 bool cxl_close_root_port(cxl_ide_test_group_context_t *group_context);
@@ -34,6 +40,27 @@ bool cxl_init_dev_port(cxl_ide_test_group_context_t *group_context);
  * Open device port
  */
 bool cxl_open_dev_port(ide_common_test_port_context_t *port_context);
+
+/*
+ * Map CXL.cachemem registers of device port.
+ * fd is the opened configuration space of the port.
+ */
+bool cxl_map_dev_port_regs(ide_common_test_port_context_t *port_context, int fd);
+
+/*
+ * Unmap CXL.cachemem register block
+ */
+void cxl_unmap_memcache_reg_block(int mapped_fd, uint8_t* mapped_addr);
+
+/*
+ * Clear Link_Enc_Control in CXL.cachemem KCBAR
+ */
+bool cxl_reset_kcbar(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);
+
+/*
+ * Clear the keys and ivs in CXL.cachemem KCBAR
+ */
+void cxl_clear_kcbar_key_ivs(INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr);
 
 /*
  * Close device port
