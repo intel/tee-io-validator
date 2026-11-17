@@ -81,6 +81,17 @@ bool spdm_start_psk_session(void *spdm_context, const void *psk_hint,
 */
 bool spdm_end_session(void *spdm_context, uint32_t session_id);
 
+/**
+ * Initialize spdm client and connect to the device with a secured session.
+ * On failure nothing is left allocated and *spdm_context is NULL.
+ */
+bool teeio_spdm_session_open(void **spdm_context, uint32_t *session_id);
+
+/**
+ * Stop the secured session and free the spdm context. Safe to call twice.
+ */
+void teeio_spdm_session_close(void **spdm_context, uint32_t *session_id);
+
 libspdm_return_t device_doe_receive_message(
     void *spdm_context,
     size_t *response_size,
