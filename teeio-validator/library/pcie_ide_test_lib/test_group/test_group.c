@@ -18,6 +18,7 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
+#include "pcie_ide_test_lib.h"
 #include "teeio_spdmlib.h"
 #include "library/pci_ide_km_common_lib.h"
 #include "library/pci_ide_km_requester_lib.h"
@@ -64,12 +65,20 @@ static bool ide_query_segment_match(uint8_t port_index, uint8_t segment, uint8_t
 // use ide_km to query the port_index matching with BDF of lower port
 bool ide_query_port_index(void *test_context)
 {
-  libspdm_return_t status;
   pcie_ide_test_group_context_t *context = (pcie_ide_test_group_context_t *)test_context;
+
+  return pcie_ide_query_port_index(&context->spdm_doe, context->common.lower_port.port,
+                                   &context->common.lower_port.port->port_index);
+}
+
+// use ide_km to query the port_index matching with BDF of dev_port
+bool pcie_ide_query_port_index(spdm_doe_context_t *spdm_doe, IDE_PORT *dev_port, uint8_t *matched_port_index)
+{
+  libspdm_return_t status;
   uint8_t port_index = 0;
-  uint8_t dev_func = ((context->common.lower_port.port->device & 0x1f) << 3) | (context->common.lower_port.port->function & 0x7);
-  uint8_t bus = context->common.lower_port.port->bus;
-  uint8_t segment = context->common.lower_port.port->segment;
+  uint8_t dev_func = ((dev_port->device & 0x1f) << 3) | (dev_port->function & 0x7);
+  uint8_t bus = dev_port->bus;
+  uint8_t segment = dev_port->segment;
   uint8_t max_port_index = 0;
   uint32_t ide_reg_block[PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT] = {0};
   uint32_t ide_reg_block_count = PCI_IDE_KM_IDE_REG_BLOCK_SUPPORTED_COUNT;
@@ -80,9 +89,9 @@ bool ide_query_port_index(void *test_context)
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Querying PCI IDE KM for dev_func=0x%x, bus=0x%x, segment=0x%x\n",
                target_dev_func, target_bus, target_segment));
-  status = pci_ide_km_query(context->spdm_doe.doe_context,
-                            context->spdm_doe.spdm_context,
-                            &context->spdm_doe.session_id,
+  status = pci_ide_km_query(spdm_doe->doe_context,
+                            spdm_doe->spdm_context,
+                            &spdm_doe->session_id,
                             port_index, &dev_func, &bus,
                             &segment, &max_port_index,
                             ide_reg_block, &ide_reg_block_count);
@@ -94,14 +103,14 @@ bool ide_query_port_index(void *test_context)
                port_index, dev_func, bus, segment, max_port_index));
 
   if (target_dev_func == dev_func && target_bus == bus && ide_query_segment_match(port_index, segment, target_segment)) {
-    context->common.lower_port.port->port_index = port_index;
+    *matched_port_index = port_index;
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
     found = true;
   } else if (max_port_index > 0) {
     for (port_index = 1; port_index < max_port_index + 1; port_index++) {
-      status = pci_ide_km_query(context->spdm_doe.doe_context,
-                                context->spdm_doe.spdm_context,
-                                &context->spdm_doe.session_id,
+      status = pci_ide_km_query(spdm_doe->doe_context,
+                                spdm_doe->spdm_context,
+                                &spdm_doe->session_id,
                                 port_index, &dev_func, &bus,
                                 &segment, &max_port_index,
                                 ide_reg_block, &ide_reg_block_count);
@@ -113,7 +122,7 @@ bool ide_query_port_index(void *test_context)
                   port_index, dev_func, bus, segment, max_port_index));
 
       if (target_dev_func == dev_func && target_bus == bus && ide_query_segment_match(port_index, segment, target_segment)) {
-        context->common.lower_port.port->port_index = port_index;
+        *matched_port_index = port_index;
         TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Found matching port_index=%d for lower_port\n", port_index));
         found = true;
       }

@@ -23,6 +23,7 @@
 #include "teeio_debug.h"
 #include "pcie_ide_lib.h"
 #include "cxl_ide_lib.h"
+#include "cxl_ide_test_lib.h"
 #include "cxl_ide_test_common.h"
 
 extern bool g_teeio_fixed_key;
@@ -180,7 +181,7 @@ bool cxl_stop_ide_stream(void *doe_context, void *spdm_context,
   return true;
 }
 
-static bool do_query_port_index(cxl_ide_test_group_context_t *context,
+static bool do_query_port_index(spdm_doe_context_t *spdm_doe,
                                               uint8_t port_index,
                                               uint8_t target_dev_func,
                                               uint8_t target_bus,
@@ -195,9 +196,9 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
     uint32_t ide_reg_block[CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT] = {0};
     uint32_t ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
 
-    status = cxl_ide_km_query(context->spdm_doe.doe_context,
-                             context->spdm_doe.spdm_context,
-                             &context->spdm_doe.session_id,
+    status = cxl_ide_km_query(spdm_doe->doe_context,
+                             spdm_doe->spdm_context,
+                             &spdm_doe->session_id,
                              port_index, &dev_func, &bus,
                              &segment, max_port_index, &caps.raw,
                              ide_reg_block, &ide_reg_block_count);
@@ -230,18 +231,35 @@ static bool do_query_port_index(cxl_ide_test_group_context_t *context,
 bool cxl_ide_query_port_index(cxl_ide_test_group_context_t *context)
 {
   uint8_t port_index = 0;
-  uint8_t dev_func = ((context->common.lower_port.port->device & 0x1f) << 3) | (context->common.lower_port.port->function & 0x7);
-  uint8_t bus = context->common.lower_port.port->bus;
-  uint8_t segment = context->common.lower_port.port->segment;
+
+  if (!cxl_ide_query_dev_port_index(&context->spdm_doe, context->common.lower_port.port, &port_index)) {
+    return false;
+  }
+
+  if (port_index != 0) {
+    context->common.lower_port.port->port_index = port_index;
+  }
+
+  return true;
+}
+
+// Query the port index of dev_port with device function and bus number
+bool cxl_ide_query_dev_port_index(spdm_doe_context_t *spdm_doe, IDE_PORT *dev_port, uint8_t *matched_port_index)
+{
+  uint8_t port_index = 0;
+  uint8_t dev_func = ((dev_port->device & 0x1f) << 3) | (dev_port->function & 0x7);
+  uint8_t bus = dev_port->bus;
+  uint8_t segment = dev_port->segment;
   uint8_t max_port_index = 0;
 
-  if (do_query_port_index(context, port_index, dev_func, bus, segment, &max_port_index)) {
+  if (do_query_port_index(spdm_doe, port_index, dev_func, bus, segment, &max_port_index)) {
+    *matched_port_index = port_index;
     return true;
   }
 
   for(port_index = 1; port_index <= max_port_index; port_index++) {
-    if (do_query_port_index(context, port_index, dev_func, bus, segment, &max_port_index)) {
-      context->common.lower_port.port->port_index = port_index;
+    if (do_query_port_index(spdm_doe, port_index, dev_func, bus, segment, &max_port_index)) {
+      *matched_port_index = port_index;
       return true;
     }
   }
@@ -434,8 +452,6 @@ bool cxl_check_ide_stream_status(cxl_ide_test_group_context_t *group_context, ui
 
 bool cxl_teardown_ide_stream(void *test_context)
 {
-  bool ret = false;
-
   ide_common_test_case_context_t *case_context = (ide_common_test_case_context_t *)test_context;
   TEEIO_ASSERT(case_context);
   TEEIO_ASSERT(case_context->signature == CASE_CONTEXT_SIGNATURE);
@@ -446,15 +462,43 @@ bool cxl_teardown_ide_stream(void *test_context)
 
   ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
   ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
+  bool insecure = false;
+
+  if(!cxl_teardown_ide_stream_common(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
+                                     &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
+                                     group_context->stream_id, group_context->common.lower_port.port->port_index,
+                                     upper_port, lower_port, &insecure)) {
+    return false;
+  }
+
+  if(case_context->action != IDE_COMMON_TEST_ACTION_SKIP) {
+    teeio_record_assertion_result(case_context->test_case->class_id, case_context->test_case->case_id, 2,
+                                  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
+                                  insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
+                                  insecure ? "CXL-IDE Stream is torn down." : "CXL-IDE Stream is not in Insecure State after teardown.");
+  }
+
+  return insecure;
+}
+
+// stop the CXL.cachemem IDE stream and check that the ports are in Insecure State
+bool cxl_teardown_ide_stream_common(void *doe_context, void *spdm_context,
+                                    uint32_t *session_id, uint8_t *kcbar_addr,
+                                    uint8_t stream_id, uint8_t port_index,
+                                    ide_common_test_port_context_t *upper_port,
+                                    ide_common_test_port_context_t *lower_port,
+                                    bool *insecure)
+{
+  bool ret = false;
 
   CXL_QUERY_RESP_CAPS dev_caps = {.raw = lower_port->cxl_data.query_resp.caps};
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dev_caps.k_set_stop_capable = %d\n", dev_caps.k_set_stop_capable));
 
   // send KSetStop if supported.
   if(dev_caps.k_set_stop_capable == 1) {
-    ret = cxl_stop_ide_stream(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
-                              &group_context->spdm_doe.session_id, upper_port->mapped_kcbar_addr,
-                              group_context->stream_id, group_context->common.lower_port.port->port_index,
+    ret = cxl_stop_ide_stream(doe_context, spdm_context,
+                              session_id, kcbar_addr,
+                              stream_id, port_index,
                               upper_port, lower_port);
     if(!ret) {
       TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "cxl_stop_ide_stream failed.\n"));
@@ -464,7 +508,7 @@ bool cxl_teardown_ide_stream(void *test_context)
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetStop is not supported.\n"));
   }
 
-  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)upper_port->mapped_kcbar_addr;
+  INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *kcbar_ptr = (INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)kcbar_addr;
 
   // set RXTRANSTOINSECURESTATE and TXTRANSTOINSECURESTATE on the RootPort side
   cxl_cfg_rp_txrx_transto_insecure_state(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
@@ -476,20 +520,13 @@ bool cxl_teardown_ide_stream(void *test_context)
   // wait for 10 ms for the ports to get to Insecure State
   libspdm_sleep(10 * 1000);
 
-  bool insecure = cxl_check_ide_status("host", &upper_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE);
+  *insecure = cxl_check_ide_status("host", &upper_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE);
   if(dev_caps.k_set_stop_capable == 1) {
-    insecure = cxl_check_ide_status("device", &lower_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE) && insecure;
+    *insecure = cxl_check_ide_status("device", &lower_port->cxl_data.memcache, CXL_IDE_STATUS_INSECURE) && *insecure;
   } else {
     // Only CXL_K_SET_STOP moves an active port to Insecure State without logging an error (CXL 3.1 Section 11.4.6).
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "KSetStop is not supported. Skip CXL IDE Status check on device.\n"));
   }
 
-  if(case_context->action != IDE_COMMON_TEST_ACTION_SKIP) {
-    teeio_record_assertion_result(case_context->test_case->class_id, case_context->test_case->case_id, 2,
-                                  IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
-                                  insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
-                                  insecure ? "CXL-IDE Stream is torn down." : "CXL-IDE Stream is not in Insecure State after teardown.");
-  }
-
-  return insecure;
+  return true;
 }
