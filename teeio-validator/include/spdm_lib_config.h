@@ -68,6 +68,11 @@
 #ifndef LIBSPDM_MAX_MEASUREMENT_RECORD_SIZE
 #define LIBSPDM_MAX_MEASUREMENT_RECORD_SIZE 0x1000
 #endif
+
+/* Sizes the recorded ENDPOINT_INFO transcript; upstream default. */
+#ifndef LIBSPDM_MAX_ENDPOINT_INFO_LENGTH
+#define LIBSPDM_MAX_ENDPOINT_INFO_LENGTH 1024
+#endif
 /* Partial certificates can be retrieved from a Requester or Responder and through multiple messages
  * the complete certificate chain can be constructed. This value specifies the maximum size,
  * in bytes, of a partial certificate that can be sent or received.
@@ -81,9 +86,10 @@
  * whether libspdm will use a running calculation over the transcript, where requests and responses
  * are discarded as they are cryptographically consumed, or whether libspdm will buffer the entire
  * transcript before calculating the digest or signature.
+ * Recording keeps whole peer chains, so a cached ML-DSA chain can be restored.
  */
 #ifndef LIBSPDM_RECORD_TRANSCRIPT_DATA_SUPPORT
-#define LIBSPDM_RECORD_TRANSCRIPT_DATA_SUPPORT 0
+#define LIBSPDM_RECORD_TRANSCRIPT_DATA_SUPPORT 1
 #endif
 
 /* Cryptography Configuration
@@ -257,7 +263,7 @@
 #endif
 
 #ifndef LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
-#define LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP 0
+#define LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP 1
 #endif
 
 #ifndef LIBSPDM_ENABLE_CAPABILITY_ENCAP_CAP

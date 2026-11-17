@@ -4,6 +4,9 @@
  *  License: BSD 3-Clause License.
  **/
 
+#ifndef _XOPEN_SOURCE
+#define _XOPEN_SOURCE 700
+#endif
 #include <stdlib.h>
 #include <stdio.h>
 #include <ctype.h>
@@ -15,6 +18,8 @@
 #include "library/spdm_transport_pcidoe_lib.h"
 #include "teeio_spdmlib.h"
 #include "helperlib.h"
+#include "spdm_test_lib.h"
+#include "teeio_fault_fixture.h"
 
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
@@ -118,8 +123,9 @@ void *spdm_init_client(void)
   size_t scratch_buffer_size;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "spdm_init_client\n"));
+  teeio_fault_transport_reset();
 
-  spdm_context = (void *)malloc(libspdm_get_context_size());
+  spdm_context = (void *)malloc(libspdm_get_context_size() + TEEIO_FAULT_ROOTS_CAPACITY);
   if (spdm_context == NULL) {
     return NULL;
   }
@@ -127,13 +133,23 @@ void *spdm_init_client(void)
 
   libspdm_register_device_io_func(spdm_context, device_doe_send_message, device_doe_receive_message);
 
-  libspdm_register_transport_layer_func(
-    spdm_context,
-    LIBSPDM_MAX_SPDM_MSG_SIZE,
-    LIBSPDM_TRANSPORT_HEADER_SIZE,
-    LIBSPDM_TRANSPORT_TAIL_SIZE,
-    libspdm_transport_pci_doe_encode_message,
-    libspdm_transport_pci_doe_decode_message);
+  if(teeio_fault_is_enabled()) {
+    libspdm_register_transport_layer_func(
+      spdm_context,
+      LIBSPDM_MAX_SPDM_MSG_SIZE,
+      LIBSPDM_TRANSPORT_HEADER_SIZE,
+      LIBSPDM_TRANSPORT_TAIL_SIZE,
+      teeio_fault_transport_encode_message,
+      teeio_fault_transport_decode_message);
+  } else {
+    libspdm_register_transport_layer_func(
+      spdm_context,
+      LIBSPDM_MAX_SPDM_MSG_SIZE,
+      LIBSPDM_TRANSPORT_HEADER_SIZE,
+      LIBSPDM_TRANSPORT_TAIL_SIZE,
+      libspdm_transport_pci_doe_encode_message,
+      libspdm_transport_pci_doe_decode_message);
+  }
 
   libspdm_register_device_buffer_func(
     spdm_context,
@@ -151,6 +167,13 @@ void *spdm_init_client(void)
     return NULL;
   }
   libspdm_set_scratch_buffer (spdm_context, scratch_buffer, scratch_buffer_size);
+
+  if (!teeio_spdm_apply_version_override(spdm_context) ||
+      !teeio_spdm_apply_algorithm_profile(spdm_context)) {
+    free(scratch_buffer);
+    free(spdm_context);
+    return NULL;
+  }
 
   return spdm_context;
 }
@@ -195,6 +218,24 @@ bool spdm_test_group_setup(void *test_context)
 
   context->spdm_doe.spdm_context = spdm_context;
 
+  /* Only key-exchange and FINISH-signature Fault drivers use this TEST trust store.
+   * Other groups ignore the environment, including positive/recovery runs. */
+  if (teeio_fault_fixture_root_required(context->common.case_class == SPDM_TEST_CASE_FAULT) &&
+      !teeio_fault_fixture_install_root(
+        spdm_context, (uint8_t *)spdm_context + libspdm_get_context_size())) {
+    void *scratch;
+    size_t scratch_size;
+    libspdm_get_scratch_buffer(spdm_context, &scratch, &scratch_size);
+    free(scratch);
+    free(spdm_context);
+    context->spdm_doe.spdm_context = NULL;
+    spdm_close_dev_port(&context->common.lower_port);
+    spdm_close_root_port(context);
+    teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_FAILED,
+      "Fault driver requires absolute TEEIO_FAULT_FIXTURE_DIR with a responder root.");
+    return false;
+  }
+
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "test_group_setup done\n"));
 
   teeio_record_group_result(TEEIO_TEST_GROUP_FUNC_SETUP, TEEIO_TEST_RESULT_PASS, "");
@@ -209,6 +250,10 @@ bool spdm_test_group_teardown(void *test_context)
 
   // close spdm_session and free spdm_context
   if(context->spdm_doe.spdm_context != NULL) {
+    void *scratch;
+    size_t scratch_size;
+    libspdm_get_scratch_buffer(context->spdm_doe.spdm_context, &scratch, &scratch_size);
+    free(scratch);
     free(context->spdm_doe.spdm_context);
     context->spdm_doe.spdm_context = NULL;
     context->spdm_doe.session_id = 0;

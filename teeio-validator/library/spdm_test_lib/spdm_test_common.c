@@ -12,6 +12,8 @@
 #include "ide_test.h"
 #include "library/common_test_utility_lib.h"
 #include "library/spdm_responder_conformance_test_lib.h"
+#include "library/spdm_requester_lib.h"
+#include "spdm_test_lib.h"
 #include "spdm_test_common.h"
 
 // SPDM supported config items
@@ -66,6 +68,7 @@ static ide_test_case_funcs_t* get_test_case_funcs (int case_class, int case_id)
   TEEIO_TEST_CASES* test_cases = &m_spdm_test_case_funcs[case_class];
 
   TEEIO_ASSERT(case_id < test_cases->cnt);
+  TEEIO_ASSERT(test_cases->funcs[case_id].run != NULL);
   return &test_cases->funcs[case_id];
 }
 
@@ -182,4 +185,53 @@ void* spdm_test_get_spdm_context_from_test_context(void *test_context)
   TEEIO_ASSERT(group_context->spdm_doe.spdm_context);
 
   return group_context->spdm_doe.spdm_context;
+}
+
+typedef struct {
+  uint8_t version;
+  uint8_t heartbeat_period;
+  uint8_t reserved[2];
+  uint32_t session_id;
+} teeio_spdm_session_test_buffer_t;
+
+static bool spdm_test_heartbeat_current_session(void *test_context)
+{
+  teeio_spdm_test_context_t *spdm_test_context = test_context;
+  teeio_spdm_session_test_buffer_t *test_buffer;
+  libspdm_return_t status;
+
+  if(spdm_test_context->test_scratch_buffer_size != sizeof(*test_buffer)) {
+    return false;
+  }
+  test_buffer = (void *)spdm_test_context->test_scratch_buffer;
+  if(test_buffer->session_id == 0) {
+    return false;
+  }
+  status = libspdm_heartbeat(spdm_test_context->spdm_context,
+                            test_buffer->session_id);
+  return !LIBSPDM_STATUS_IS_ERROR(status);
+}
+
+bool spdm_test_same_session_preflight(void *test_context)
+{
+  bool succeeded;
+
+  if(!teeio_fault_begin_same_session_preflight()) {
+    return true;
+  }
+  succeeded = spdm_test_heartbeat_current_session(test_context);
+  teeio_fault_end_same_session_preflight();
+  return succeeded;
+}
+
+bool spdm_test_same_session_recovery(void *test_context)
+{
+  bool succeeded;
+
+  if(!teeio_fault_begin_same_session_recovery()) {
+    return true;
+  }
+  succeeded = spdm_test_heartbeat_current_session(test_context);
+  teeio_fault_record_same_session_recovery(succeeded);
+  return succeeded;
 }
