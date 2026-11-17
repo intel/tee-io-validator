@@ -56,6 +56,7 @@ EntryName=EntryValue
 - [CXL-IDE Test](../doc/cxl_ide_test/)
 - [CXL-TSP Test](../doc/tsp_test/)
 - [SPDM Test](../doc/spdm_test/)
+- [MULTI-IDE Test](../doc/multi_ide_test/)
 
 Settings of **Topology** / **Configuration** / **TestSuite** are different.
 
@@ -64,6 +65,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 - [CXL-IDE Section settings](#cxl-ide-section-settings)
 - [CXL-TSP Section settings](#cxl-tsp-section-settings)
 - [SPDM Section settings](#spdm-section-settings)
+- [MULTI-IDE Section settings](#multi-ide-section-settings)
 
 ### PCIE-IDE Section settings
 [Topology_x]
@@ -237,3 +239,40 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |DeviceState|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [DeviceInterfaceState.md](../doc/tdisp_test/TdispTestCase/5.DeviceInterfaceState.md)|
 |StartInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [StartInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/6.StartInterfaceResponse.md)|
 |StopInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [StopInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/7.StopInterfaceResponse.md)|
+
+### MULTI-IDE Section settings
+MULTI-IDE sets up and tears down several IDE streams of different types within one SPDM session.
+It is for devices which support only one SPDM session but more than one type of IDE stream.
+Both the rootport and the device shall have the PCIE IDE Extended Capability.
+
+[Topology_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|type|string||M|must be **selective_and_link_ide**|
+|connection|string||M|must be **direct**|
+|segment|hex||M|The segment which rootport is connected to. For example 0x0000|
+|bus|hex||M|The bus which rootport is connected to. For example 0x1a|
+|path1|string||M|rootport_x to endpoint_y. For example: rootport_1,endpoint_1|
+|streams|string||M|IDE streams separated by ','. Each stream is **type:stream_id**. For example **link_ide:1,selective_ide:2,cxl_cm_ide:0**. See below.|
+
+```streams```:
+- Available types are **link_ide** (PCIE/CXL.io Link IDE), **selective_ide** (PCIE/CXL.io Selective IDE) and **cxl_cm_ide** (CXL.cachemem IDE).
+- 1 to 3 streams. Each type can be listed only once.
+- stream_id shall be in [0, 255]. stream_ids of link_ide and selective_ide shall be different. stream_id of cxl_cm_ide shall be **0**.
+- The streams are set up in the order of the list and torn down in the same order.
+- ```stream_id``` entry is not used.
+
+[Configration_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|category|string||M|must be **multi-ide**|
+|cxl_ide_mode|string|containment|O|available values are **containment** or **skid**. It is used by the cxl_cm_ide stream.|
+|default|0/1|1|O||
+
+[TestSuite_x]
+|Entry|Value|Default|Mandatory|Comment|
+|------|------|------|------|------|
+|category|string||M|must be **multi-ide**|
+|topology|number||M|Topology_x|
+|configuration|number||M|Configuration_x|
+|MultiStream|string||O|numbers separated by comma.<br> For example **1,2** means Case1 and Case2 in [MultiStream.md](../doc/multi_ide_test/MultiIdeTestCase/1.MultiStream.md)|
