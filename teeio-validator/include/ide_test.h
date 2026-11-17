@@ -81,6 +81,7 @@ typedef enum {
   TEEIO_TEST_CATEGORY_CXL_TSP,
   TEEIO_TEST_CATEGORY_TDISP,
   TEEIO_TEST_CATEGORY_SPDM,
+  TEEIO_TEST_CATEGORY_MULTI_IDE,
   TEEIO_TEST_CATEGORY_MAX
 } TEEIO_TEST_CATEGORY;
 
@@ -341,6 +342,10 @@ typedef struct {
   int kcbar_fd;
   INTEL_KEYP_PCIE_STREAM_CAP stream_cap;
 
+  // CXL.cachemem kcbar when it is mapped together with the PCIE kcbar (multi-ide)
+  uint8_t *mapped_cxl_kcbar_addr;
+  int cxl_kcbar_fd;
+
   // ide_id
   uint8_t ide_id;
 
@@ -520,6 +525,37 @@ typedef struct {
   teeio_common_test_group_context_t common;
   spdm_doe_context_t spdm_doe;
 } spdm_test_group_context_t;
+
+typedef enum {
+  MULTI_IDE_STREAM_STATE_IDLE = 0,
+  // stream registers are programmed, keys may be programmed
+  MULTI_IDE_STREAM_STATE_CONFIGURED,
+  // K_SET_GO is done and the stream is enabled
+  MULTI_IDE_STREAM_STATE_ACTIVE
+} multi_ide_stream_state_t;
+
+typedef struct {
+  IDE_TEST_STREAM_TYPE type;
+  uint8_t stream_id;
+  // IDE_KM or CXL_IDE_KM port_index of the device
+  uint8_t port_index;
+  // PCIE/CXL.io only
+  uint8_t rp_ide_id;
+  uint8_t dev_ide_id;
+  uint8_t rp_stream_index;
+  ide_key_set_t k_set;
+  // PCIE or CXL.cachemem kcbar of the rootport
+  uint8_t *kcbar;
+  multi_ide_stream_state_t state;
+} multi_ide_stream_t;
+
+typedef struct {
+  teeio_common_test_group_context_t common;
+  spdm_doe_context_t spdm_doe;
+
+  int streams_cnt;
+  multi_ide_stream_t streams[MAX_IDE_TEST_STREAM_NUM];
+} multi_ide_test_group_context_t;
 
 typedef struct {
   uint32_t signature;

@@ -15,6 +15,7 @@
 #include "cxl_tsp_test_lib.h"
 #include "tdisp_test_lib.h"
 #include "spdm_test_lib.h"
+#include "multi_ide_test_lib.h"
 
 const char *m_ide_test_topology_name[] = {
   "SelectiveIDE",
@@ -54,6 +55,8 @@ teeio_test_funcs_t m_teeio_test_funcs[TEEIO_TEST_CATEGORY_MAX] = {
   { 0 },
   // SPDM
   { 0 },
+  // MULTI-IDE
+  { 0 },
 };
 
 void teeio_init_test_funcs()
@@ -63,6 +66,7 @@ void teeio_init_test_funcs()
   cxl_tsp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_CXL_TSP]);
   tdisp_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_TDISP]);
   spdm_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_SPDM]);
+  multi_ide_test_lib_register_test_suite_funcs(&m_teeio_test_funcs[TEEIO_TEST_CATEGORY_MULTI_IDE]);
 }
 
 void teeio_clean_test_libs()

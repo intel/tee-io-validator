@@ -78,7 +78,8 @@ const char *TEEIO_TEST_CATEGORY_NAMES[] = {
     "cxl-ide",
     "cxl-tsp",
     "tdisp",
-    "spdm"
+    "spdm",
+    "multi-ide"
 };
 
 #define IS_HYPHEN(a) ((a) == '-')
@@ -1611,6 +1612,9 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
       return false;
     }
     test_suite.type = get_topology_type_from_name(entry_value);
+  } else if(test_suite.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE) {
+    // The streams are listed in Topology_x. Its type shall be selective_and_link_ide.
+    test_suite.type = IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE;
   } else {
     // Other test category either not care the type or use fixed LINK_IDE (like CXL).
     test_suite.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
@@ -1633,6 +1637,19 @@ bool ParseTestSuiteSection(void *context, IDE_TEST_CONFIG *test_config, int inde
   {
     TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] topology_%d type doesnot match test_suite.type\n", section_name, data32));
     return false;
+  }
+  if (test_suite.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE)
+  {
+    if (top->streams_cnt == 0)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] streams is missing in topology_%d.\n", section_name, data32));
+      return false;
+    }
+    if (top->connection != IDE_TEST_CONNECT_DIRECT)
+    {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[%s] connection of topology_%d shall be direct.\n", section_name, data32));
+      return false;
+    }
   }
   test_suite.topology_id = data32;
 
@@ -1774,6 +1791,8 @@ bool ParseConfigurationSection(void *context, IDE_TEST_CONFIG *test_config, int 
       return false;
     }
     config.type = get_topology_type_from_name(entry_value);
+  } else if(config.test_category == TEEIO_TEST_CATEGORY_MULTI_IDE) {
+    config.type = IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE;
   } else {
     // Other test category either not care the type or use fixed LINK_IDE (like CXL).
     config.type = IDE_TEST_TOPOLOGY_TYPE_LINK_IDE;
