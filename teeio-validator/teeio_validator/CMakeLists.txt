@@ -35,6 +35,7 @@ SET(teeio_validator_LIBRARY
     cxl_tsp_test_lib
     tdisp_test_lib
     spdm_test_lib
+    multi_ide_test_lib
     )
 
 ADD_EXECUTABLE(teeio_validator ${src_teeio_validator})
