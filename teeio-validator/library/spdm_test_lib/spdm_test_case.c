@@ -191,3 +191,15 @@ int spdm_test_lib_get_case_class(int responder_group_id)
 
   return case_class;
 }
+
+// Returns the SPDM-Responder-Validator group ID of a case class, or 0 if unknown.
+int spdm_test_lib_get_group_id(int case_class)
+{
+  for(int i = 0; i < SPDM_TEST_CASE_NUM; i++) {
+    if (m_teeio_map_spdm_responder_test_groups[i].teeio_spdm_case_class == case_class) {
+      return m_teeio_map_spdm_responder_test_groups[i].spdm_responder_group_id;
+    }
+  }
+
+  return 0;
+}

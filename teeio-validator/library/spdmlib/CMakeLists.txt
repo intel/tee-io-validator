@@ -20,6 +20,7 @@ INCLUDE_DIRECTORIES(
 SET(src_spdmlib
     pci_doe.c
     spdm.c
+    spdm_trace.c
     support.c
 )
 

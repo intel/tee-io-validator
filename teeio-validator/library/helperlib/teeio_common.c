@@ -168,6 +168,105 @@ bool teeio_record_config_item_result(
   return true;
 }
 
+static ide_run_test_case_result_t* get_current_case_result(int case_class, int case_id)
+{
+  if(g_current_case_result == NULL) {
+    return NULL;
+  }
+
+  ide_run_test_case_result_t* case_result = g_current_case_result;
+  if(case_result->class_id != case_class || case_result->case_id != case_id) {
+    TEEIO_ASSERT(false);
+    return NULL;
+  }
+
+  return case_result;
+}
+
+bool teeio_case_has_diagnostic_note(
+  int case_class,
+  int case_id
+  )
+{
+  ide_run_test_case_result_t* case_result = get_current_case_result(case_class, case_id);
+  if(case_result == NULL) {
+    return false;
+  }
+
+  return case_result->diagnostic_note[0] != '\0';
+}
+
+bool teeio_record_case_diagnostic_note(
+  int case_class,
+  int case_id,
+  const char *message_format,
+  ...)
+{
+  va_list marker;
+
+  ide_run_test_case_result_t* case_result = get_current_case_result(case_class, case_id);
+  if(case_result == NULL) {
+    return false;
+  }
+
+  if (message_format != NULL) {
+    va_start(marker, message_format);
+    vsnprintf(case_result->diagnostic_note, sizeof(case_result->diagnostic_note), message_format, marker);
+    va_end(marker);
+  }
+
+  return true;
+}
+
+bool teeio_record_case_skip_reason(
+  int case_class,
+  int case_id,
+  teeio_case_skip_kind_t kind,
+  const char *message_format,
+  ...)
+{
+  va_list marker;
+
+  ide_run_test_case_result_t* case_result = get_current_case_result(case_class, case_id);
+  if(case_result == NULL) {
+    return false;
+  }
+
+  case_result->skip_kind = kind;
+
+  if (message_format != NULL) {
+    va_start(marker, message_format);
+    vsnprintf(case_result->skip_reason, sizeof(case_result->skip_reason), message_format, marker);
+    va_end(marker);
+  }
+
+  return true;
+}
+
+bool teeio_flag_suite_coverage_gap(
+  int case_class,
+  int case_id,
+  const char *message_format,
+  ...)
+{
+  va_list marker;
+
+  ide_run_test_case_result_t* case_result = get_current_case_result(case_class, case_id);
+  if(case_result == NULL) {
+    return false;
+  }
+
+  case_result->suite_coverage_gap = true;
+
+  if (message_format != NULL) {
+    va_start(marker, message_format);
+    vsnprintf(case_result->suite_coverage_gap_note, sizeof(case_result->suite_coverage_gap_note), message_format, marker);
+    va_end(marker);
+  }
+
+  return true;
+}
+
 bool teeio_record_group_result(
   teeio_test_group_func_t func,
   teeio_test_result_t result,
