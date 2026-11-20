@@ -349,6 +349,9 @@ typedef struct {
   // ide_id
   uint8_t ide_id;
 
+  // TC of the Link/Selective IDE Stream at ide_id
+  uint8_t tc;
+
   // rid/addr assoc_reg_block
   PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;

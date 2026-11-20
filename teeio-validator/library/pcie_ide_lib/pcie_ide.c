@@ -1288,6 +1288,8 @@ bool reset_ide_registers(
   // setup ide_ecap_regs
   PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg = {.raw = 0};
   stream_ctrl_reg.stream_id = stream_id;
+  // TC is at the same bits in the Link and Selective IDE Stream Control Registers
+  stream_ctrl_reg.tc = port_context->tc;
 
   return setup_ide_ecap_regs(
       port_context->cfg_space_fd,
@@ -1475,8 +1477,8 @@ void dump_ecap(
 
     PCIE_SEL_IDE_STREAM_CTRL stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
     TEEIO_PRINT(("    stream_ctrl   : %08x\n", stream_ctrl.raw));
-    TEEIO_PRINT(("                  : enabled=%x, pcrc_en=%x, cfg_sel_ide=%x, stream_id=%x\n",
-                                                          stream_ctrl.enabled, stream_ctrl.pcrc_en, stream_ctrl.cfg_sel_ide, stream_ctrl.stream_id));
+    TEEIO_PRINT(("                  : enabled=%x, pcrc_en=%x, cfg_sel_ide=%x, tc=%x, stream_id=%x\n",
+                                                          stream_ctrl.enabled, stream_ctrl.pcrc_en, stream_ctrl.cfg_sel_ide, stream_ctrl.tc, stream_ctrl.stream_id));
 
     offset += 4;
     PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = device_pci_read_32(offset, fd)};
