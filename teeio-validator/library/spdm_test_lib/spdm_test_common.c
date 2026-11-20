@@ -45,7 +45,7 @@ static const char* get_test_configuration_name (int configuration_type)
   return m_spdm_test_configuration_name[configuration_type];
 }
 
-static uint32_t get_test_configuration_bitmask (int top_tpye)
+static uint32_t get_test_configuration_bitmask (int top_type)
 {
   return m_spdm_config_bitmask;
 }

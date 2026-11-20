@@ -176,10 +176,10 @@ static bool parse_test_configuration_priv_name (const char* key, const char* val
   return true;
 }
 
-static uint32_t get_test_configuration_bitmask (int top_tpye)
+static uint32_t get_test_configuration_bitmask (int top_type)
 {
   // CXL.memcache only supports LinkIde
-  TEEIO_ASSERT(top_tpye == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE);
+  TEEIO_ASSERT(top_type == IDE_TEST_TOPOLOGY_TYPE_LINK_IDE);
   return m_cxl_ide_config_bitmask;
 }
 
