@@ -45,7 +45,8 @@
 #define MAX_ENTRY_STRING_LENGTH 128
 #define MAX_STREAM_ID 255
 #define MAX_RP_STREAM_INDEX 255
-#define MAX_IDE_TEST_STREAM_NUM 3
+// 1 cxl_cm_ide + 8 link_ide + 8 selective_ide: link_ide and selective_ide streams need different TCs
+#define MAX_IDE_TEST_STREAM_NUM 17
 #define MAX_IDE_TEST_STREAM_TC 7
 // granularity of Memory Base/Limit in the IDE Address Association Registers (PCIe 6.2 Section 7.9.26.5.5)
 #define IDE_ADDR_ASSOC_GRANULARITY 0x100000ULL
@@ -549,6 +550,14 @@ typedef enum {
 typedef struct {
   IDE_TEST_STREAM_TYPE type;
   uint8_t stream_id;
+  // index, type, stream_id and TC for the log
+  char name[48];
+  // PCIE/CXL.io only
+  uint8_t tc;
+  // selective_ide only
+  bool has_addr_range;
+  uint64_t addr_base;
+  uint64_t addr_limit;
   // IDE_KM or CXL_IDE_KM port_index of the device
   uint8_t port_index;
   // PCIE/CXL.io only

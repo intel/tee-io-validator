@@ -49,14 +49,55 @@ bool multi_ide_has_stream_type(multi_ide_test_group_context_t *group_context, bo
   return false;
 }
 
-// The PCIE IDE helpers use ide_id of the port context, so give them copies with the ide_id of this stream.
+// The PCIE IDE helpers use ide_id, tc and assoc blocks of the port context, so give them copies with the values of this stream.
 static void multi_ide_get_port_views(multi_ide_test_group_context_t *group_context, multi_ide_stream_t *stream,
                                      ide_common_test_port_context_t *rp, ide_common_test_port_context_t *ep)
 {
   *rp = group_context->common.upper_port;
   rp->ide_id = stream->rp_ide_id;
+  rp->tc = stream->tc;
   *ep = group_context->common.lower_port;
   ep->ide_id = stream->dev_ide_id;
+  ep->tc = stream->tc;
+
+  // the device side keeps the whole address range because it targets the host memory
+  if(stream->has_addr_range) {
+    PCIE_SEL_IDE_ADDR_ASSOC_1 addr_assoc1 = {.valid = 1,
+                                             .mem_base_lower = (stream->addr_base >> 20) & 0xfff,
+                                             .mem_limit_lower = (stream->addr_limit >> 20) & 0xfff};
+    rp->addr_assoc_reg_block.addr_assoc1.raw = addr_assoc1.raw;
+    rp->addr_assoc_reg_block.addr_assoc2.raw = (uint32_t)(stream->addr_limit >> 32);
+    rp->addr_assoc_reg_block.addr_assoc3.raw = (uint32_t)(stream->addr_base >> 32);
+  }
+}
+
+/**
+ * Check that the addr range of each selective_ide stream is inside the device memory window,
+ * which is the range a selective_ide stream without addr gets.
+ */
+bool multi_ide_check_addr_ranges(multi_ide_test_group_context_t *group_context)
+{
+  PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK *window = &group_context->common.upper_port.addr_assoc_reg_block;
+  uint64_t window_base = ((uint64_t)window->addr_assoc3.mem_base_upper << 32) |
+                         ((uint64_t)window->addr_assoc1.mem_base_lower << 20);
+  uint64_t window_limit = ((uint64_t)window->addr_assoc2.mem_limit_upper << 32) |
+                          ((uint64_t)window->addr_assoc1.mem_limit_lower << 20) | (IDE_ADDR_ASSOC_GRANULARITY - 1);
+  bool result = true;
+
+  for(int i = 0; i < group_context->streams_cnt; i++) {
+    multi_ide_stream_t *stream = &group_context->streams[i];
+    if(!stream->has_addr_range) {
+      continue;
+    }
+    if(stream->addr_base < window_base || stream->addr_limit > window_limit) {
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "[Topology_%d] addr 0x%llx-0x%llx of %s is outside the device memory window 0x%llx-0x%llx.\n",
+                   group_context->common.top->id, (unsigned long long)stream->addr_base, (unsigned long long)stream->addr_limit,
+                   stream->name, (unsigned long long)window_base, (unsigned long long)window_limit));
+      result = false;
+    }
+  }
+
+  return result;
 }
 
 CXL_IDE_MODE multi_ide_get_cxl_ide_mode(multi_ide_test_group_context_t *group_context)
@@ -181,8 +222,8 @@ static bool multi_ide_setup_pcie_stream(multi_ide_test_group_context_t *group_co
      !pcie_ide_alloc_slot_ids(upper_port, stream->rp_stream_index, &stream->k_set)) {
     return false;
   }
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "rp_ide_id=%d, dev_ide_id=%d, rp_stream_index=%d\n",
-               stream->rp_ide_id, stream->dev_ide_id, stream->rp_stream_index));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%s: rp_ide_id=%d, dev_ide_id=%d, rp_stream_index=%d\n",
+               stream->name, stream->rp_ide_id, stream->dev_ide_id, stream->rp_stream_index));
 
   multi_ide_get_port_views(group_context, stream, &rp, &ep);
 
@@ -229,7 +270,7 @@ static bool multi_ide_setup_cxl_stream(multi_ide_test_group_context_t *group_con
 
 bool multi_ide_setup_stream(multi_ide_test_group_context_t *group_context, multi_ide_stream_t *stream)
 {
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Set up %s:%d stream\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Set up %s\n", stream->name));
 
   if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
     return multi_ide_setup_cxl_stream(group_context, stream);
@@ -243,8 +284,7 @@ bool multi_ide_setup_all_streams(multi_ide_test_group_context_t *group_context)
   for(int i = 0; i < group_context->streams_cnt; i++) {
     multi_ide_stream_t *stream = &group_context->streams[i];
     if(!multi_ide_setup_stream(group_context, stream)) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Set up %s:%d stream failed. Tear down the streams which are set up.\n",
-                   IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Set up %s failed. Tear down the streams which are set up.\n", stream->name));
       multi_ide_teardown_all_streams(group_context);
       return false;
     }
@@ -276,7 +316,7 @@ static bool multi_ide_teardown_pcie_stream(multi_ide_test_group_context_t *group
   if(!pcie_ide_key_set_stop_all(group_context->spdm_doe.doe_context, group_context->spdm_doe.spdm_context,
                                 &group_context->spdm_doe.session_id, stream->stream_id,
                                 PCI_IDE_KM_KEY_SET_K0, stream->port_index)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "K_SET_STOP of %s:%d stream failed.\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "K_SET_STOP of %s failed.\n", stream->name));
   }
 
   // overwrite the keys in the rootport key/iv slots of this stream
@@ -303,7 +343,7 @@ static bool multi_ide_teardown_cxl_stream(multi_ide_test_group_context_t *group_
                                      &group_context->spdm_doe.session_id, stream->kcbar, stream->stream_id,
                                      stream->port_index, &group_context->common.upper_port,
                                      &group_context->common.lower_port, &insecure)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "K_SET_STOP of %s:%d stream failed.\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "K_SET_STOP of %s failed.\n", stream->name));
     insecure = false;
     // cxl_teardown_ide_stream_common returns before the rootport leaves the secure mode
     cxl_cfg_rp_txrx_transto_insecure_state(kcbar_ptr, CXL_IDE_STREAM_DIRECTION_RX, true);
@@ -325,7 +365,7 @@ bool multi_ide_teardown_stream(multi_ide_test_group_context_t *group_context, mu
     return true;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Tear down %s:%d stream\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Tear down %s\n", stream->name));
 
   if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
     insecure = multi_ide_teardown_cxl_stream(group_context, stream);
@@ -369,7 +409,7 @@ void multi_ide_dump_stream(multi_ide_test_group_context_t *group_context, multi_
   ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
 
   TEEIO_PRINT(("\n"));
-  TEEIO_PRINT(("Print registers of %s:%d stream.\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+  TEEIO_PRINT(("Print registers of %s.\n", stream->name));
 
   if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
     cxl_dump_kcbar((INTEL_KEYP_CXL_ROOT_COMPLEX_KCBAR *)stream->kcbar);
