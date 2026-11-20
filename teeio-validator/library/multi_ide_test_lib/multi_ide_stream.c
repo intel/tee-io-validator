@@ -26,6 +26,12 @@
 extern int m_dev_fp;
 extern uint32_t g_doe_extended_offset;
 
+// Root Complex IDE Programming Guide 3.2: wait at least 100ms after terminating a stream before reusing its Stream ID or resources
+#define MULTI_IDE_STREAM_REUSE_DELAY_US (100 * 1000)
+
+// Set when a stream is torn down. Kept across test groups because they share the rootport resources.
+static bool m_stream_torn_down = false;
+
 IDE_TEST_TOPOLOGY_TYPE multi_ide_get_stream_top_type(multi_ide_stream_t *stream)
 {
   TEEIO_ASSERT(stream->type != IDE_TEST_STREAM_TYPE_CXL_CM_IDE);
@@ -272,6 +278,13 @@ bool multi_ide_setup_stream(multi_ide_test_group_context_t *group_context, multi
 {
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Set up %s\n", stream->name));
 
+  if(m_stream_torn_down) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Wait %dms after the last stream teardown before the resources are reused.\n",
+                 MULTI_IDE_STREAM_REUSE_DELAY_US / 1000));
+    libspdm_sleep(MULTI_IDE_STREAM_REUSE_DELAY_US);
+    m_stream_torn_down = false;
+  }
+
   if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
     return multi_ide_setup_cxl_stream(group_context, stream);
   }
@@ -373,6 +386,7 @@ bool multi_ide_teardown_stream(multi_ide_test_group_context_t *group_context, mu
     insecure = multi_ide_teardown_pcie_stream(group_context, stream);
   }
   stream->state = MULTI_IDE_STREAM_STATE_IDLE;
+  m_stream_torn_down = true;
 
   return insecure;
 }
