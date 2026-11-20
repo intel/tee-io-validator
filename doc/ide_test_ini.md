@@ -241,8 +241,8 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |StopInterface|string||O|numbers separated by comma.<br> For example **1,2** means Cases1 and Cases2 in [StopInterfaceResponse.md](../doc/tdisp_test/TdispTestCase/7.StopInterfaceResponse.md)|
 
 ### MULTI-IDE Section settings
-MULTI-IDE sets up and tears down several IDE streams of different types within one SPDM session.
-It is for devices which support only one SPDM session but more than one type of IDE stream.
+MULTI-IDE sets up and tears down several IDE streams within one SPDM session.
+It is for devices which support only one SPDM session but more than one IDE stream.
 Both the rootport and the device shall have the PCIE IDE Extended Capability.
 
 [Topology_x]
@@ -253,14 +253,22 @@ Both the rootport and the device shall have the PCIE IDE Extended Capability.
 |segment|hex||M|The segment which rootport is connected to. For example 0x0000|
 |bus|hex||M|The bus which rootport is connected to. For example 0x1a|
 |path1|string||M|rootport_x to endpoint_y. For example: rootport_1,endpoint_1|
-|streams|string||M|IDE streams separated by ','. Each stream is **type:stream_id**. For example **link_ide:1,selective_ide:2,cxl_cm_ide:0**. See below.|
+|streams|string||M|IDE streams separated by ','. Each stream is **type:stream_id[:tc=N][:addr=base-limit]**. For example **link_ide:1,selective_ide:2,cxl_cm_ide:0**. See below.|
 
 ```streams```:
 - Available types are **link_ide** (PCIE/CXL.io Link IDE), **selective_ide** (PCIE/CXL.io Selective IDE) and **cxl_cm_ide** (CXL.cachemem IDE).
-- 1 to 3 streams. Each type can be listed only once.
-- stream_id shall be in [0, 255]. stream_ids of link_ide and selective_ide shall be different. stream_id of cxl_cm_ide shall be **0**.
+- 1 to 17 streams: at most 8 link_ide, at most 8 selective_ide and at most 1 cxl_cm_ide.
+  The rootport and the device shall also have enough free Link/Selective IDE Stream Register Blocks, and the rootport enough free stream_x and key/iv slots. This is checked when the test group is set up.
+- stream_id shall be in [0, 255]. stream_ids of link_ide and selective_ide streams shall be different. stream_id of cxl_cm_ide shall be **0**.
+- Optional attributes of link_ide and selective_ide streams, separated by ':':
+  - **tc=N**: Traffic Class of the stream, N in [0, 7]. Default 0.
+  - **addr=base-limit** (selective_ide only): memory range in hex that the stream covers on the rootport, for example **addr=0x80000000-0x801fffff**. base shall be 1MB aligned and limit shall end with fffff. The range shall be inside the device memory window. Default is the whole device memory window. The device side always covers all addresses.
+- cxl_cm_ide accepts no attributes.
+- link_ide streams shall use different TCs: a Link IDE Stream secures all TLPs of its TC (PCIe 6.2 Section 6.33).
+- selective_ide streams shall use different TCs: Selective IDE Streams with the same TC shall not overlap in RID and address range (PCIe 6.2 Section 6.33.4), and in a direct topology they all target the same device. A link_ide and a selective_ide stream may use the same TC.
 - The streams are set up in the order of the list and torn down in the same order.
 - ```stream_id``` entry is not used.
+- teeio-validator does not generate traffic. A stream with tc=N only sees traffic with TC N, and a selective_ide stream with addr only sees requests to that range. See [run_traffic.md](run_traffic.md).
 
 [Configration_x]
 |Entry|Value|Default|Mandatory|Comment|
