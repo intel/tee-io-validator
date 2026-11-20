@@ -302,8 +302,10 @@ InitRootPortFail:
 
 /**
  * Collect the key/iv slots used by the enabled stream_x in rootport KCBar.
+ * We assume PR/NPR/CPL substreams are allocated continuously. So slot_group_used[i]
+ * tells if the key/iv slots i*3, i*3+1 and i*3+2 are used.
  */
-static bool pcie_ide_get_key_iv_slot_usage(ide_common_test_port_context_t* port_context, uint8_t* key_iv_slot_usage_map, int* num_key_iv_slots)
+static bool pcie_ide_get_key_iv_slot_usage(ide_common_test_port_context_t* port_context, bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM], int* num_key_iv_slots)
 {
   int i = 0;
 
@@ -315,16 +317,19 @@ static bool pcie_ide_get_key_iv_slot_usage(ide_common_test_port_context_t* port_
   INTEL_KEYP_PCIE_STREAM_CAP stream_cap = { .raw = mmio_read_reg32(&kcbar->capabilities)};
   int num_stream_supported = stream_cap.num_stream_supported + 1;
   *num_key_iv_slots = stream_cap.num_tx_key_slots + 1;
-  *key_iv_slot_usage_map = 0;
+  memset(slot_group_used, 0, sizeof(bool) * MAX_KEY_IV_SLOT_GROUP_NUM);
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "num_stream_supported=%d, num_key_iv_slots=%d\n", num_stream_supported, *num_key_iv_slots));
   TEEIO_ASSERT(*num_key_iv_slots % 3 == 0);
 
-  // We use key_iv_slot_usage_map to indicate the usage of key/iv slots.
-  // We assume PR/NPR/CPL substreams are allocated continuously. So 1 bit in key_iv_slot_usage_map represents 3 key/iv slots.
-  // In the future if the supported key/iv slots exceeds key_iv_slot_usage_map, we will revisit here.
-  if(*num_key_iv_slots > sizeof(*key_iv_slot_usage_map) * 8 * 3) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "supported num_key_iv_slots (%d) exceeds key_iv_slot_usage_map (%d) and it shall be expanded.\n", *num_key_iv_slots, sizeof(*key_iv_slot_usage_map) * 8 * 3));
+  // Root Complex IDE Programming Guide Figure 2-1: stream_x blocks, then Tx key, Tx IV, Rx key and Rx IV slots
+  size_t kcbar_size = sizeof(INTEL_KEYP_PCIE_STREAM_CAP) +
+                      num_stream_supported * sizeof(INTEL_KEYP_STREAM_CONFIG_REG_BLOCK) +
+                      (stream_cap.num_tx_key_slots + 1 + stream_cap.num_rx_key_slots + 1) *
+                      (sizeof(INTEL_KEYP_KEY_SLOT) + sizeof(INTEL_KEYP_IV_SLOT));
+  size_t mapped_size = get_kcbar_mapped_size(port_context->mapped_kcbar_addr);
+  if(kcbar_size > mapped_size) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KCBar registers (%zu bytes) exceed the mapped KCBar (%zu bytes).\n", kcbar_size, mapped_size));
     return false;
   }
 
@@ -363,10 +368,8 @@ static bool pcie_ide_get_key_iv_slot_usage(ide_common_test_port_context_t* port_
     TEEIO_ASSERT(keyset.npr < *num_key_iv_slots);
     TEEIO_ASSERT(keyset.cpl < *num_key_iv_slots);
 
-    *key_iv_slot_usage_map = (1 << keyset.pr/3) | *key_iv_slot_usage_map;
+    slot_group_used[keyset.pr / 3] = true;
   }
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key/iv slot usage: key_iv_slot_usage_map=%02x\n", *key_iv_slot_usage_map));
 
   return true;
 }
@@ -382,19 +385,17 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
 {
   int i = 0;
   bool found = false;
-  uint8_t key_iv_slot_usage_map = 0;
+  bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM];
   int num_key_iv_slots = 0;
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Allocate kv/iv slot for %s. Its rp_stream_index is stream_%c\n", port_context->port->port_name, rp_stream_index + 'a'));
 
-  if(!pcie_ide_get_key_iv_slot_usage(port_context, &key_iv_slot_usage_map, &num_key_iv_slots)) {
+  if(!pcie_ide_get_key_iv_slot_usage(port_context, slot_group_used, &num_key_iv_slots)) {
     return false;
   }
 
   for(i = 0; i < num_key_iv_slots / 3; i++) {
-    uint8_t key_iv_slot = (key_iv_slot_usage_map >> i) & 0x1;
-    // 0 indicates the slots are free, 1 indicates the slots are occupied.
-    if(key_iv_slot == 0) {
+    if(!slot_group_used[i]) {
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_PR] = i * 3;
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_NPR] = i * 3 + 1;
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_CPL] = i * 3 + 2;
@@ -421,18 +422,55 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
  */
 int pcie_ide_get_free_slot_group_num(ide_common_test_port_context_t* port_context)
 {
-  uint8_t key_iv_slot_usage_map = 0;
+  bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM];
   int num_key_iv_slots = 0;
   int num = 0;
 
-  if(!pcie_ide_get_key_iv_slot_usage(port_context, &key_iv_slot_usage_map, &num_key_iv_slots)) {
+  if(!pcie_ide_get_key_iv_slot_usage(port_context, slot_group_used, &num_key_iv_slots)) {
     return 0;
   }
 
   for(int i = 0; i < num_key_iv_slots / 3; i++) {
-    if(((key_iv_slot_usage_map >> i) & 0x1) == 0) {
+    if(!slot_group_used[i]) {
       num++;
     }
+  }
+
+  return num;
+}
+
+/**
+ * Return the number of Link or Selective IDE Stream Register Blocks in ecap which are not enabled.
+ */
+int pcie_ide_get_free_ide_reg_block_num(ide_common_test_port_context_t* port_context, TEST_IDE_TYPE ide_type)
+{
+  PCIE_IDE_CAP ide_cap = {.raw = port_context->ide_cap.raw};
+  int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
+  int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
+  int fd = port_context->cfg_space_fd;
+  uint32_t offset = port_context->ecap_offset + sizeof(PCIE_CAP_ID) + sizeof(PCIE_IDE_CAP) + sizeof(PCIE_IDE_CTRL);
+  int num = 0;
+
+  if(ide_type == TEST_IDE_TYPE_LNK_IDE) {
+    for(int i = 0; i < num_lnk_ide; i++) {
+      PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
+      if(lnk_ide_stream_ctrl.enabled == 0) {
+        num++;
+      }
+      offset += LINK_IDE_REGISTER_BLOCK_SIZE;
+    }
+    return num;
+  }
+
+  offset += num_lnk_ide * LINK_IDE_REGISTER_BLOCK_SIZE;
+  for(int i = 0; i < num_sel_ide; i++) {
+    PCIE_SEL_IDE_STREAM_CAP sel_ide_stream_cap = {.raw = device_pci_read_32(offset, fd)};
+    PCIE_SEL_IDE_STREAM_CTRL sel_ide_stream_ctrl = {.raw = device_pci_read_32(offset + 4, fd)};
+    if(sel_ide_stream_ctrl.enabled == 0) {
+      num++;
+    }
+    // Capability, Control and Status Registers, RID Association Register Block and Address Association Register Blocks
+    offset += 3 * 4 + 2 * 4 + sel_ide_stream_cap.num_addr_assoc_reg_blocks * 3 * 4;
   }
 
   return num;

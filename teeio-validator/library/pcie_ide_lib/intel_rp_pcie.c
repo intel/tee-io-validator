@@ -279,6 +279,21 @@ bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr)
     return false;
 }
 
+// mmap() maps whole pages, so more than KCBAR_MEMORY_SIZE bytes behind the KCBAR can be accessed
+size_t get_kcbar_mapped_size(const uint8_t *mapped_kcbar_addr)
+{
+    uint64_t page_offset = 0;
+    size_t map_len = 0;
+
+    if (mapped_kcbar_addr == NULL ||
+        !get_kcbar_map_layout((uint64_t)(uintptr_t)mapped_kcbar_addr, &page_offset, &map_len)) {
+        return 0;
+    }
+
+    size_t page_size = (size_t)sysconf(_SC_PAGE_SIZE);
+    return ((map_len + page_size - 1) & ~(page_size - 1)) - (size_t)page_offset;
+}
+
 
 // Parse the KEYP table and map the kcbar of keyp_protocol for the root port
 bool map_keyp_kcbar(IDE_PORT *port, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol, uint8_t **mapped_kcbar_addr, int *kcbar_fd)
