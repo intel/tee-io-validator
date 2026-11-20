@@ -57,44 +57,70 @@ static bool multi_ide_check_pcie_resources(multi_ide_test_group_context_t *group
 {
   ide_common_test_port_context_t *upper_port = &group_context->common.upper_port;
   ide_common_test_port_context_t *lower_port = &group_context->common.lower_port;
-  int pcie_streams_cnt = 0;
-  uint8_t rp_stream_index = 0;
-  uint8_t ide_id = 0;
+  int link_streams_cnt = 0;
+  int sel_streams_cnt = 0;
+  bool result = true;
 
   for(int i = 0; i < group_context->streams_cnt; i++) {
     multi_ide_stream_t *stream = &group_context->streams[i];
     if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
       continue;
     }
-    pcie_streams_cnt++;
 
     if(check_stream_id_used_in_rootport(stream->stream_id, upper_port)) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "stream_id (%d) is already used.\n", stream->stream_id));
-      return false;
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "stream_id (%d) of %s is already used.\n", stream->stream_id, stream->name));
+      result = false;
     }
 
-    IDE_TEST_TOPOLOGY_TYPE top_type = multi_ide_get_stream_top_type(stream);
-    if(!find_free_rp_stream_index_and_ide_id(upper_port, &rp_stream_index, &ide_id, top_type, true) ||
-       !find_free_rp_stream_index_and_ide_id(lower_port, NULL, &ide_id, top_type, false)) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "No free register block for %s stream.\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type]));
-      return false;
+    if(stream->type == IDE_TEST_STREAM_TYPE_LINK_IDE) {
+      link_streams_cnt++;
+    } else {
+      sel_streams_cnt++;
     }
   }
 
+  int pcie_streams_cnt = link_streams_cnt + sel_streams_cnt;
   if(pcie_streams_cnt == 0) {
-    return true;
+    return result;
   }
 
+  // The blocks are allocated right before each stream is set up. Here only count them.
+  int rp_free_link = pcie_ide_get_free_ide_reg_block_num(upper_port, TEST_IDE_TYPE_LNK_IDE);
+  int dev_free_link = pcie_ide_get_free_ide_reg_block_num(lower_port, TEST_IDE_TYPE_LNK_IDE);
+  int rp_free_sel = pcie_ide_get_free_ide_reg_block_num(upper_port, TEST_IDE_TYPE_SEL_IDE);
+  int dev_free_sel = pcie_ide_get_free_ide_reg_block_num(lower_port, TEST_IDE_TYPE_SEL_IDE);
   int free_rp_streams = pcie_ide_get_free_rp_stream_num(upper_port);
   int free_slot_groups = pcie_ide_get_free_slot_group_num(upper_port);
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "link_ide streams=%d, free Link IDE Stream Register Blocks: rootport=%d, device=%d\n",
+               link_streams_cnt, rp_free_link, dev_free_link));
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "selective_ide streams=%d, free Selective IDE Stream Register Blocks: rootport=%d, device=%d\n",
+               sel_streams_cnt, rp_free_sel, dev_free_sel));
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "PCIE/CXL.io streams=%d, free rootport stream_x=%d, free key/iv slot groups=%d\n",
                pcie_streams_cnt, free_rp_streams, free_slot_groups));
-  if(free_rp_streams < pcie_streams_cnt || free_slot_groups < pcie_streams_cnt) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not enough free stream_x or key/iv slots in rootport KCBar.\n"));
-    return false;
+
+  if(link_streams_cnt > rp_free_link || link_streams_cnt > dev_free_link) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%d link_ide streams need as many free Link IDE Stream Register Blocks. Rootport has %d, device has %d.\n",
+                 link_streams_cnt, rp_free_link, dev_free_link));
+    result = false;
+  }
+  if(sel_streams_cnt > rp_free_sel || sel_streams_cnt > dev_free_sel) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%d selective_ide streams need as many free Selective IDE Stream Register Blocks. Rootport has %d, device has %d.\n",
+                 sel_streams_cnt, rp_free_sel, dev_free_sel));
+    result = false;
+  }
+  if(pcie_streams_cnt > free_rp_streams) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%d PCIE/CXL.io streams need as many free stream_x in rootport KCBar. It has %d.\n",
+                 pcie_streams_cnt, free_rp_streams));
+    result = false;
+  }
+  if(pcie_streams_cnt > free_slot_groups) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%d PCIE/CXL.io streams need as many free key/iv slot groups (3 slots each) in rootport KCBar. It has %d.\n",
+                 pcie_streams_cnt, free_slot_groups));
+    result = false;
   }
 
-  return true;
+  return result;
 }
 
 /**
@@ -117,14 +143,30 @@ bool multi_ide_test_group_setup(void *test_context)
 
   group_context->streams_cnt = top->streams_cnt;
   for(int i = 0; i < top->streams_cnt; i++) {
-    memset(&group_context->streams[i], 0, sizeof(multi_ide_stream_t));
-    group_context->streams[i].type = top->streams[i].type;
-    group_context->streams[i].stream_id = top->streams[i].stream_id;
-    group_context->streams[i].state = MULTI_IDE_STREAM_STATE_IDLE;
+    multi_ide_stream_t *stream = &group_context->streams[i];
+    memset(stream, 0, sizeof(multi_ide_stream_t));
+    stream->type = top->streams[i].type;
+    stream->stream_id = top->streams[i].stream_id;
+    stream->tc = top->streams[i].tc;
+    stream->has_addr_range = top->streams[i].has_addr_range;
+    stream->addr_base = top->streams[i].addr_base;
+    stream->addr_limit = top->streams[i].addr_limit;
+    stream->state = MULTI_IDE_STREAM_STATE_IDLE;
+    if(stream->type == IDE_TEST_STREAM_TYPE_CXL_CM_IDE) {
+      snprintf(stream->name, sizeof(stream->name), "stream[%d] %s:%d", i, IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id);
+    } else {
+      snprintf(stream->name, sizeof(stream->name), "stream[%d] %s:%d tc=%d", i, IDE_TEST_STREAM_TYPE_NAMES[stream->type],
+               stream->stream_id, stream->tc);
+    }
   }
 
   if(!multi_ide_open_ports(group_context)) {
     err_msg = "Open ports failed.";
+    goto GroupSetupFail;
+  }
+
+  if(!multi_ide_check_addr_ranges(group_context)) {
+    err_msg = "addr of a selective_ide stream is outside the device memory window.";
     goto GroupSetupFail;
   }
 

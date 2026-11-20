@@ -46,6 +46,9 @@ void multi_ide_test_multi_stream_2_teardown(void *test_context);
 bool multi_ide_open_ports(multi_ide_test_group_context_t *group_context);
 void multi_ide_close_ports(multi_ide_test_group_context_t *group_context);
 
+// check that the addr of the selective_ide streams is inside the device memory window. The ports shall be open.
+bool multi_ide_check_addr_ranges(multi_ide_test_group_context_t *group_context);
+
 // CXL IDE mode set in [Configuration_x]
 CXL_IDE_MODE multi_ide_get_cxl_ide_mode(multi_ide_test_group_context_t *group_context);
 

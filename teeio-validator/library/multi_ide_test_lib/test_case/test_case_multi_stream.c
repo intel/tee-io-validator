@@ -38,8 +38,7 @@ static void check_streams_active(multi_ide_test_group_context_t *group_context, 
     teeio_record_assertion_result(case_class, case_id, assertion_id + i,
                                   IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
                                   active ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
-                                  "%s:%d stream is %s %s.", IDE_TEST_STREAM_TYPE_NAMES[stream->type],
-                                  stream->stream_id, active ? "active" : "not active", when);
+                                  "%s is %s %s.", stream->name, active ? "active" : "not active", when);
   }
 }
 
@@ -85,8 +84,8 @@ void multi_ide_test_multi_stream_1_teardown(void *test_context)
       teeio_record_assertion_result(case_context->test_case->class_id, case_context->test_case->case_id, assertion_id + i,
                                     IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
                                     insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
-                                    "%s:%d stream is %s after teardown.", IDE_TEST_STREAM_TYPE_NAMES[stream->type],
-                                    stream->stream_id, insecure ? "in Insecure State" : "not in Insecure State");
+                                    "%s is %s after teardown.", stream->name,
+                                    insecure ? "in Insecure State" : "not in Insecure State");
     }
   }
 }
@@ -121,12 +120,11 @@ void multi_ide_test_multi_stream_2_run(void *test_context)
     teeio_record_assertion_result(case_class, case_id, assertion_id++,
                                   IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
                                   insecure ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
-                                  "%s:%d stream is %s after teardown.", IDE_TEST_STREAM_TYPE_NAMES[stream->type],
-                                  stream->stream_id, insecure ? "in Insecure State" : "not in Insecure State");
+                                  "%s is %s after teardown.", stream->name,
+                                  insecure ? "in Insecure State" : "not in Insecure State");
 
     if(i == 0) {
-      TEEIO_PRINT(("%s:%d stream is torn down. Run traffic on the other streams and press any key to continue.\n",
-                   IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+      TEEIO_PRINT(("%s is torn down. Run traffic on the other streams and press any key to continue.\n", stream->name));
       getchar();
     }
 
@@ -136,10 +134,8 @@ void multi_ide_test_multi_stream_2_run(void *test_context)
       teeio_record_assertion_result(case_class, case_id, assertion_id++,
                                     IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
                                     active ? TEEIO_TEST_RESULT_PASS : TEEIO_TEST_RESULT_FAILED,
-                                    "%s:%d stream is %s after %s:%d stream is torn down.",
-                                    IDE_TEST_STREAM_TYPE_NAMES[other->type], other->stream_id,
-                                    active ? "active" : "not active",
-                                    IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id);
+                                    "%s is %s after %s is torn down.", other->name,
+                                    active ? "active" : "not active", stream->name);
     }
   }
 }

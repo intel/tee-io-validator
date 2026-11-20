@@ -66,7 +66,7 @@ bool multi_ide_test_config_default_support(void *test_context)
     }
 
     if(!stream_supported) {
-      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s:%d stream is not supported.\n", IDE_TEST_STREAM_TYPE_NAMES[stream->type], stream->stream_id));
+      TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "%s is not supported.\n", stream->name));
       supported = false;
     }
   }
