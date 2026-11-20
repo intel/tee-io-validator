@@ -674,7 +674,7 @@ typedef struct {
 typedef const char*(*teeio_get_test_configuration_name_func_t) (int configuration_type);
 typedef const char**(*teeio_get_test_configuration_priv_names_func_t) ();
 typedef bool(*teeio_parse_test_configuration_priv_name_func_t) (const char* key, const char* value, IDE_TEST_CONFIGURATION* config);
-typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_tpye);
+typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_type);
 typedef ide_test_config_funcs_t*(*teeio_get_test_configuration_funcs_func_t) (int top_type, int configuration_type);
 typedef ide_test_group_funcs_t*(*teeio_get_test_group_funcs_func_t) (int top_type);
 typedef ide_test_case_funcs_t*(*teeio_get_test_case_funcs_func_t) (int case_class, int case_id);

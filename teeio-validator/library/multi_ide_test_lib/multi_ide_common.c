@@ -91,9 +91,9 @@ static bool parse_test_configuration_priv_name (const char* key, const char* val
   return false;
 }
 
-static uint32_t get_test_configuration_bitmask (int top_tpye)
+static uint32_t get_test_configuration_bitmask (int top_type)
 {
-  TEEIO_ASSERT(top_tpye == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE);
+  TEEIO_ASSERT(top_type == IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE);
   return BIT_MASK(MULTI_IDE_CONFIGURATION_TYPE_DEFAULT);
 }
 
