@@ -585,12 +585,14 @@ FindFreeLinkSelectiveIDERegisterBlockDone:
     found = false;
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to find a free one.\n"));
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
-    int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
+    INTEL_KEYP_PCIE_STREAM_CAP stream_cap = {.raw = mmio_read_reg32(&kcbar->capabilities)};
+    int num_stream_supported = stream_cap.num_stream_supported + 1;
 
     for(i = 0; i < num_stream_supported; i++) {
       INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: stream_config_reg_block.control = 0x%08x\n", i, stream_config_reg_block->control.raw));
-      if(stream_config_reg_block->control.en == 0) {
+      INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: stream_config_reg_block.control = 0x%08x\n", i, stream_ctrl.raw));
+      if(stream_ctrl.en == 0) {
         *rp_stream_index = (uint8_t)i;
         found = true;
         break;
@@ -773,11 +775,13 @@ bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_co
 
   // First walk thru Key Configuration Unit Register Block
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)root_port_context->mapped_kcbar_addr;
-  int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
+  INTEL_KEYP_PCIE_STREAM_CAP stream_cap = {.raw = mmio_read_reg32(&kcbar->capabilities)};
+  int num_stream_supported = stream_cap.num_stream_supported + 1;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to check if stream_id(%d) is used.\n", stream_id));
   for(i = 0; i < num_stream_supported; i++) {
     INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
-    if(stream_config_reg_block->control.en == 1 && stream_config_reg_block->control.stream_id == stream_id) {
+    INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+    if(stream_ctrl.en == 1 && stream_ctrl.stream_id == stream_id) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_id (%d) is used in stream_%c\n", stream_id, 'a' + i));
       return true;
     }
@@ -788,17 +792,16 @@ bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_co
   int fd = root_port_context->cfg_space_fd;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport IDE Extended Cap to check if stream_id(%d) is used.\n", stream_id));
 
-  offset += 4;  // refer to PCIE_IDE_ECAP
+  offset += 4;  // refer to PCIE_IDE_CAP
   PCIE_IDE_CAP ide_cap = {.raw = device_pci_read_32(offset, fd)};
   int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
   int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
 
-  offset += 4;  // refer to PCIE_IDE_CTRL
+  // skip PCIE_IDE_CAP and PCIE_IDE_CTRL to the first Link or Selective IDE Stream Register Block
+  offset += 8;
 
   if(num_lnk_ide > 0) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    Check Link IDE Stream Control Register block ...\n"));
-    offset += 4;  // refer to PCIE_SEL_IDE_STREAM_CAP
-
     for(i = 0; i < num_lnk_ide; i++) {
       PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
       if(lnk_ide_stream_ctrl.enabled == 1 && lnk_ide_stream_ctrl.stream_id == stream_id) {
