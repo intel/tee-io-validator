@@ -19,8 +19,6 @@
 
 int m_rp_fp = 0;
 
-#define KCBAR_MEMORY_SIZE 1024
-
 INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *get_stream_cfg_reg_block(
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *const kcbar_ptr,
     const uint16_t rp_stream_index)

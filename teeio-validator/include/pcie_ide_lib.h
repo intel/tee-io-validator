@@ -11,6 +11,12 @@
 
 // pcie_ide_lib header file
 
+// size of the KCBar mapping (one page). The PCIE KCBar stream_x blocks and key/iv slots must fit in it.
+#define KCBAR_MEMORY_SIZE 4096
+
+// num_tx_key_slots in KCBar is 10 bits, so there are at most 1024 key/iv slots in groups of 3 (PR/NPR/CPL)
+#define MAX_KEY_IV_SLOT_GROUP_NUM (1024 / 3)
+
 //
 // PCIE APIs
 //
@@ -263,6 +269,12 @@ bool pcie_ide_alloc_slot_ids(
  * Return the number of free key/iv slot groups (3 continuous slots for PR/NPR/CPL) in rootport KCBar.
  */
 int pcie_ide_get_free_slot_group_num(ide_common_test_port_context_t* port_context);
+
+/**
+ * Return the number of Link (ide_type is TEST_IDE_TYPE_LNK_IDE) or Selective IDE Stream
+ * Register Blocks in ecap which are not enabled.
+ */
+int pcie_ide_get_free_ide_reg_block_num(ide_common_test_port_context_t* port_context, TEST_IDE_TYPE ide_type);
 
 /**
  * Return the number of stream_x which are not enabled in rootport KCBar.
