@@ -210,46 +210,54 @@ bool pcie_ide_teardown_common(void *test_context, uint8_t ks)
   uint32_t session_id = group_context->spdm_doe.session_id;
   uint8_t stream_id = group_context->stream_id;
   uint8_t port_index = group_context->common.lower_port.port->port_index;
+
+  return pcie_ide_key_set_stop_all(doe_context, spdm_context, &session_id, stream_id, ks, port_index);
+}
+
+// send K_SET_STOP for all sub-streams in both directions
+bool pcie_ide_key_set_stop_all(void *doe_context, void *spdm_context, uint32_t *session_id,
+                               uint8_t stream_id, uint8_t ks, uint8_t port_index)
+{
   bool res = false;
 
   // then test KSetStop  
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|PR\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index);
   if(!res) {
     goto TestFullTeardownDone;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|NPR\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index);
   if(!res) {
     goto TestFullTeardownDone;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|RX|CPL\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_RX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index);
   if(!res) {
     goto TestFullTeardownDone;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|PR\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_PR, port_index);
   if(!res) {
     goto TestFullTeardownDone;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|NPR\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_NPR, port_index);
   if(!res) {
     goto TestFullTeardownDone;
   }
 
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "[idetest]       Test KSetStop %s|TX|CPL\n", k_set_names[ks]));
-  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, &session_id, stream_id,
+  res = test_full_ide_km_key_set_stop(doe_context, spdm_context, session_id, stream_id,
                              ks | PCI_IDE_KM_KEY_DIRECTION_TX | PCI_IDE_KM_KEY_SUB_STREAM_CPL, port_index);
 
 TestFullTeardownDone:

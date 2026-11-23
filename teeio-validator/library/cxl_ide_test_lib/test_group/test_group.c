@@ -19,6 +19,7 @@
 #include "helperlib.h"
 #include "teeio_debug.h"
 #include "cxl_ide_lib.h"
+#include "cxl_ide_test_lib.h"
 #include "pcie_ide_lib.h"
 #include "teeio_spdmlib.h"
 
@@ -62,6 +63,12 @@ bool cxl_check_device_ide_reg_block(uint32_t* ide_reg_block, uint32_t ide_reg_bl
 
 bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
 {
+  return cxl_ide_query_dev(&group_context->spdm_doe, 0, &group_context->common.lower_port.cxl_data);
+}
+
+// CXL_QUERY the device at port_index and store the response in cxl_data
+bool cxl_ide_query_dev(spdm_doe_context_t *spdm_doe, uint8_t port_index, CXL_PRIV_DATA *cxl_data)
+{
   libspdm_return_t status;
 
   CXL_QUERY_RESP_CAPS caps;
@@ -75,10 +82,10 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   // query
   caps.raw = 0;
   ide_reg_block_count = CXL_IDE_KM_IDE_CAP_REG_BLOCK_MAX_COUNT;
-  status = cxl_ide_km_query(group_context->spdm_doe.doe_context,
-                            group_context->spdm_doe.spdm_context,
-                            &group_context->spdm_doe.session_id,
-                            0, // port_index
+  status = cxl_ide_km_query(spdm_doe->doe_context,
+                            spdm_doe->spdm_context,
+                            &spdm_doe->session_id,
+                            port_index,
                             &dev_func_num,
                             &bus_num,
                             &segment,
@@ -107,8 +114,6 @@ bool cxl_ide_query(cxl_ide_test_group_context_t *group_context)
   // check CXL IDE Capability at offset 00h
   TEEIO_ASSERT(ide_reg_block_count > 1);
   CXL_IDE_CAPABILITY ide_cap = {.raw = ide_reg_block[0]};
-  group_context->common.lower_port.cxl_data.memcache.ide_cap.raw = ide_cap.raw;
-  CXL_PRIV_DATA *cxl_data = &group_context->common.lower_port.cxl_data;
   cxl_data->memcache.ide_cap.raw = ide_cap.raw;
   cxl_data->query_resp.bus_num = bus_num;
   cxl_data->query_resp.dev_func_num = dev_func_num;

@@ -178,9 +178,9 @@ static const char* get_test_configuration_name (int configuration_type)
 	return m_tdisp_test_configuration_name[configuration_type];
 }
 
-static uint32_t get_test_configuration_bitmask (int top_tpye)
+static uint32_t get_test_configuration_bitmask (int top_type)
 {
-	TEEIO_ASSERT (top_tpye == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
+	TEEIO_ASSERT (top_type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE);
 
 	return (uint32_t) SELECTIVE_IDE_CONFIGURATION_BITMASK;
 }

@@ -45,6 +45,11 @@
 #define MAX_ENTRY_STRING_LENGTH 128
 #define MAX_STREAM_ID 255
 #define MAX_RP_STREAM_INDEX 255
+// 1 cxl_cm_ide + 8 link_ide + 8 selective_ide: link_ide and selective_ide streams need different TCs
+#define MAX_IDE_TEST_STREAM_NUM 17
+#define MAX_IDE_TEST_STREAM_TC 7
+// granularity of Memory Base/Limit in the IDE Address Association Registers (PCIe 6.2 Section 7.9.26.5.5)
+#define IDE_ADDR_ASSOC_GRANULARITY 0x100000ULL
 
 #define MAX_CASE_ID 32
 #define MAX_TEST_CASE_NUM 32
@@ -80,6 +85,7 @@ typedef enum {
   TEEIO_TEST_CATEGORY_CXL_TSP,
   TEEIO_TEST_CATEGORY_TDISP,
   TEEIO_TEST_CATEGORY_SPDM,
+  TEEIO_TEST_CATEGORY_MULTI_IDE,
   TEEIO_TEST_CATEGORY_MAX
 } TEEIO_TEST_CATEGORY;
 
@@ -116,6 +122,14 @@ typedef enum {
   IDE_TEST_TOPOLOGY_TYPE_SEL_LINK_IDE = 2,
   IDE_TEST_TOPOLOGY_TYPE_NUM
 } IDE_TEST_TOPOLOGY_TYPE;
+
+// type of an entry in the streams list of a topology
+typedef enum {
+  IDE_TEST_STREAM_TYPE_LINK_IDE = 0,
+  IDE_TEST_STREAM_TYPE_SEL_IDE = 1,
+  IDE_TEST_STREAM_TYPE_CXL_CM_IDE = 2,
+  IDE_TEST_STREAM_TYPE_NUM
+} IDE_TEST_STREAM_TYPE;
 
 typedef enum {
   IDE_COMMON_TEST_CASE_QUERY = 0,
@@ -184,6 +198,17 @@ typedef struct
 } IDE_TEST_MAIN_CONFIG;
 
 typedef struct {
+  IDE_TEST_STREAM_TYPE type;
+  uint8_t stream_id;
+  // link_ide/selective_ide only
+  uint8_t tc;
+  // selective_ide only: memory range instead of the whole device memory window
+  bool has_addr_range;
+  uint64_t addr_base;
+  uint64_t addr_limit;
+} IDE_TEST_STREAM;
+
+typedef struct {
   int id;
   bool enabled;
   IDE_TEST_TOPOLOGY_TYPE type;
@@ -196,6 +221,9 @@ typedef struct {
   uint16_t segment;
   uint8_t bus;
   uint8_t stream_id;
+  // streams set up in this order within one SPDM session
+  int streams_cnt;
+  IDE_TEST_STREAM streams[MAX_IDE_TEST_STREAM_NUM];
 } IDE_TEST_TOPOLOGY;
 
 typedef struct {
@@ -324,8 +352,15 @@ typedef struct {
   int kcbar_fd;
   INTEL_KEYP_PCIE_STREAM_CAP stream_cap;
 
+  // CXL.cachemem kcbar when it is mapped together with the PCIE kcbar (multi-ide)
+  uint8_t *mapped_cxl_kcbar_addr;
+  int cxl_kcbar_fd;
+
   // ide_id
   uint8_t ide_id;
+
+  // TC of the Link/Selective IDE Stream at ide_id
+  uint8_t tc;
 
   // rid/addr assoc_reg_block
   PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
@@ -504,6 +539,45 @@ typedef struct {
   spdm_doe_context_t spdm_doe;
 } spdm_test_group_context_t;
 
+typedef enum {
+  MULTI_IDE_STREAM_STATE_IDLE = 0,
+  // stream registers are programmed, keys may be programmed
+  MULTI_IDE_STREAM_STATE_CONFIGURED,
+  // K_SET_GO is done and the stream is enabled
+  MULTI_IDE_STREAM_STATE_ACTIVE
+} multi_ide_stream_state_t;
+
+typedef struct {
+  IDE_TEST_STREAM_TYPE type;
+  uint8_t stream_id;
+  // index, type, stream_id and TC for the log
+  char name[48];
+  // PCIE/CXL.io only
+  uint8_t tc;
+  // selective_ide only
+  bool has_addr_range;
+  uint64_t addr_base;
+  uint64_t addr_limit;
+  // IDE_KM or CXL_IDE_KM port_index of the device
+  uint8_t port_index;
+  // PCIE/CXL.io only
+  uint8_t rp_ide_id;
+  uint8_t dev_ide_id;
+  uint8_t rp_stream_index;
+  ide_key_set_t k_set;
+  // PCIE or CXL.cachemem kcbar of the rootport
+  uint8_t *kcbar;
+  multi_ide_stream_state_t state;
+} multi_ide_stream_t;
+
+typedef struct {
+  teeio_common_test_group_context_t common;
+  spdm_doe_context_t spdm_doe;
+
+  int streams_cnt;
+  multi_ide_stream_t streams[MAX_IDE_TEST_STREAM_NUM];
+} multi_ide_test_group_context_t;
+
 typedef struct {
   uint32_t signature;
   ide_common_test_suite_context_t *suite_context;
@@ -621,7 +695,7 @@ typedef struct {
 typedef const char*(*teeio_get_test_configuration_name_func_t) (int configuration_type);
 typedef const char**(*teeio_get_test_configuration_priv_names_func_t) ();
 typedef bool(*teeio_parse_test_configuration_priv_name_func_t) (const char* key, const char* value, IDE_TEST_CONFIGURATION* config);
-typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_tpye);
+typedef uint32_t(*teeio_get_test_configuration_bitmask_func_t) (int top_type);
 typedef ide_test_config_funcs_t*(*teeio_get_test_configuration_funcs_func_t) (int top_type, int configuration_type);
 typedef ide_test_group_funcs_t*(*teeio_get_test_group_funcs_func_t) (int top_type);
 typedef ide_test_case_funcs_t*(*teeio_get_test_case_funcs_func_t) (int case_class, int case_id);

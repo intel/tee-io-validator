@@ -279,9 +279,24 @@ bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr)
     return false;
 }
 
+// mmap() maps whole pages, so more than KCBAR_MEMORY_SIZE bytes behind the KCBAR can be accessed
+size_t get_kcbar_mapped_size(const uint8_t *mapped_kcbar_addr)
+{
+    uint64_t page_offset = 0;
+    size_t map_len = 0;
 
-// Parse the KEYP table and map the kcbar address
-bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol)
+    if (mapped_kcbar_addr == NULL ||
+        !get_kcbar_map_layout((uint64_t)(uintptr_t)mapped_kcbar_addr, &page_offset, &map_len)) {
+        return 0;
+    }
+
+    size_t page_size = (size_t)sysconf(_SC_PAGE_SIZE);
+    return ((map_len + page_size - 1) & ~(page_size - 1)) - (size_t)page_offset;
+}
+
+
+// Parse the KEYP table and map the kcbar of keyp_protocol for the root port
+bool map_keyp_kcbar(IDE_PORT *port, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol, uint8_t **mapped_kcbar_addr, int *kcbar_fd)
 {
   const char *keyp_table = "/sys/firmware/acpi/tables/KEYP";
   const char KEYP_SIGNATURE[] = {'K', 'E', 'Y', 'P'};
@@ -294,14 +309,14 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_P
   uint32_t size = 0;
   uint64_t kcbar_addr = 0;
 
-  if (port_context == NULL || port_context->port->port_type != IDE_PORT_TYPE_ROOTPORT)
+  if (port == NULL || port->port_type != IDE_PORT_TYPE_ROOTPORT || mapped_kcbar_addr == NULL || kcbar_fd == NULL)
   {
     TEEIO_ASSERT(false);
     return false;
   }
 
-  port_context->kcbar_fd = -1;
-  port_context->mapped_kcbar_addr = 0;
+  *kcbar_fd = -1;
+  *mapped_kcbar_addr = 0;
 
   int fd = open(keyp_table, O_RDONLY);
   if (fd == -1)
@@ -316,6 +331,7 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_P
   lseek(fd, 0, SEEK_SET);
   size_t bytes_read = read(fd, buffer, size);
   TEEIO_ASSERT(bytes_read == size);
+  close(fd);
 
   INTEL_KEYP_ACPI *keyp = (INTEL_KEYP_ACPI *)buffer;
   if (memcmp(keyp->signature, KEYP_SIGNATURE, sizeof(keyp->signature)) != 0)
@@ -345,10 +361,10 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_P
     for (i = 0; i < kcu->RootPortCount; i++)
     {
       krpi = (INTEL_KEYP_ROOT_PORT_INFORMATION *)(buffer + offset + sizeof(INTEL_KEYP_KEY_CONFIGURATION_UNIT) + i * sizeof(INTEL_KEYP_ROOT_PORT_INFORMATION));
-      if (krpi->SegmentNumber == port_context->port->segment &&
-          krpi->Bus == port_context->port->bus &&
-          krpi->Bits.Device == port_context->port->device &&
-          krpi->Bits.Function == port_context->port->function)
+      if (krpi->SegmentNumber == port->segment &&
+          krpi->Bus == port->bus &&
+          krpi->Bits.Device == port->device &&
+          krpi->Bits.Function == port->function)
       {
         found = true;
         break;
@@ -370,14 +386,26 @@ bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_P
   }
 
   // we need to map the kcbar_addr to user space
-  port_context->mapped_kcbar_addr = map_kcbar_addr(kcbar_addr, &port_context->kcbar_fd);
-  if (port_context->mapped_kcbar_addr == NULL)
+  *mapped_kcbar_addr = map_kcbar_addr(kcbar_addr, kcbar_fd);
+  if (*mapped_kcbar_addr == NULL)
   {
     TEEIO_ASSERT(false);
     return false;
   }
 
   return true;
+}
+
+// Parse the KEYP table and map the kcbar address
+bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol)
+{
+  if (port_context == NULL)
+  {
+    TEEIO_ASSERT(false);
+    return false;
+  }
+
+  return map_keyp_kcbar(port_context->port, keyp_protocol, &port_context->mapped_kcbar_addr, &port_context->kcbar_fd);
 }
 
 // Initialize key configuration registers block

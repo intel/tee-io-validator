@@ -102,3 +102,25 @@ Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .
 # Run cases in [TestSuite_1] in tdisp_test.ini.
 ./teeio_validator -f tdisp_test.ini
 ```
+
+## Run MULTI-IDE test cases
+MULTI-IDE sets up several IDE streams (for example PCIE/CXL.io Link IDE, PCIE/CXL.io Selective IDE and CXL.cachemem IDE) within one SPDM session.
+
+**Step1** Prepare the multi_ide.ini.
+
+Refer to [ide_test_ini.md](../doc/ide_test_ini.md) for detailed description of .ini file. Here is a sample [multi_ide.ini](./sample_ini/multi_ide.ini).
+
+**Note**: The ```bus``` in ```[Topology_1]``` shall be replaced by the bus of **host BDF**(```0xd9```). The ```rootport_1``` and ```endpoint_1``` in ```[Ports]``` shall be replaced by the dev/func of **host BDF** and **device  BDF** respectively. The ```streams``` in ```[Topology_1]``` shall list the IDE streams supported by the device. Refer to [Check how TEEIO Device is connected](#check-how-teeio-device-is-connected)
+
+**Step2** Run test case
+
+```
+# Set up all IDE streams, run traffic and tear down the streams
+./teeio_validator -f multi_ide.ini -c 1 -t 1 -s MultiStream.1
+
+# Tear down the IDE streams one by one and check the other streams stay active
+./teeio_validator -f multi_ide.ini -c 1 -t 1 -s MultiStream.2
+
+# Run cases in [TestSuite_1] in multi_ide.ini.
+./teeio_validator -f multi_ide.ini
+```

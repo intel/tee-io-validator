@@ -11,6 +11,9 @@
 
 // pcie_ide_lib header file
 
+// num_tx_key_slots in KCBar is 10 bits, so there are at most 1024 key/iv slots in groups of 3 (PR/NPR/CPL)
+#define MAX_KEY_IV_SLOT_GROUP_NUM (1024 / 3)
+
 //
 // PCIE APIs
 //
@@ -81,6 +84,36 @@ bool open_dev_port(ide_common_test_port_context_t *port_context);
  * Close device port
  */
 bool close_dev_port(ide_common_test_port_context_t *port_context, IDE_TEST_TOPOLOGY_TYPE top_type);
+
+/**
+ * Populate rid/addr assoc_reg_block of the rootport for the device at lower_port_context.
+ * Mem Base/Limit of addr assoc_reg_block are read from dev_bdf.
+ */
+bool populate_rp_assoc_reg_blocks(
+    ide_common_test_port_context_t *port_context,
+    ide_common_test_port_context_t *lower_port_context,
+    char *dev_bdf);
+
+/**
+ * Populate rid/addr assoc_reg_block of the device port.
+ */
+void populate_dev_assoc_reg_blocks(ide_common_test_port_context_t *port_context);
+
+/**
+ * Find a free Link/Selective IDE Stream Register Block (ide_id) in ecap and,
+ * if rp_or_dev is true, a free stream_x (rp_stream_index) in rootport KCBar.
+ */
+bool find_free_rp_stream_index_and_ide_id(
+    ide_common_test_port_context_t* port_context,
+    uint8_t* rp_stream_index,
+    uint8_t* ide_id,
+    IDE_TEST_TOPOLOGY_TYPE top_type,
+    bool rp_or_dev);
+
+/**
+ * Check if the stream_id is used in rootport KCBar or IDE ecap.
+ */
+bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_context_t* root_port_context);
 
 /*
  * set pcrc_en in ecap
@@ -194,6 +227,12 @@ get_stream_cfg_reg_block(
 bool parse_keyp_table(ide_common_test_port_context_t *port_context, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol);
 
 /**
+ * parse KEYP table and map the KCBAR of keyp_protocol for the rootport into
+ * mapped_kcbar_addr/kcbar_fd
+*/
+bool map_keyp_kcbar(IDE_PORT *port, INTEL_KEYP_PROTOCOL_TYPE keyp_protocol, uint8_t **mapped_kcbar_addr, int *kcbar_fd);
+
+/**
  * map KCBAR into memory
 */
 uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd);
@@ -202,6 +241,11 @@ uint8_t* map_kcbar_addr(uint64_t addr, int* mapped_fd);
  * unmap KCBAR mapped memory
 */
 bool unmap_kcbar_addr(int kcbar_mem_fd, uint8_t* mapped_kcbar_addr);
+
+/**
+ * Return the number of bytes which can be accessed from mapped_kcbar_addr to the end of its mapping.
+*/
+size_t get_kcbar_mapped_size(const uint8_t *mapped_kcbar_addr);
 
 /**
  * Initialize key configuration registers block
@@ -222,6 +266,22 @@ bool pcie_ide_alloc_slot_ids(
     ide_common_test_port_context_t* port_context,
     uint8_t rp_stream_index,
     ide_key_set_t* k_set);
+
+/**
+ * Return the number of free key/iv slot groups (3 continuous slots for PR/NPR/CPL) in rootport KCBar.
+ */
+int pcie_ide_get_free_slot_group_num(ide_common_test_port_context_t* port_context);
+
+/**
+ * Return the number of Link (ide_type is TEST_IDE_TYPE_LNK_IDE) or Selective IDE Stream
+ * Register Blocks in ecap which are not enabled.
+ */
+int pcie_ide_get_free_ide_reg_block_num(ide_common_test_port_context_t* port_context, TEST_IDE_TYPE ide_type);
+
+/**
+ * Return the number of stream_x which are not enabled in rootport KCBar.
+ */
+int pcie_ide_get_free_rp_stream_num(ide_common_test_port_context_t* port_context);
 
 /**
  * enable rootport ide stream.

@@ -301,19 +301,13 @@ InitRootPortFail:
 }
 
 /**
- * This function is to find free key/iv slots for PCIE-IDE stream.
- *
- * There are 3 substreams (PR/NPR/CPL) in a PCIE-IDE stream. We assume
- * the key/iv slots allocated for these substreams are continuous. For
- * example, 0|1|2 or 3|4|5.
+ * Collect the key/iv slots used by the enabled stream_x in rootport KCBar.
+ * We assume PR/NPR/CPL substreams are allocated continuously. So slot_group_used[i]
+ * tells if the key/iv slots i*3, i*3+1 and i*3+2 are used.
  */
-bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8_t rp_stream_index, ide_key_set_t* k_set)
+static bool pcie_ide_get_key_iv_slot_usage(ide_common_test_port_context_t* port_context, bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM], int* num_key_iv_slots)
 {
   int i = 0;
-  bool found = false;
-  uint8_t key_iv_slot_usage_map = 0;
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Allocate kv/iv slot for %s. Its rp_stream_index is stream_%c\n", port_context->port->port_name, rp_stream_index + 'a'));
 
   TEEIO_ASSERT(port_context->port->port_type == IDE_PORT_TYPE_ROOTPORT);
 
@@ -322,16 +316,20 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
   INTEL_KEYP_PCIE_STREAM_CAP stream_cap = { .raw = mmio_read_reg32(&kcbar->capabilities)};
   int num_stream_supported = stream_cap.num_stream_supported + 1;
-  int num_key_iv_slots = stream_cap.num_tx_key_slots + 1;
+  *num_key_iv_slots = stream_cap.num_tx_key_slots + 1;
+  memset(slot_group_used, 0, sizeof(bool) * MAX_KEY_IV_SLOT_GROUP_NUM);
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "num_stream_supported=%d, num_key_iv_slots=%d\n", num_stream_supported, num_key_iv_slots));
-  TEEIO_ASSERT(num_key_iv_slots % 3 == 0);
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "num_stream_supported=%d, num_key_iv_slots=%d\n", num_stream_supported, *num_key_iv_slots));
+  TEEIO_ASSERT(*num_key_iv_slots % 3 == 0);
 
-  // We use key_iv_slot_usage_map to indicate the usage of key/iv slots.
-  // We assume PR/NPR/CPL substreams are allocated continuously. So 1 bit in key_iv_slot_usage_map represents 3 key/iv slots.
-  // In the future if the supported key/iv slots exceeds key_iv_slot_usage_map, we will revisit here.
-  if(num_key_iv_slots > sizeof(key_iv_slot_usage_map) * 8 * 3) {
-    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "supported num_key_iv_slots (%d) exceeds key_iv_slot_usage_map (%d) and it shall be expanded.\n", num_key_iv_slots, sizeof(key_iv_slot_usage_map) * 8 * 3));
+  // Root Complex IDE Programming Guide Figure 2-1: stream_x blocks, then Tx key, Tx IV, Rx key and Rx IV slots
+  size_t kcbar_size = sizeof(INTEL_KEYP_PCIE_STREAM_CAP) +
+                      num_stream_supported * sizeof(INTEL_KEYP_STREAM_CONFIG_REG_BLOCK) +
+                      (stream_cap.num_tx_key_slots + 1 + stream_cap.num_rx_key_slots + 1) *
+                      (sizeof(INTEL_KEYP_KEY_SLOT) + sizeof(INTEL_KEYP_IV_SLOT));
+  size_t mapped_size = get_kcbar_mapped_size(port_context->mapped_kcbar_addr);
+  if(kcbar_size > mapped_size) {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "KCBar registers (%zu bytes) exceed the mapped KCBar (%zu bytes).\n", kcbar_size, mapped_size));
     return false;
   }
 
@@ -365,19 +363,39 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
                                     tx_ctrl.stream_tx_control.key_set_select - 1,
                                     keyset.pr, keyset.npr, keyset.cpl));
 
-    TEEIO_ASSERT(keyset.pr < num_key_iv_slots);
+    TEEIO_ASSERT(keyset.pr < *num_key_iv_slots);
     TEEIO_ASSERT(keyset.pr % 3 == 0);
-    TEEIO_ASSERT(keyset.npr < num_key_iv_slots);
-    TEEIO_ASSERT(keyset.cpl < num_key_iv_slots);
+    TEEIO_ASSERT(keyset.npr < *num_key_iv_slots);
+    TEEIO_ASSERT(keyset.cpl < *num_key_iv_slots);
 
-    key_iv_slot_usage_map = (1 << keyset.pr/3) | key_iv_slot_usage_map;
+    slot_group_used[keyset.pr / 3] = true;
   }
 
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "key/iv slot usage: key_iv_slot_usage_map=%02x\n", key_iv_slot_usage_map));
+  return true;
+}
+
+/**
+ * This function is to find free key/iv slots for PCIE-IDE stream.
+ *
+ * There are 3 substreams (PR/NPR/CPL) in a PCIE-IDE stream. We assume
+ * the key/iv slots allocated for these substreams are continuous. For
+ * example, 0|1|2 or 3|4|5.
+ */
+bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8_t rp_stream_index, ide_key_set_t* k_set)
+{
+  int i = 0;
+  bool found = false;
+  bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM];
+  int num_key_iv_slots = 0;
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Allocate kv/iv slot for %s. Its rp_stream_index is stream_%c\n", port_context->port->port_name, rp_stream_index + 'a'));
+
+  if(!pcie_ide_get_key_iv_slot_usage(port_context, slot_group_used, &num_key_iv_slots)) {
+    return false;
+  }
+
   for(i = 0; i < num_key_iv_slots / 3; i++) {
-    uint8_t key_iv_slot = (key_iv_slot_usage_map >> i) & 0x1;
-    // 0 indicates the slots are free, 1 indicates the slots are occupied.
-    if(key_iv_slot == 0) {
+    if(!slot_group_used[i]) {
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_PR] = i * 3;
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_NPR] = i * 3 + 1;
       k_set->slot_id[PCIE_IDE_STREAM_RX][PCIE_IDE_SUB_STREAM_CPL] = i * 3 + 2;
@@ -397,6 +415,85 @@ bool pcie_ide_alloc_slot_ids(ide_common_test_port_context_t* port_context, uint8
   }
 
   return found;
+}
+
+/**
+ * Return the number of free key/iv slot groups (3 continuous slots for PR/NPR/CPL) in rootport KCBar.
+ */
+int pcie_ide_get_free_slot_group_num(ide_common_test_port_context_t* port_context)
+{
+  bool slot_group_used[MAX_KEY_IV_SLOT_GROUP_NUM];
+  int num_key_iv_slots = 0;
+  int num = 0;
+
+  if(!pcie_ide_get_key_iv_slot_usage(port_context, slot_group_used, &num_key_iv_slots)) {
+    return 0;
+  }
+
+  for(int i = 0; i < num_key_iv_slots / 3; i++) {
+    if(!slot_group_used[i]) {
+      num++;
+    }
+  }
+
+  return num;
+}
+
+/**
+ * Return the number of Link or Selective IDE Stream Register Blocks in ecap which are not enabled.
+ */
+int pcie_ide_get_free_ide_reg_block_num(ide_common_test_port_context_t* port_context, TEST_IDE_TYPE ide_type)
+{
+  PCIE_IDE_CAP ide_cap = {.raw = port_context->ide_cap.raw};
+  int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
+  int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
+  int fd = port_context->cfg_space_fd;
+  uint32_t offset = port_context->ecap_offset + sizeof(PCIE_CAP_ID) + sizeof(PCIE_IDE_CAP) + sizeof(PCIE_IDE_CTRL);
+  int num = 0;
+
+  if(ide_type == TEST_IDE_TYPE_LNK_IDE) {
+    for(int i = 0; i < num_lnk_ide; i++) {
+      PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
+      if(lnk_ide_stream_ctrl.enabled == 0) {
+        num++;
+      }
+      offset += LINK_IDE_REGISTER_BLOCK_SIZE;
+    }
+    return num;
+  }
+
+  offset += num_lnk_ide * LINK_IDE_REGISTER_BLOCK_SIZE;
+  for(int i = 0; i < num_sel_ide; i++) {
+    PCIE_SEL_IDE_STREAM_CAP sel_ide_stream_cap = {.raw = device_pci_read_32(offset, fd)};
+    PCIE_SEL_IDE_STREAM_CTRL sel_ide_stream_ctrl = {.raw = device_pci_read_32(offset + 4, fd)};
+    if(sel_ide_stream_ctrl.enabled == 0) {
+      num++;
+    }
+    // Capability, Control and Status Registers, RID Association Register Block and Address Association Register Blocks
+    offset += 3 * 4 + 2 * 4 + sel_ide_stream_cap.num_addr_assoc_reg_blocks * 3 * 4;
+  }
+
+  return num;
+}
+
+/**
+ * Return the number of stream_x which are not enabled in rootport KCBar.
+ */
+int pcie_ide_get_free_rp_stream_num(ide_common_test_port_context_t* port_context)
+{
+  INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
+  INTEL_KEYP_PCIE_STREAM_CAP stream_cap = { .raw = mmio_read_reg32(&kcbar->capabilities)};
+  int num = 0;
+
+  for(int i = 0; i < stream_cap.num_stream_supported + 1; i++) {
+    INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = &kcbar->stream_config_reg_block + i;
+    INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+    if(stream_ctrl.en == 0) {
+      num++;
+    }
+  }
+
+  return num;
 }
 
 /**
@@ -488,12 +585,14 @@ FindFreeLinkSelectiveIDERegisterBlockDone:
     found = false;
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to find a free one.\n"));
     INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)port_context->mapped_kcbar_addr;
-    int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
+    INTEL_KEYP_PCIE_STREAM_CAP stream_cap = {.raw = mmio_read_reg32(&kcbar->capabilities)};
+    int num_stream_supported = stream_cap.num_stream_supported + 1;
 
     for(i = 0; i < num_stream_supported; i++) {
       INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: stream_config_reg_block.control = 0x%08x\n", i, stream_config_reg_block->control.raw));
-      if(stream_config_reg_block->control.en == 0) {
+      INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "%d: stream_config_reg_block.control = 0x%08x\n", i, stream_ctrl.raw));
+      if(stream_ctrl.en == 0) {
         *rp_stream_index = (uint8_t)i;
         found = true;
         break;
@@ -668,7 +767,7 @@ bool populate_addr_assoc_reg_block(
 /**
  * To check if the stream_id is used in rootport.
  */
-static bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_context_t* root_port_context)
+bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_port_context_t* root_port_context)
 {
   TEEIO_ASSERT(root_port_context != NULL);
 
@@ -676,11 +775,13 @@ static bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_
 
   // First walk thru Key Configuration Unit Register Block
   INTEL_KEYP_ROOT_COMPLEX_KCBAR *kcbar = (INTEL_KEYP_ROOT_COMPLEX_KCBAR *)root_port_context->mapped_kcbar_addr;
-  int num_stream_supported = kcbar->capabilities.num_stream_supported + 1;
+  INTEL_KEYP_PCIE_STREAM_CAP stream_cap = {.raw = mmio_read_reg32(&kcbar->capabilities)};
+  int num_stream_supported = stream_cap.num_stream_supported + 1;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport KCBar stream_x to check if stream_id(%d) is used.\n", stream_id));
   for(i = 0; i < num_stream_supported; i++) {
     INTEL_KEYP_STREAM_CONFIG_REG_BLOCK *stream_config_reg_block = (&kcbar->stream_config_reg_block) + i;
-    if(stream_config_reg_block->control.en == 1 && stream_config_reg_block->control.stream_id == stream_id) {
+    INTEL_KEYP_STREAM_CONTROL stream_ctrl = {.raw = mmio_read_reg32(&stream_config_reg_block->control)};
+    if(stream_ctrl.en == 1 && stream_ctrl.stream_id == stream_id) {
       TEEIO_DEBUG((TEEIO_DEBUG_INFO, "stream_id (%d) is used in stream_%c\n", stream_id, 'a' + i));
       return true;
     }
@@ -691,17 +792,16 @@ static bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_
   int fd = root_port_context->cfg_space_fd;
   TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Walk thru Rootport IDE Extended Cap to check if stream_id(%d) is used.\n", stream_id));
 
-  offset += 4;  // refer to PCIE_IDE_ECAP
+  offset += 4;  // refer to PCIE_IDE_CAP
   PCIE_IDE_CAP ide_cap = {.raw = device_pci_read_32(offset, fd)};
   int num_lnk_ide = ide_cap.lnk_ide_supported == 1 ? ide_cap.num_lnk_ide + 1 : 0;
   int num_sel_ide = ide_cap.sel_ide_supported == 1 ? ide_cap.num_sel_ide + 1 : 0;
 
-  offset += 4;  // refer to PCIE_IDE_CTRL
+  // skip PCIE_IDE_CAP and PCIE_IDE_CTRL to the first Link or Selective IDE Stream Register Block
+  offset += 8;
 
   if(num_lnk_ide > 0) {
     TEEIO_DEBUG((TEEIO_DEBUG_INFO, "    Check Link IDE Stream Control Register block ...\n"));
-    offset += 4;  // refer to PCIE_SEL_IDE_STREAM_CAP
-
     for(i = 0; i < num_lnk_ide; i++) {
       PCIE_LNK_IDE_STREAM_CTRL lnk_ide_stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
       if(lnk_ide_stream_ctrl.enabled == 1 && lnk_ide_stream_ctrl.stream_id == stream_id) {
@@ -728,6 +828,70 @@ static bool check_stream_id_used_in_rootport(uint8_t stream_id, ide_common_test_
   }
 
   return false;
+}
+
+/**
+ * Populate rid/addr assoc_reg_block of the rootport for the device at lower_port_context.
+ * Mem Base/Limit of addr assoc_reg_block are read from dev_bdf.
+ */
+bool populate_rp_assoc_reg_blocks(ide_common_test_port_context_t *port_context, ide_common_test_port_context_t *lower_port_context, char *dev_bdf)
+{
+  uint16_t segment = 0;
+  if (pcie_check_flit_mode_enabled(port_context)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Upper port PCIE Flit Mode Enabled.\n"));
+    if (pcie_check_segment_captured(port_context)) {
+      segment = port_context->port->segment;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for upper port.\n", segment));
+
+      // Some device does not implement pcie link status2 register properly,
+      // In this case we should use segment number from root_port in case selective IDE fails in FM.
+      if (!pcie_check_flit_mode_enabled(lower_port_context) || !pcie_check_segment_captured(lower_port_context)) {
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Lower port PCIE Flit Mode Not Enabled or Segment Not Captured.\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Some device does not implement pcie link status2 register properly.\n"));
+        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Use the segment number (%d) from lower port.\n", segment));
+        lower_port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
+      }
+    }
+  }
+  populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, segment, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
+
+  bool use_prefetch_memory = check_use_prefetchable(dev_bdf);
+  if(!populate_addr_assoc_reg_block(dev_bdf, use_prefetch_memory, &port_context->addr_assoc_reg_block)) {
+    return false;
+  }
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump host assoc_reg_block:\n"));
+  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
+  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
+
+  return true;
+}
+
+/**
+ * Populate rid/addr assoc_reg_block of the device port.
+ */
+void populate_dev_assoc_reg_blocks(ide_common_test_port_context_t *port_context)
+{
+  port_context->rid_assoc_reg_block.rid_assoc1.raw = m_rid_assoc_reg_block.rid_assoc1.raw;
+  port_context->rid_assoc_reg_block.rid_assoc2.raw = m_rid_assoc_reg_block.rid_assoc2.raw;
+  port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
+  port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
+  port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
+
+  // set segment base for lower port if flit mode enabled
+  uint16_t segment = 0;
+  if (pcie_check_flit_mode_enabled(port_context)) {
+    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Lower port PCIE Flit Mode Enabled.\n"));
+    if (pcie_check_segment_captured(port_context)) {
+      segment = port_context->port->segment;
+      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for lower port.\n", segment));
+    }
+  }
+  port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
+
+  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump dev assoc_reg_block:\n"));
+  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
+  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 }
 
 /**
@@ -769,24 +933,6 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
 
   // rid & addr assoc_reg_block
   ide_common_test_port_context_t *lower_port_context = &group_context->common.lower_port;
-  uint16_t segment = 0;
-  if (pcie_check_flit_mode_enabled(port_context)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Upper port PCIE Flit Mode Enabled.\n"));
-    if (pcie_check_segment_captured(port_context)) {
-      segment = port_context->port->segment;
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for upper port.\n", segment));
-
-      // Some device does not implement pcie link status2 register properly,
-      // In this case we should use segment number from root_port in case selective IDE fails in FM.
-      if (!pcie_check_flit_mode_enabled(lower_port_context) || !pcie_check_segment_captured(lower_port_context)) {
-        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Lower port PCIE Flit Mode Not Enabled or Segment Not Captured.\n"));
-        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Some device does not implement pcie link status2 register properly.\n"));
-        TEEIO_DEBUG((TEEIO_DEBUG_WARN, "Use the segment number (%d) from lower port.\n", segment));
-        lower_port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
-      }
-    }
-  }
-  populate_rid_assoc_reg_block(&port_context->rid_assoc_reg_block, segment, lower_port_context->port->bus, lower_port_context->port->device, lower_port_context->port->function);
 
   ide_common_test_switch_internal_conn_context_t *itr = NULL;
   char* dev_bdf = NULL;
@@ -808,14 +954,9 @@ bool init_root_port(pcie_ide_test_group_context_t *group_context)
     dev_bdf = port_context->port->bdf;
   }
 
-  bool use_prefetch_memory = check_use_prefetchable(dev_bdf);
-  if(!populate_addr_assoc_reg_block(dev_bdf, use_prefetch_memory, &port_context->addr_assoc_reg_block)) {
+  if(!populate_rp_assoc_reg_blocks(port_context, lower_port_context, dev_bdf)) {
     goto InitHostFail;
   }
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump host assoc_reg_block:\n"));
-  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
-  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
 
   // allocate key/iv slots
   if(!pcie_ide_alloc_slot_ids(port_context, group_context->rp_stream_index, &group_context->k_set)) {
@@ -968,26 +1109,7 @@ bool init_dev_port(pcie_ide_test_group_context_t *group_context)
   port_context->ide_id = ide_id;
 
   // rid&addr assoc_reg_block
-  port_context->rid_assoc_reg_block.rid_assoc1.raw = m_rid_assoc_reg_block.rid_assoc1.raw;
-  port_context->rid_assoc_reg_block.rid_assoc2.raw = m_rid_assoc_reg_block.rid_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc1.raw = m_addr_assoc_reg_block.addr_assoc1.raw;
-  port_context->addr_assoc_reg_block.addr_assoc2.raw = m_addr_assoc_reg_block.addr_assoc2.raw;
-  port_context->addr_assoc_reg_block.addr_assoc3.raw = m_addr_assoc_reg_block.addr_assoc3.raw;
-
-  // set segment base for lower port if flit mode enabled
-  uint16_t segment = 0;
-  if (pcie_check_flit_mode_enabled(port_context)) {
-    TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Lower port PCIE Flit Mode Enabled.\n"));
-    if (pcie_check_segment_captured(port_context)) {
-      segment = port_context->port->segment;
-      TEEIO_DEBUG((TEEIO_DEBUG_INFO, "Use the segment number (%d) for lower port.\n", segment));
-    }
-  }
-  port_context->rid_assoc_reg_block.rid_assoc2.segment_base = segment;
-
-  TEEIO_DEBUG((TEEIO_DEBUG_INFO, "dump dev assoc_reg_block:\n"));
-  dump_rid_assoc_reg_block(&port_context->rid_assoc_reg_block);
-  dump_addr_assoc_reg_block(&port_context->addr_assoc_reg_block);
+  populate_dev_assoc_reg_blocks(port_context);
 
   return true;
 
@@ -1207,6 +1329,8 @@ bool reset_ide_registers(
   // setup ide_ecap_regs
   PCIE_SEL_IDE_STREAM_CTRL stream_ctrl_reg = {.raw = 0};
   stream_ctrl_reg.stream_id = stream_id;
+  // TC is at the same bits in the Link and Selective IDE Stream Control Registers
+  stream_ctrl_reg.tc = port_context->tc;
 
   return setup_ide_ecap_regs(
       port_context->cfg_space_fd,
@@ -1394,8 +1518,8 @@ void dump_ecap(
 
     PCIE_SEL_IDE_STREAM_CTRL stream_ctrl = {.raw = device_pci_read_32(offset, fd)};
     TEEIO_PRINT(("    stream_ctrl   : %08x\n", stream_ctrl.raw));
-    TEEIO_PRINT(("                  : enabled=%x, pcrc_en=%x, cfg_sel_ide=%x, stream_id=%x\n",
-                                                          stream_ctrl.enabled, stream_ctrl.pcrc_en, stream_ctrl.cfg_sel_ide, stream_ctrl.stream_id));
+    TEEIO_PRINT(("                  : enabled=%x, pcrc_en=%x, cfg_sel_ide=%x, tc=%x, stream_id=%x\n",
+                                                          stream_ctrl.enabled, stream_ctrl.pcrc_en, stream_ctrl.cfg_sel_ide, stream_ctrl.tc, stream_ctrl.stream_id));
 
     offset += 4;
     PCIE_SEL_IDE_STREAM_STATUS stream_status = {.raw = device_pci_read_32(offset, fd)};

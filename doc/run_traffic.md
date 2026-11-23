@@ -51,3 +51,5 @@ sudo fio --filename=${FILENAME} --rw=rw \
 ```
 Note: If tester want to test 2 Devices with one FIO command, follow [Find the TEEIO Device information](#find-the-teeio-device-information) to find both devices' information, for example, ```/dev/nvme5``` and ```/dev/nvme6```, then set ```FILENAME=/dev/nvme5:/dev/nvme6```.
 
+Note: In the multi-ide test category a stream with ```tc=N``` (N is not 0) only secures TLPs with Traffic Class N, and a selective_ide stream with ```addr=base-limit``` only secures requests to that range. FIO traffic usually uses TC 0 and all BARs of the device. teeio-validator does not generate traffic, so to see traffic on such a stream the tester shall generate TLPs with that TC or to that address range.
+

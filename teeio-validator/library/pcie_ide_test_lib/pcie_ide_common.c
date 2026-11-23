@@ -204,10 +204,10 @@ static const char* get_test_configuration_name (int configuration_type)
   return m_ide_test_configuration_name[configuration_type];
 }
 
-static uint32_t get_test_configuration_bitmask (int top_tpye)
+static uint32_t get_test_configuration_bitmask (int top_type)
 {
-  TEEIO_ASSERT(top_tpye < IDE_TEST_TOPOLOGY_TYPE_NUM);
-  return m_top_config_bitmasks[top_tpye];
+  TEEIO_ASSERT(top_type < IDE_TEST_TOPOLOGY_TYPE_NUM);
+  return m_top_config_bitmasks[top_type];
 }
 
 static ide_test_config_funcs_t* get_test_configuration_funcs (int top_type, int configuration_type)
