@@ -142,6 +142,9 @@ void common_test_record_test_assertion (
     IDE_COMMON_TEST_CASE_ASSERTION_TYPE_TEST,
     (teeio_test_result_t)test_result, 
     "%s", buffer);
+
+  spdm_test_annotate_failed_case(group_id, case_id, case_class, assertion_id,
+                                 (teeio_test_result_t)test_result, buffer);
 }
 
 void common_test_run_test_suite (

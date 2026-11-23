@@ -81,6 +81,38 @@ bool spdm_start_psk_session(void *spdm_context, const void *psk_hint,
 */
 bool spdm_end_session(void *spdm_context, uint32_t session_id);
 
+/**
+ * Lightweight trace of the unsecured SPDM traffic seen by the DOE layer. It lets a
+ * caller explain why a connection setup failed after the fact, for example which
+ * request the responder rejected. Secured SPDM messages are not inspected.
+ */
+#define TEEIO_SPDM_TRACE_MAX_VERSIONS 8
+
+typedef struct {
+    /* The most recent SPDM response was an ERROR; the fields below describe it. */
+    bool    last_response_is_error;
+    uint8_t error_request_code;
+    uint8_t error_code;
+    uint8_t error_data;
+    uint8_t error_spdm_version;
+
+    /* Versions listed in the most recent VERSION response, as 0xMN (major/minor). */
+    bool    has_versions;
+    uint8_t version_count;
+    uint8_t versions[TEEIO_SPDM_TRACE_MAX_VERSIONS];
+} teeio_spdm_trace_t;
+
+void teeio_spdm_trace_reset(void);
+void teeio_spdm_trace_get(teeio_spdm_trace_t *trace);
+
+/* Called by the DOE layer after a message is successfully sent or received. */
+void teeio_spdm_trace_on_send(const void *doe_message, size_t size);
+void teeio_spdm_trace_on_receive(const void *doe_message, size_t size);
+
+/* Names for log output. They return a generic string for unknown codes. */
+const char *teeio_spdm_request_code_name(uint8_t request_code);
+const char *teeio_spdm_error_code_name(uint8_t error_code);
+
 libspdm_return_t device_doe_receive_message(
     void *spdm_context,
     size_t *response_size,
