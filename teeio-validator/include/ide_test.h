@@ -16,6 +16,7 @@
 #include "spdm_test.h"
 #include "intel_keyp.h"
 #include "teeio_debug.h"
+#include "teeio_fault_injection.h"
 
 #define NOT_IMPLEMENTED(msg) \
   TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Not implemented - %s\n", msg)); \
@@ -68,6 +69,9 @@
 #define MAIN_SECTION_PCI_LOG "pci_log"
 #define MAIN_SECTION_SPDM_VERSION "spdm_version"
 #define TEEIO_SPDM_VERSION_AUTO 0
+#define MAIN_SECTION_ALGORITHM_PROFILE "algorithm_profile"
+#define TEEIO_SPDM_ALGORITHM_PROFILE_CLASSICAL 0
+#define TEEIO_SPDM_ALGORITHM_PROFILE_PQC 1
 
 #define PORTS_SECTION "Ports"
 #define TOPOLOGY_SECTION "Topology_%d"
@@ -181,6 +185,7 @@ typedef struct
   bool wo_tdisp;
   bool pcap_enable;
   uint8_t spdm_version;
+  uint8_t algorithm_profile;
 } IDE_TEST_MAIN_CONFIG;
 
 typedef struct {
@@ -252,6 +257,7 @@ typedef struct {
   IDE_TEST_TOPOLOGYS topologies;
   IDE_TEST_CONFIGURATIONS configurations;
   IDE_TEST_SUITES test_suites;
+  IDE_TEST_FAULT_CONFIG fault_injection;
 } IDE_TEST_CONFIG;
 
 /*
