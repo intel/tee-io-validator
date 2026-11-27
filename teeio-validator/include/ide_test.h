@@ -205,6 +205,9 @@ typedef struct {
 
 typedef union {
   CXL_IDE_PRIV_CONFIG_DATA cxl_ide;
+  struct {
+    bool linux_ep_association;
+  } pcie_ide;
 } IDE_TEST_CONFIGURATION_PRIV_DATA;
 
 typedef struct {
@@ -330,6 +333,7 @@ typedef struct {
   // rid/addr assoc_reg_block
   PCIE_SEL_IDE_RID_ASSOC_REG_BLOCK rid_assoc_reg_block;
   PCIE_SEL_IDE_ADDR_ASSOC_REG_BLOCK addr_assoc_reg_block;
+  bool linux_ep_association;
 
   // cxl related data
   CXL_PRIV_DATA cxl_data;

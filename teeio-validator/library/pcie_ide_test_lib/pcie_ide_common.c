@@ -257,6 +257,33 @@ static bool pcie_ide_check_configuration_bitmap(uint32_t* bitmap)
   return true;
 }
 
+static const char** get_test_configuration_priv_names(void)
+{
+  static const char* names[] = {"ep_association_policy", NULL};
+  return names;
+}
+
+static bool parse_test_configuration_priv_name(const char* key, const char* value,
+                                               IDE_TEST_CONFIGURATION* config)
+{
+  if(key == NULL || value == NULL || config == NULL ||
+     strcmp(key, "ep_association_policy") != 0) {
+    return false;
+  }
+
+  if(strcmp(value, "legacy") == 0) {
+    config->priv_data.pcie_ide.linux_ep_association = false;
+  } else if(strcmp(value, "root_port_rid") == 0 &&
+            config->type == IDE_TEST_TOPOLOGY_TYPE_SEL_IDE) {
+    config->priv_data.pcie_ide.linux_ep_association = true;
+  } else {
+    TEEIO_DEBUG((TEEIO_DEBUG_ERROR, "Invalid ep_association_policy '%s'; use legacy or root_port_rid (requires selective_ide).\n", value));
+    return false;
+  }
+
+  return true;
+}
+
 bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
 {
   TEEIO_ASSERT(funcs);
@@ -266,6 +293,8 @@ bool pcie_ide_test_lib_register_test_suite_funcs(teeio_test_funcs_t* funcs)
   funcs->get_configuration_bitmask_func = get_test_configuration_bitmask;
   funcs->get_configuration_funcs_func = get_test_configuration_funcs;
   funcs->get_configuration_name_func = get_test_configuration_name;
+  funcs->get_configuration_priv_names_func = get_test_configuration_priv_names;
+  funcs->parse_configuration_priv_name_func = parse_test_configuration_priv_name;
   funcs->get_group_funcs_func = get_test_group_funcs;
   funcs->alloc_test_group_context_func = alloc_pcie_ide_test_group_context;
   funcs->check_configuration_bitmap_func = pcie_ide_check_configuration_bitmap;

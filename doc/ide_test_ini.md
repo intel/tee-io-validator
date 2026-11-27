@@ -90,6 +90,7 @@ Settings of **Topology** / **Configuration** / **TestSuite** are different.
 |selective_ide_for_configuration|0/1|0|O||
 |tee_limited_stream|0/1|0|O||
 |flit_mode_disable|0/1|0|O||
+|ep_association_policy|string|legacy|O|**legacy**: all-RID/all-address matching. **root_port_rid**: EP matches only the Root Port RID; address matching disabled. Currently for direct/switched RP-to-EP Selective IDE.|
 
 [TestSuite_x]
 |Entry|Value|Default|Mandatory|Comment|
